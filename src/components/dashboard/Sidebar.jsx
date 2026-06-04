@@ -21,7 +21,7 @@ function Sidebar() {
   return (
     <div className="d-flex flex-column p-3 text-white" style={{ width: '260px', backgroundColor: '#06060c', minHeight: '100vh', borderRight: '1px solid #1e1e2f' }}>
       {/* Brand Logo */}
-      <Navbar.Brand href="#home" className="fw-bold text-white fs-4 mb-4">
+      <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4 mb-4">
           <span style={{
             background: 'linear-gradient(to right, #00bfa5 0%, #00bfa5 30%, #ffffff 70%, #ffffff 100%)',
             WebkitBackgroundClip: 'text',
