@@ -1,4 +1,4 @@
-// src/components/dashboard/RecentActivity.jsx
+// Component thể hiện Lộ trình học tập trên trang chủ.
 import React, { useState } from 'react';
 
 function RecentActivity() {

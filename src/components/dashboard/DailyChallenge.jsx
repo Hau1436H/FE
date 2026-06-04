@@ -1,4 +1,4 @@
-// src/components/dashboard/DailyChallenge.jsx
+// daily Challenge ở trang dashboard chính.
 import React, { useState, useEffect } from 'react';
 import { FaFire } from 'react-icons/fa';
 

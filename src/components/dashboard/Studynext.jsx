@@ -1,4 +1,4 @@
-// src/components/dashboard/Studynext.jsx
+// Component gợi ý bài học tiếp theo trên trang dashboard chính.
 import React, { useState } from 'react';
 
 function StudyNext() {

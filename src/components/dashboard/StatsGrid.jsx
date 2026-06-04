@@ -1,4 +1,4 @@
-// src/components/dashboard/StatsGrid.jsx
+// component chứa thông số thống kê chính ở trang dashboard.
 import React from 'react';
 import { FaCalendarCheck, FaClock, FaAward, FaStar } from 'react-icons/fa';
 

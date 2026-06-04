@@ -1,4 +1,4 @@
-// src/components/dashboard/LearningPath.jsx
+// Đây là component Lộ trình học tập.
 import React, { useState } from 'react';
 
 function LearningPath() {

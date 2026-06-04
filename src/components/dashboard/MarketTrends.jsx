@@ -1,4 +1,4 @@
-// src/components/dashboard/MarketTrends.jsx
+;// Đây là component thể hiện xu hướng thị trường
 import React, { useState } from 'react';
 
 function MarketTrends() {

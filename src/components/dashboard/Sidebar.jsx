@@ -1,4 +1,4 @@
-// src/components/dashboard/Sidebar.jsx
+// Component chứa sidebar mennu điều hướng bên trái của trang dashboard.
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom'; // 1. Thêm hook useLocation
 import { Navbar } from 'react-bootstrap';
@@ -34,7 +34,7 @@ function Sidebar() {
   );
 
   return (
-    <div className="d-flex flex-column p-3 text-white" style={{ width: '260px', backgroundColor: '#06060c', minHeight: '100vh', borderRight: '1px solid #1e1e2f' }}>
+    <div className="d-flex flex-column p-3 text-white flex-shrink-0" style={{ width: '260px', backgroundColor: '#06060c', minHeight: '100vh', borderRight: '1px solid #1e1e2f' }}>
       {/* Brand Logo */}
       <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4 mb-4">
           <span style={{
