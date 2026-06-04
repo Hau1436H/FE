@@ -5,7 +5,7 @@ import DailyChallenge from '../components/dashboard/DailyChallenge';
 import StatsGrid from '../components/dashboard/StatsGrid';
 import LearningPath from '../components/dashboard/LearningPath';
 import MarketTrends from '../components/dashboard/MarketTrends';
-import RoadMap from '../components/dashboard/RoadMap';
+import StudyNext from '../components/dashboard/Studynext';
 import RecentActivity from '../components/dashboard/RecentActivity';
 
 function Dashboard() {
@@ -58,7 +58,7 @@ function Dashboard() {
 
           {/* Cột Bên Phải */}
           <div className="col-12 col-lg-4">
-            <RoadMap />
+            <StudyNext />
             <RecentActivity />
           </div>
         </div>

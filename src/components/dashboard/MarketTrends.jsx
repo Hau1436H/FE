@@ -1,7 +1,25 @@
 // src/components/dashboard/MarketTrends.jsx
-import React from 'react';
+import React, { useState } from 'react';
 
 function MarketTrends() {
+  // Khởi tạo State chứa danh sách dữ liệu động xu hướng thị trường
+  const [trends, setTrends] = useState([
+    {
+      id: 1,
+      skillName: "React / Next.js",
+      growth: 18,
+      demandPercentage: 90,
+      salaryRange: "18 - 28M/tháng"
+    },
+    {
+      id: 2,
+      skillName: "TypeScript",
+      growth: 31,
+      demandPercentage: 75,
+      salaryRange: "20 - 35M/tháng"
+    }
+  ]);
+
   return (
     <div className="p-4 rounded-4" style={{ backgroundColor: '#0f111a', border: '1px solid #1e2235' }}>
       <h6 className="fw-bold text-white mb-3">Xu hướng thị trường tuyển dụng</h6>
@@ -14,16 +32,31 @@ function MarketTrends() {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td className="fw-semibold text-white py-3">React / Next.js <span className="text-success small">+18%</span></td>
-            <td><div className="progress" style={{ width: '80px', height: '4px' }}><div className="progress-bar bg-primary" style={{ width: '90%' }}></div></div></td>
-            <td className="text-success fw-medium">18 - 28M/tháng</td>
-          </tr>
-          <tr>
-            <td className="fw-semibold text-white py-3">TypeScript <span className="text-success small">+31%</span></td>
-            <td><div className="progress" style={{ width: '80px', height: '4px' }}><div className="progress-bar bg-primary" style={{ width: '75%' }}></div></div></td>
-            <td className="text-success fw-medium">20 - 35M/tháng</td>
-          </tr>
+          {/* Duyệt qua mảng dữ liệu động bằng vòng lặp .map() */}
+          {trends.map((item) => (
+            <tr key={item.id}>
+              <td className="fw-semibold text-white py-3">
+                {item.skillName}{" "}
+                <span className="text-success small">
+                  +{item.growth}%
+                </span>
+              </td>
+              <td>
+                <div className="progress" style={{ width: '80px', height: '4px', backgroundColor: '#22223b' }}>
+                  <div 
+                    className="progress-bar bg-primary" 
+                    style={{ 
+                      width: `${item.demandPercentage}%`,
+                      transition: 'width 0.5s ease-in-out'
+                    }}
+                  ></div>
+                </div>
+              </td>
+              <td className="text-success fw-medium">
+                {item.salaryRange}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
