@@ -8,6 +8,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Learning from "./pages/dashboard/Learning";
+import Practice from "./pages/dashboard/Practice";
+import Jobs from "./pages/dashboard/Jobs";
+import Profile from "./pages/dashboard/Profile";
+import Notifications from "./pages/dashboard/Notifications";
 
 function App() {
   // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx
@@ -27,6 +31,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/learning" element={<Learning />}/>
+        <Route path="/dashboard/practice" element={<Practice />}/>
+        <Route path="/dashboard/jobs" element={<Jobs />}/>
+        <Route path="/dashboard/profile" element={<Profile />}/>
+        <Route path="/dashboard/notifications" element={<Notifications />}/>
       </Routes>
     </div>
   );
