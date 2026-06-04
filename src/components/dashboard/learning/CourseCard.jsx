@@ -6,9 +6,9 @@ import { FaStar, FaClock, FaBookOpen, FaUserGraduate } from 'react-icons/fa';
 function CourseCard({ course }) {
   // Hàm render Badge trạng thái động ở góc ảnh
   const renderStatusBadge = () => {
-    if (course.status === 'completed') return <span className="badge bg-success bg-opacity-20 text-success border border-success border-opacity-50">✓ Hoàn thành</span>;
-    if (course.status === 'learning') return <span className="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-50">⏳ Đang học</span>;
-    return <span className="badge bg-secondary bg-opacity-20 text-white-50 border border-secondary border-opacity-50">🔏 Đã lưu</span>;
+    if (course.status === 'completed') return <span className="badge bg-success bg-opacity-20 text-white border border-success border-opacity-50">✓ Hoàn thành</span>;
+    if (course.status === 'learning') return <span className="badge bg-primary bg-opacity-20 text-white border border-primary border-opacity-50">⏳ Đang học</span>;
+    return <span className="badge bg-secondary bg-opacity-20 text-white border border-secondary border-opacity-50">🔏 Đã lưu</span>;
   };
 
   // Hàm cấu hình nút bấm dựa trên trạng thái
