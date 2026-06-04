@@ -6,12 +6,13 @@ import Home from "./pages/Home";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Login from "./pages/Login"; 
 import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx
   const location = useLocation();
 
-  const noNavarPaths = ['/login', '/register'];
+  const noNavarPaths = ['/login', '/register', '/dashboard'];
   const showNavbar = !noNavarPaths.includes(location.pathname);
 
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </div>
   );

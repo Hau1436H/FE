@@ -32,7 +32,7 @@ function Login() {
             
             // Đăng nhập thành công
             localStorage.setItem('token', response.data.token);
-            navigate('/'); // Trở về trang chủ
+            navigate('/dashboard'); // Trở về trang chủ
         } catch (error) {
             const errRes = error.response;
             if (errRes && errRes.status === 403 && errRes.data.message.includes('chưa được xác thực')) {
