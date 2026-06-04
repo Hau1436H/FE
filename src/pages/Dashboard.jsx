@@ -20,7 +20,7 @@ function Dashboard() {
         {/* Thanh tìm kiếm và lời chào trên cùng */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h4 className="fw-bold mb-0 text-white">Chào buổi chiều, Minh Tú! 👋</h4>
+            <h4 className="fw-bold mb-0 text-white">Chào buổi chiều, Minh Tú!</h4>
             <span className="text-white small">Streak 12 ngày • 2,840 điểm</span>
           </div>
           <div style={{ width: '300px' }}>
