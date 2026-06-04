@@ -18,7 +18,7 @@ function DailyChallenge() {
             ⚡ DAILY CHALLENGE
           </div>
           <h5 className="text-white mb-1 fw-bold mt-1">Giải bài Leetcode #724 – Find Pivot Index</h5>
-          <p className="text-muted mb-0 small">
+          <p className="text-white mb-0 small">
             Còn <span className="text-white fw-medium">6h 23m</span> • <span className="text-success fw-medium">+150 XP</span> khi hoàn thành
           </p>
         </div>

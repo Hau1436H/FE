@@ -17,9 +17,9 @@ function StatsGrid() {
           <div className="p-3 rounded-4 d-flex align-items-center justify-content-between h-100" 
                style={{ backgroundColor: '#0f111a', border: '1px solid #1e2235' }}>
             <div>
-              <span className="text-muted small" style={{ fontSize: '13px' }}>{stat.title}</span>
+              <span className="text-white small" style={{ fontSize: '13px' }}>{stat.title}</span>
               <h3 className="text-white my-1 fw-bold">{stat.value}</h3>
-              <span className="text-muted extra-small" style={{ fontSize: '11px' }}>{stat.desc}</span>
+              <span className="text-white extra-small" style={{ fontSize: '11px' }}>{stat.desc}</span>
             </div>
             {/* Đã sửa lỗi: item.icon chuyển thành stat.icon chuẩn xác */}
             <div className={`p-3 ${stat.bg} bg-opacity-10 ${stat.color} rounded-4 fs-4 d-flex align-items-center justify-content-center`} 

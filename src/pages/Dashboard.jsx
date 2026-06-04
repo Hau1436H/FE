@@ -13,20 +13,37 @@ function Dashboard() {
       {/* Khu vực nội dung hiển thị chính */}
       <div className="flex-grow-1 p-4 overflow-auto text-white" style={{ maxHeight: '100vh' }}>
         {/* Thanh tìm kiếm và lời chào trên cùng */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h4 className="fw-bold mb-0 text-white">Chào buổi chiều, Minh Tú! 👋</h4>
-            <span className="text-muted small">Streak 12 ngày • 2,840 điểm</span>
-          </div>
-          <div style={{ width: '300px' }}>
-            <input 
-              type="text" 
-              placeholder="Tìm kỹ năng, bài học..." 
-              className="form-control border-0 text-white placeholder-muted py-2 px-3 small rounded-3" 
-              style={{ backgroundColor: '#0f111a', fontSize: '14px', border: '1px solid #1e2235 !important' }} 
-            />
+        <div className="flex-grow-1 p-4 overflow-auto text-white" style={{ maxHeight: '100vh' }}>
+          {/* Thanh tìm kiếm và lời chào trên cùng */}
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 className="fw-bold mb-0 text-white">Chào buổi chiều, Minh Tú! 👋</h4>
+              <span className="text-white small">Streak 12 ngày • 2,840 điểm</span>
+            </div>
+            <div style={{ width: '300px' }}>
+              <input 
+                type="text" 
+                placeholder="Tìm kỹ năng, bài học..." 
+                className="form-control border-0 text-white py-2 px-3 small rounded-3" 
+                style={{ 
+                  backgroundColor: '#0f111a',
+                  fontSize: '14px', 
+                  border: '1px solid #1e2235',
+                  opacity: 1 // Giữ ô input rõ nét
+                }} 
+                // Thêm hàm bổ sung để xử lý placeholder cho mọi phiên bản Bootstrap
+                onFocus={(e) => e.target.style.outline = 'none'}
+              />
+              {/* Thẻ style nhúng trực tiếp để xử lý triệt để màu placeholder */}
+              <style>{`
+                .form-control::placeholder {
+                  color: rgba(255, 255, 255, 0.5) !important;
+                }
+              `}</style>
+            </div>
           </div>
         </div>
+
 
         {/* Khối thử thách hàng ngày */}
         <DailyChallenge />
@@ -108,11 +125,11 @@ function Dashboard() {
               <h6 className="fw-bold text-white mb-3">Hoạt động gần đây</h6>
               <div className="d-flex flex-column gap-3 small">
                 <div className="d-flex justify-content-between">
-                  <span className="text-muted">Hoàn thành bài: Git Merge vs Rebase</span>
+                  <span className="text-white-50">Hoàn thành bài: Git Merge vs Rebase</span>
                   <span className="text-success fw-medium">+50 XP</span>
                 </div>
                 <div className="d-flex justify-content-between">
-                  <span className="text-muted">Làm bài test JavaScript - Đạt 87%</span>
+                  <span className="text-white-50">Làm bài test JavaScript - Đạt 87%</span>
                   <span className="text-success fw-medium">+120 XP</span>
                 </div>
               </div>
