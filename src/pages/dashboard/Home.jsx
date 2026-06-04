@@ -3,8 +3,8 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
-import MyNavbar from '../components/MyNavbar';
-import MyFooter from '../components/MyFooter';
+import MyNavbar from '../../components/MyNavbar';
+import MyFooter from '../../components/MyFooter';
 
 function Home() {
   // Thay link ảnh nền của bạn vào đây hoặc import từ thư mục assets

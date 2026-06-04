@@ -1,12 +1,12 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
-import Sidebar from '../components/dashboard/Sidebar';
-import DailyChallenge from '../components/dashboard/DailyChallenge';
-import StatsGrid from '../components/dashboard/StatsGrid';
-import LearningPath from '../components/dashboard/LearningPath';
-import MarketTrends from '../components/dashboard/MarketTrends';
-import StudyNext from '../components/dashboard/Studynext';
-import RecentActivity from '../components/dashboard/RecentActivity';
+import Sidebar from '../../components/dashboard/Sidebar';
+import DailyChallenge from '../../components/dashboard/DailyChallenge';
+import StatsGrid from '../../components/dashboard/StatsGrid';
+import LearningPath from '../../components/dashboard/LearningPath';
+import MarketTrends from '../../components/dashboard/MarketTrends';
+import StudyNext from '../../components/dashboard/Studynext';
+import RecentActivity from '../../components/dashboard/RecentActivity';
 
 function Dashboard() {
   return (

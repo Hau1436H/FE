@@ -2,18 +2,19 @@ import React from "react";
 import MyNavbar from "./components/MyNavbar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Route, Routes, useLocation } from "react-router-dom";
-import Home from "./pages/Home";
+import Home from "./pages/dashboard/Home";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Login from "./pages/Login"; 
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/dashboard/Dashboard";
+import Learning from "./pages/dashboard/Learning";
 
 function App() {
   // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx
   const location = useLocation();
 
   const noNavarPaths = ['/login', '/register', '/dashboard'];
-  const showNavbar = !noNavarPaths.includes(location.pathname);
+  const showNavbar = !noNavarPaths.some(path => location.pathname.startsWith(path));
 
   return (
     <div className="position-relative" style={{ backgroundColor: '#0a0a14' }}>
@@ -25,6 +26,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/learning" element={<Learning />}/>
       </Routes>
     </div>
   );
