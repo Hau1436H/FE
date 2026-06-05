@@ -12,6 +12,7 @@ import Practice from "./pages/dashboard/Practice";
 import Jobs from "./pages/dashboard/Jobs";
 import Profile from "./pages/dashboard/Profile";
 import Notifications from "./pages/dashboard/Notifications";
+import Setting from "./pages/dashboard/Setting";
 
 function App() {
   // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx
@@ -35,6 +36,7 @@ function App() {
         <Route path="/dashboard/jobs" element={<Jobs />}/>
         <Route path="/dashboard/profile" element={<Profile />}/>
         <Route path="/dashboard/notifications" element={<Notifications />}/>
+        <Route path="/dashboard/setting" element={<Setting />}/>
       </Routes>
     </div>
   );
