@@ -28,8 +28,26 @@ function CourseCard({ course }) {
   return (
     <div className="card h-100 text-white rounded-4 overflow-hidden d-flex flex-column" style={{ backgroundColor: '#0f111a', border: '1px solid #1e2235' }}>
       {/* Khối Ảnh nền / Poster bài học */}
-      <div className="position-relative ratio ratio-16x9" style={{ backgroundColor: course.imgBg || '#1e1e38' }}>
-        <div className="p-3 d-flex flex-column justify-content-between">
+      <div className="position-relative ratio ratio-16x9">
+        {/* Thẻ hiển thị ảnh nền khóa học */}
+        <img 
+          src={course.imgBg} 
+          alt={course.title} 
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{ objectFit: 'cover', zIndex: 0 }}
+        />
+        
+        {/* Lớp phủ tối (Overlay) giúp text đè lên ảnh không bị mờ/khó đọc */}
+        <div 
+          className="position-absolute top-0 start-0 w-100 h-100" 
+          style={{ 
+            background: 'linear-gradient(to bottom, rgba(15, 17, 26, 0.4), rgba(15, 17, 26, 0.85))',
+            zIndex: 1 
+          }}
+        />
+
+        {/* Nội dung text đè lên ảnh (Thêm zIndex: 2 để nổi lên trên lớp phủ) */}
+        <div className="p-3 d-flex flex-column justify-content-between position-relative" style={{ zIndex: 2 }}>
           <div className="d-flex justify-content-between align-items-center">
             {renderStatusBadge()}
             <span className="badge bg-dark bg-opacity-70 text-white small">{course.type}</span>

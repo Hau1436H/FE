@@ -1,0 +1,56 @@
+export const MENTOR_DATA = [
+  {
+    id: 1,
+    name: "Lê Đức Thịnh",
+    avatar: "👨‍💻", // Bạn có thể thay bằng link ảnh thực tế
+    role: "Engineering Manager",
+    company: "VNG Corporation",
+    rating: 5,
+    reviewsCount: 67,
+    experience: "15+",
+    students: 89,
+    responseTime: "< 1 ngày",
+    price: "500kđ",
+    duration: "90p",
+    bio: "15 năm kinh nghiệm. Từ intern lên EM tại VNG. Mentor tập trung career path dài hạn, system design và kỹ năng leadership.",
+    tags: ["System Design", "Leadership", "Career Growth", "Backend"],
+    availableDays: [6, 7, 8, 9, 10],
+    languages: "Tiếng Việt, English"
+  },
+  {
+    id: 2,
+    name: "Nguyễn Tuấn Anh",
+    avatar: "👨‍💻",
+    role: "Staff Software Engineer",
+    company: "Grab",
+    rating: 4.9,
+    reviewsCount: 128,
+    experience: "10+",
+    students: 218,
+    responseTime: "< 2 giờ",
+    price: "350kđ",
+    duration: "60p",
+    bio: "10+ năm kinh nghiệm. Đã mentor 200+ sinh viên vào Big Tech Việt Nam. Chuyên review code, mock interview, lộ trình sự nghiệp.",
+    tags: ["Frontend", "React", "System Design", "Career Path"],
+    availableDays: [6, 7, 8, 9, 10],
+    languages: "Tiếng Việt, English"
+  },
+  {
+    id: 3,
+    name: "Bùi Quang Minh",
+    avatar: "👨‍💻",
+    role: "DevOps/Platform Engineer",
+    company: "Zalo",
+    rating: 4.9,
+    reviewsCount: 43,
+    experience: "9+",
+    students: 62,
+    responseTime: "< 4 giờ",
+    price: "400kđ",
+    duration: "60p",
+    bio: "Platform Engineer tại Zalo, quản lý hạ tầng 50M+ user. Dạy DevOps thực chiến từ Docker đến K8s production.",
+    tags: ["DevOps", "Kubernetes", "AWS", "CI/CD"],
+    availableDays: [6, 7, 8, 9, 10],
+    languages: "Tiếng Việt"
+  }
+];

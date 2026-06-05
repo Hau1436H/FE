@@ -63,7 +63,7 @@ function FilterTabs({
         <div className="p-4 rounded-4 mb-4 transition-all" style={{ backgroundColor: '#0f111a', border: '1px solid #1e2235' }}>
           <h6 className="fw-bold text-white mb-3" style={{ fontSize: '15px' }}>Bộ lọc</h6>
           
-          <div className="d-flex flex-row flex-shrink-1 gap-3 small">
+          <div className="d-flex flex-column flex-shrink-1 gap-3 small">
             {/* 1. Hàng Danh Mục */}
             <div>
               <div className="text-white-50 text-uppercase fw-bold mb-2" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>Danh mục</div>
@@ -74,7 +74,7 @@ function FilterTabs({
                     key={cat}
                     variant={filters.category === cat ? 'success' : 'secondary'}
                     className={`rounded-pill px-3 py-1 btn-sm border-0 ${filters.category === cat ? 'text-dark fw-semibold' : 'bg-secondary bg-opacity-10 text-white-50'}`}
-                    style={filters.category === cat ? { backgroundColor: '#10b981' } : {}}
+                    style={filters.category === cat ? { backgroundColor: '#10b981   ' } : {}}
                     onClick={() => onFilterChange('category', cat)}
                   >
                     {cat} {/* ĐÃ SỬA: Đưa chữ hiển thị đầy đủ vào đây */}
