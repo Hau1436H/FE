@@ -73,7 +73,14 @@ function SkillAssessment() {
       <nav className="navbar navbar-dark border-bottom border-secondary border-opacity-10 py-3" style={{ backgroundColor: '#0b0c16' }}>
         <div className="container d-flex justify-content-between align-items-center">
           <Link to="/" className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4 text-white m-0">
-            <span style={{ color: '#198754' }}>AI</span>Career
+            <span style={{
+                background: 'linear-gradient(to right, #00bfa5 0%, #00bfa5 30%, #ffffff 70%, #ffffff 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'inline-block',
+                fontWeight: '900',
+                fontSize: '1.25rem'
+            }}>AICareer</span>
           </Link>
 
           {/* Điều kiện check hiển thị: Chỉ xuất hiện khi testResult.hasTaken là true */}
