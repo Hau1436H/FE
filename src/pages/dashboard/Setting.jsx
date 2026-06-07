@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
-
+import { SETTINGS_DATA } from '../../data/settingsData';
 
 function Settings() {
   const [activeTab, setActiveTab] = useState('notifications');
