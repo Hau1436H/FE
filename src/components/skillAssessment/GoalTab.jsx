@@ -11,10 +11,10 @@
 
     // Danh sách dữ liệu cấu hình dựa theo Test1_2.png
     const goals = [
-        { id: 'job', title: 'Tìm việc IT', desc: 'Chuẩn bị portfolio & phỏng vấn', icon: '💼' },
-        { id: 'up_skill', title: 'Nâng cao kỹ năng', desc: 'Học thêm tech mới, lên senior', icon: '⇡' },
-        { id: 'switch', title: 'Chuyển ngành Tech', desc: 'Từ ngành khác sang lập trình', icon: '⇄' },
-        { id: 'research', title: 'Nghiên cứu / Học thuật', desc: 'Nghiên cứu hoặc làm luận văn', icon: '🎓' },
+        { id: 'job', title: 'Tìm việc IT', desc: 'Chuẩn bị portfolio & phỏng vấn'},
+        { id: 'up_skill', title: 'Nâng cao kỹ năng', desc: 'Học thêm tech mới, lên senior'},
+        { id: 'switch', title: 'Chuyển ngành Tech', desc: 'Từ ngành khác sang lập trình'},
+        { id: 'research', title: 'Nghiên cứu / Học thuật', desc: 'Nghiên cứu hoặc làm luận văn' },
     ];
 
     const fields = ['Frontend', 'Backend', 'Mobile', 'AI / ML', 'DevOps', 'Data Engineering', 'Security', 'Full-stack'];
@@ -85,7 +85,6 @@
                     style={{ backgroundColor: '#111324', cursor: 'pointer' }}
                 >
                     <div className="d-flex align-items-start gap-3">
-                    <div className="fs-4 p-2 rounded bg-dark bg-opacity-20">{g.icon}</div>
                     <div>
                         <div className="fw-bold text-white">{g.title}</div>
                         <div className="text-white-50 small">{g.desc}</div>
