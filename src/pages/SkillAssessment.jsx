@@ -19,10 +19,10 @@ function SkillAssessment() {
   });
 
   const tabs = [
-    { id: 'goal', label: '🎯 Mục tiêu' },
-    { id: 'test', label: '🧠 Assessment Test' },
-    { id: 'stats', label: '📊 Thống kê kỹ năng' },
-    { id: 'roadmap', label: '🗺️ Lộ trình học tập' }
+    { id: 'goal', label: 'Mục tiêu' },
+    { id: 'test', label: 'Assessment Test' },
+    { id: 'stats', label: 'Thống kê kỹ năng' },
+    { id: 'roadmap', label: 'Lộ trình học tập' }
   ];
 
   const unlockNextTab = (currentTabId) => {
