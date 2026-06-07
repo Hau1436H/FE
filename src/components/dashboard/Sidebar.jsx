@@ -47,7 +47,7 @@ function Sidebar() {
       {/* 1. KHỐI BRAND LOGO */}
       <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4 mb-4">
         <span style={{
-          background: 'linear-gradient(to right, #00bfa5 0%, #00bfa5 30%, #ffffff 70%, #ffffff 100%)',
+          background: 'linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, #ffffff 70%, #ffffff 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           display: 'inline-block',
@@ -104,16 +104,16 @@ function Sidebar() {
               <button 
                 type="button"
                 className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 rounded-3 border-0 ${
-                  isItemActive ? 'bg-success text-success bg-opacity-10 fw-semibold' : 'bg-transparent text-white-50'
+                  isItemActive ? 'bg-success bg-opacity-10 fw-semibold' : 'bg-transparent text-white-50'
                 }`}
-                style={isItemActive ? { color: '#10b981' } : {}}
+                style={isItemActive ? { color: '#fff' } : {}}
                 // ĐIỀU HƯỚNG ĐỘNG: Nhấn vào dòng nào tự nhảy URL sang module phân hệ đó
                 onClick={() => navigate(item.path)} 
               >
-                <span className={isItemActive ? 'text-success' : 'text-white-50 d-flex align-items-center'}>
+                <span className={isItemActive ? 'text-white' : 'text-white-50 d-flex align-items-center'}>
                   {item.icon}
                 </span>
-                <span className={isItemActive ? 'text-success' : 'text-white'}>
+                <span className={isItemActive ? 'text-white' : 'text-white'}>
                   {item.text}
                 </span>
               </button>
@@ -129,11 +129,11 @@ function Sidebar() {
         <li>
           <button 
             type="button"
-            className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 border-0 ${location.pathname === '/dashboard/setting' ? 'bg-success bg-opacity-10 text-success fw-semibold' : 'bg-transparent text-white-50'}`}
+            className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 border-0 ${location.pathname === '/dashboard/setting' ? 'bg-success bg-opacity-10 fw-semibold' : 'bg-transparent text-white-50'}`}
             onClick={() => navigate('/dashboard/setting')}
           >
-            <FaCog className={location.pathname === '/dashboard/setting' ? 'text-success' : 'text-white-50'} /> 
-            <span className={location.pathname === '/dashboard/setting' ? 'text-success' : 'text-white'}>Cài đặt</span>
+            <FaCog className={location.pathname === '/dashboard/setting' ? 'text-white' : 'text-white-50'} /> 
+            <span className={location.pathname === '/dashboard/setting' ? 'text-white' : 'text-white'}>Cài đặt</span>
           </button>
         </li>
         <li>

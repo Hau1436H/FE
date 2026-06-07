@@ -31,7 +31,7 @@ export const SETTINGS_DATA = {
       id: 'appearance',
       icon: '🎨',
       label: 'Giao diện',
-      sub: 'Theme, màu sắc, cỡ chữ, ngôn ngữ',
+      sub: 'Theme, màu sắc, cỡ chữ',
     },
     {
       id: 'notifications',

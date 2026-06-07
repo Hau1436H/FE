@@ -14,6 +14,7 @@ import Profile from "./pages/dashboard/Profile";
 import Notifications from "./pages/dashboard/Notifications";
 import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
+import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 
 function App() {
   // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx
@@ -23,11 +24,12 @@ function App() {
   const showNavbar = !noNavarPaths.some(path => location.pathname.startsWith(path));
 
   return (
-    <div className="position-relative" style={{ backgroundColor: '#0a0a14' }}>
-      {showNavbar && <MyNavbar />}
-      
-      <Routes>
-        <Route index element={<Home />} />
+    <AppSettingsProvider>
+      <div className="position-relative" style={{ backgroundColor: '#0a0a14' }}>
+        {showNavbar && <MyNavbar />}
+        
+        <Routes>
+          <Route index element={<Home />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -37,10 +39,11 @@ function App() {
         <Route path="/dashboard/jobs" element={<Jobs />}/>
         <Route path="/dashboard/profile" element={<Profile />}/>
         <Route path="/dashboard/notifications" element={<Notifications />}/>
-        <Route path="/dashboard/setting" element={<Setting />}/>
-        <Route path="/skill-assessment" element={<SkillAssessment />} />
-      </Routes>
-    </div>
+          <Route path="/dashboard/setting" element={<Setting />}/>
+          <Route path="/skill-assessment" element={<SkillAssessment />} />
+        </Routes>
+      </div>
+    </AppSettingsProvider>
   );
 }
 

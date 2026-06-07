@@ -1,11 +1,55 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
+import { useAppSettings } from '../../components/dashboard/setting/AppSettingsContext';
+import AppearanceTab from '../../components/dashboard/setting/AppearanceTab';
+import NotificationsTab from '../../components/dashboard/setting/NotificationsTab';
+import PrivacyTab from '../../components/dashboard/setting/PrivacyTab';
 import { SETTINGS_DATA } from '../../data/settingsData';
 
 function Settings() {
-  const [activeTab, setActiveTab] = useState('notifications');
-  const activeItem = SETTINGS_DATA.settingsNav.find((item) => item.id === activeTab) || SETTINGS_DATA.settingsNav[0];
+  const [activeTab, setActiveTab] = useState('appearance');
+  const [savedMessage, setSavedMessage] = useState('');
+  const { t } = useAppSettings();
+
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    channels: Object.fromEntries(SETTINGS_DATA.notifications.channels.map((item) => [item.id, item.defaultEnabled])),
+    types: Object.fromEntries(SETTINGS_DATA.notifications.types.map((item) => [item.id, Object.values(item.defaults).some(Boolean)])),
+  });
+  const [privacyPrefs, setPrivacyPrefs] = useState({ publicProfile: true, twoFactor: false });
+
+  const activeChannelCount = useMemo(
+    () => Object.values(notificationPrefs.channels).filter(Boolean).length,
+    [notificationPrefs.channels],
+  );
+
+  const navItems = SETTINGS_DATA.settingsNav.map((item) => ({
+    ...item,
+    label: t(`nav.${item.id}.label`) || item.label,
+    sub: t(`nav.${item.id}.sub`) || item.sub,
+  }));
+
+  const handleSave = () => {
+    setSavedMessage('Đã lưu cài đặt thành công.');
+  };
+
+  const toggleChannel = (id) => {
+    setNotificationPrefs((prev) => ({
+      ...prev,
+      channels: { ...prev.channels, [id]: !prev.channels[id] },
+    }));
+  };
+
+  const toggleType = (id) => {
+    setNotificationPrefs((prev) => ({
+      ...prev,
+      types: { ...prev.types, [id]: !prev.types[id] },
+    }));
+  };
+
+  const togglePrivacy = (key) => {
+    setPrivacyPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div className="d-flex min-vh-100 w-100" style={{ backgroundColor: '#0b0c10' }}>
@@ -18,9 +62,9 @@ function Settings() {
 
           {/* 2b. Tiêu đề trang */}
           <div className="mb-3">
-            <h4 className="fw-bold text-white mb-1">Cài đặt</h4>
+            <h4 className="fw-bold text-white mb-1">{t('settings.title')}</h4>
             <p className="text-white-50 mb-0" style={{ fontSize: 13 }}>
-              Quản lý tài khoản, giao diện và bảo mật của bạn
+              {t('settings.subtitle')}
             </p>
           </div>
 
@@ -46,7 +90,7 @@ function Settings() {
           <div className="row g-4">
             <div className="col-12 col-lg-3">
               <div className="card border-0 rounded-4 p-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                {SETTINGS_DATA.settingsNav.map((item) => (
+                {navItems.map((item) => (
                   <button
                     key={item.id}
                     type="button"
@@ -58,7 +102,7 @@ function Settings() {
                     }}
                   >
                     <div className="d-flex align-items-center justify-content-between gap-2">
-                      <span className="fw-semibold">{item.icon} {item.label}</span>
+                      <span className="fw-semibold">{item.label}</span>
                       {item.badge ? <span className="badge rounded-pill bg-light text-dark">{item.badge}</span> : null}
                     </div>
                     <div className="small text-white-50 mt-1">{item.sub}</div>
@@ -68,44 +112,32 @@ function Settings() {
             </div>
 
             <div className="col-12 col-lg-9">
-              {activeTab === 'notifications' ? (
-                <div className="card border-0 rounded-4 p-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                  <h5 className="text-white mb-1">Thông báo</h5>
-                  <p className="text-white-50 small mb-4">Điều chỉnh kênh, tần suất và loại thông báo bạn muốn nhận.</p>
-                  <div className="row g-3 mb-4">
-                    {SETTINGS_DATA.notifications.channels.map((channel) => (
-                      <div key={channel.id} className="col-12 col-md-6 col-xl-4">
-                        <div className="rounded-4 p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                          <div className="d-flex align-items-center justify-content-between mb-2">
-                            <strong className="text-white">{channel.icon} {channel.label}</strong>
-                            <span className={`badge rounded-pill ${channel.defaultEnabled ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-white-50'}`}>
-                              {channel.defaultEnabled ? 'Bật' : 'Tắt'}
-                            </span>
-                          </div>
-                          <p className="text-white-50 small mb-0">{channel.desc}</p>
-                        </div>
-                      </div>
-                    ))}
+              {activeTab === 'appearance' ? (
+                <>
+                  <AppearanceTab />
+                  <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                    <button type="button" onClick={handleSave} className="btn btn-success rounded-pill px-4">Lưu cài đặt</button>
+                    {savedMessage ? <span className="text-success small">{savedMessage}</span> : null}
                   </div>
-                  <div className="d-grid gap-3">
-                    {SETTINGS_DATA.notifications.types.map((type) => (
-                      <div key={type.id} className="rounded-4 p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                        <div className="d-flex align-items-center justify-content-between gap-3">
-                          <div>
-                            <strong className="text-white">{type.emoji} {type.label}</strong>
-                            <p className="text-white-50 small mb-0">{type.desc}</p>
-                          </div>
-                          <span className="badge rounded-pill text-white" style={{ background: type.color }}>
-                            {Object.entries(type.defaults).filter(([, enabled]) => enabled).length} kênh
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                </>
+              ) : activeTab === 'notifications' ? (
+                <>
+                  <NotificationsTab notificationPrefs={notificationPrefs} toggleChannel={toggleChannel} toggleType={toggleType} activeChannelCount={activeChannelCount} />
+                  <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                    <button type="button" onClick={handleSave} className="btn btn-success rounded-pill px-4">Lưu cài đặt</button>
+                    {savedMessage ? <span className="text-success small">{savedMessage}</span> : null}
                   </div>
-                </div>
+                </>
+              ) : activeTab === 'privacy' ? (
+                <>
+                  <PrivacyTab privacyPrefs={privacyPrefs} togglePrivacy={togglePrivacy} />
+                  <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                    <button type="button" onClick={handleSave} className="btn btn-success rounded-pill px-4">Lưu cài đặt</button>
+                    {savedMessage ? <span className="text-success small">{savedMessage}</span> : null}
+                  </div>
+                </>
               ) : (
                 <div className="card border-0 rounded-4 p-4 text-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
                   <h5 className="text-white mb-1">{SETTINGS_DATA.settingsNav.find((item) => item.id === activeTab)?.label || 'Cài đặt'}</h5>
                   <p className="text-white-50 mb-0">{SETTINGS_DATA.settingsNav.find((item) => item.id === activeTab)?.sub || 'Mục này đang được chuẩn bị.'}</p>
                 </div>
