@@ -1,4 +1,5 @@
 import React from 'react';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 function NotiList({ 
   notifications = [], 
@@ -75,7 +76,7 @@ function NotiList({
               type="button"
               className="btn btn-sm rounded-pill px-2.5 py-0.5 border-0 text-nowrap fw-medium"
               style={{
-                backgroundColor: isSelected ? '#0d9488' : 'rgba(255,255,255,0.03)',
+                backgroundColor: isSelected ? 'color-mix(in srgb, var(--accent) 25%, transparent)' : 'rgba(255,255,255,0.03)',
                 color: isSelected ? '#fff' : 'rgba(255,255,255,0.5)',
                 fontSize: '11.5px'
               }}
@@ -105,9 +106,7 @@ function NotiList({
               }}
             >
               {/* Icon đại diện */}
-              <div className="fs-5 p-2 rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', minWidth: '36px' }}>
-                {noti.icon}
-              </div>
+               <i className={noti.icon} style={{ color: noti.color, fontSize: '20px' }}></i>
 
               {/* Chi tiết nội dung văn bản */}
               <div className="flex-grow-1 pe-3">

@@ -104,9 +104,9 @@ function Sidebar() {
               <button 
                 type="button"
                 className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 rounded-3 border-0 ${
-                  isItemActive ? 'bg-success bg-opacity-10 fw-semibold' : 'bg-transparent text-white-50'
+                  isItemActive ? ' fw-semibold' : 'bg-transparent text-white-50'
                 }`}
-                style={isItemActive ? { color: '#fff' } : {}}
+                style={isItemActive ? { color: '#fff', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important' } : {}}
                 // ĐIỀU HƯỚNG ĐỘNG: Nhấn vào dòng nào tự nhảy URL sang module phân hệ đó
                 onClick={() => navigate(item.path)} 
               >

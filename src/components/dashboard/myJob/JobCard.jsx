@@ -69,7 +69,7 @@ function JobCard({ job }) {
 
       {/* 3. Hiển thị Mức Lương */}
       <div className="text-success fw-bold mb-3 d-flex align-items-center gap-1.5" style={{ fontSize: '18px' }}>
-        💵 {job.salary} <span className="text-white-50 fw-normal" style={{ fontSize: '13px' }}>/tháng (gross)</span>
+        Cast: {job.salary} <span className="text-white-50 fw-normal" style={{ fontSize: '13px' }}>/tháng (gross)</span>
       </div>
 
       {/* 4. Đoạn mô tả ngắn */}
@@ -84,8 +84,8 @@ function JobCard({ job }) {
           {job.skills.map((skill, idx) => (
             <span 
               key={idx} 
-              className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 px-2.5 py-1.5 rounded-pill fw-medium" 
-              style={{ fontSize: '12px' }}
+              className="badge bg-success bg-opacity-10 text-white-50 border border-success border-opacity-20 px-2.5 py-1.5 rounded-pill fw-medium" 
+              style={{ fontSize: '12px', backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent) !important' , borderColor: 'color-mix(in srgb, var(--accent) 20%, transparent) !important' }}
             >
               ✓ {skill}
             </span>

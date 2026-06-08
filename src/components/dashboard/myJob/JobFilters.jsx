@@ -66,7 +66,7 @@ function JobFilters({
                       type="button"
                       className="btn btn-sm rounded-pill px-3 py-1 fw-medium border-0 transition-all"
                       style={{ 
-                        backgroundColor: isSelected ? '#10b981' : 'rgba(255, 255, 255, 0.05)', 
+                        backgroundColor: isSelected ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)', 
                         color: isSelected ? '#000' : '#a0aec0',
                         fontSize: '12.5px'
                       }}
@@ -93,7 +93,7 @@ function JobFilters({
                       type="button"
                       className="btn btn-sm rounded-pill px-3 py-1 fw-medium border-0 transition-all"
                       style={{ 
-                        backgroundColor: isSelected ? '#f59e0b' : 'rgba(255, 255, 255, 0.05)', 
+                        backgroundColor: isSelected ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)', 
                         color: isSelected ? '#000' : '#a0aec0',
                         fontSize: '12.5px'
                       }}
@@ -146,7 +146,7 @@ function JobFilters({
                     type="button"
                     className="btn btn-sm rounded-pill px-3 py-1 fw-medium border-0 transition-all"
                     style={{ 
-                      backgroundColor: isSelected ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)', 
+                      backgroundColor: isSelected ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)', 
                       color: isSelected ? '#fff' : '#a0aec0',
                       fontSize: '12.5px'
                     }}
@@ -175,7 +175,7 @@ function JobFilters({
               key={tab.id}
               type="button"
               className={`btn btn-sm rounded-3 px-3 py-1.5 border-0 small transition-all ${isTargetActive ? 'text-dark fw-semibold' : 'text-white-50'}`}
-              style={{ backgroundColor: isTargetActive ? '#10b981' : 'transparent', fontSize: '13px' }}
+              style={{ backgroundColor: isTargetActive ? 'var(--accent)' : 'transparent', fontSize: '13px' }}
               onClick={() => onTabChange(tab.id)}
             >
               {tab.text}{" "}

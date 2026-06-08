@@ -57,7 +57,7 @@ function Profile() {
           ) : (
             // Trạng thái dự phòng trống (Empty State) khi người dùng chọn các mục chưa kết nối database
             <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10">
-              📭 Nội dung tab "{activeTab}" đang được đồng bộ dữ liệu hệ thống...
+              Nội dung tab "{activeTab}" đang được đồng bộ dữ liệu hệ thống...
             </div>
           )}
 
