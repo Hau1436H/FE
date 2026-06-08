@@ -48,10 +48,10 @@ function Notification() {
     }, 0);
 
     return [
-      { id: 1, icon: "🔔", count: unreadNotis, label: "Thông báo chưa đọc", desc: "Mới nhận", bg: "rgba(59, 130, 246, 0.1)", color: "#3b82f6" },
-      { id: 2, icon: "💼", count: unreadJobs, label: "Job Matches mới", desc: "Vị trí phù hợp", bg: "rgba(16, 185, 129, 0.1)", color: "#10b981" },
-      { id: 3, icon: "🔥", count: unreadStreaks, label: "Cảnh báo chuỗi", desc: "Cần duy trì", bg: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" },
-      { id: 4, icon: "⏰", count: `+${totalXPToday}`, label: "Hoạt động hôm nay", desc: "XP tích luỹ", bg: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }
+      { id: 1, icon: "bi bi-bell", count: "4", label: "Tổng thông báo", desc: "4 chưa đọc", bg: "rgba(59, 130, 246, 0.1)", color: "#3b82f6" },
+  { id: 2, icon: "bi bi-briefcase", count: "3", label: "Job Matches", desc: "Tuần này", bg: "rgba(16, 185, 129, 0.1)", color: "#10b981" },
+  { id: 3, icon: "bi bi-fire", count: "2", label: "Streak alerts", desc: "Chuẩn bị rớt học", bg: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" },
+  { id: 4, icon: "bi bi-clock", count: "5", label: "Hoạt động hôm nay", desc: "+930 XP tổng", bg: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }
     ];
   }, [notifications]);
 
@@ -129,7 +129,7 @@ function Notification() {
                               type="button"
                               className="page-link rounded-2 border-0 fw-semibold"
                               style={{
-                                backgroundColor: isActive ? '#0d9488' : '#131520',
+                                backgroundColor: isActive ? 'color-mix(in srgb, var(--accent) 25%, transparent) !important' : '#131520',
                                 color: isActive ? '#fff' : 'rgba(255,255,255,0.6)',
                                 fontSize: '12.5px',
                                 minWidth: '32px',

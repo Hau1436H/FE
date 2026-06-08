@@ -21,7 +21,6 @@ function StatsGrid() {
               <h3 className="text-white my-1 fw-bold">{stat.value}</h3>
               <span className="text-white extra-small" style={{ fontSize: '11px' }}>{stat.desc}</span>
             </div>
-            {/* Đã sửa lỗi: item.icon chuyển thành stat.icon chuẩn xác */}
             <div className={`p-3 ${stat.bg} bg-opacity-10 ${stat.color} rounded-4 fs-4 d-flex align-items-center justify-content-center`} 
                  style={{ width: '52px', height: '52px' }}>
               {stat.icon}

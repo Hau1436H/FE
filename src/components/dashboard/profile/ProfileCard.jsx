@@ -28,7 +28,7 @@ function ProfileCard({ data }) {
             {/* Tên & Badge chức danh công việc */}
             <div className="d-flex align-items-center gap-2 mb-1">
               <h5 className="fw-bold text-white mb-0 fs-5">{data.user.name}</h5>
-              <span className="badge bg-success bg-opacity-25 text-success rounded-pill px-2.5 py-0.5 extra-small fw-medium" style={{ fontSize: '11px' }}>
+              <span className="badge text-success rounded-pill px-2.5 py-0.5 extra-small fw-medium" style={{ fontSize: '11px', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important' }}>
                 {data.user.role}
               </span>
             </div>

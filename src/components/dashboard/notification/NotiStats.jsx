@@ -1,4 +1,6 @@
 import React from 'react';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 
 function NotiStats({ stats }) {
   return (
@@ -11,7 +13,7 @@ function NotiStats({ stats }) {
               className="fs-4 p-2 rounded-3 d-flex align-items-center justify-content-center" 
               style={{ backgroundColor: stat.bg, color: stat.color, width: '46px', height: '46px' }}
             >
-              {stat.icon}
+              <i className={stat.icon} style={{ color: stat.color, fontSize: '20px' }}></i>
             </div>
             
             {/* Vùng số liệu đếm tự động */}

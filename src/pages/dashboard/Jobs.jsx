@@ -87,14 +87,14 @@ function Jobs() {
           <div className="d-flex gap-2 mb-4">
             <button 
               className="btn btn-sm rounded-pill px-3 py-1.5 fw-medium transition-all" 
-              style={{ backgroundColor: currentMainTab === 'jobs' ? '#0d9488' : 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px', border: 'none' }}
+              style={{ backgroundColor: currentMainTab === 'jobs' ? 'var(--accent)' : 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px', border: 'none' }}
               onClick={() => setCurrentMainTab('jobs')}
             >
-              💼 Việc làm phù hợp
+              Việc làm phù hợp
             </button>
             <button 
               className="btn btn-sm rounded-pill px-3 py-1.5 fw-medium transition-all" 
-              style={{ backgroundColor: currentMainTab === 'mentors' ? '#0d9488' : 'rgba(255,255,255,0.05)', color: currentMainTab === 'mentors' ? '#fff' : 'rgba(255,255,255,0.5)', fontSize: '13px', border: 'none' }}
+              style={{ backgroundColor: currentMainTab === 'mentors' ? 'var(--accent)' : 'rgba(255,255,255,0.05)', color: currentMainTab === 'mentors' ? '#fff' : 'rgba(255,255,255,0.5)', fontSize: '13px', border: 'none' }}
               onClick={() => setCurrentMainTab('mentors')}
             >
               👤 Mentor Directory
