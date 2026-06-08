@@ -34,13 +34,29 @@ function RoadmapTab({ result }) {
     switch (status) {
       case 'completed':
         return (
-          <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10 px-3 py-1.5 rounded-pill text-uppercase font-monospace" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+          <span 
+            className="badge text-success border px-3 py-1.5 rounded-pill animate-pulse text-uppercase font-monospace" 
+            style={{ 
+              fontSize: '0.7rem', 
+              letterSpacing: '0.5px',
+              // Đồng bộ trực tiếp với biến CSS đang chạy trong hệ thống của bạn
+              borderColor: 'color-mix(in srgb, var(--accent) 50%, transparent) !important'
+            }}
+          >
             Đã hoàn thành
           </span>
         );
       case 'learning':
         return (
-          <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 px-3 py-1.5 rounded-pill animate-pulse text-uppercase font-monospace" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+            <span 
+            className="badge text-success border px-3 py-1.5 rounded-pill animate-pulse text-uppercase font-monospace" 
+            style={{ 
+              fontSize: '0.7rem', 
+              letterSpacing: '0.5px',
+              // Đồng bộ trực tiếp với biến CSS đang chạy trong hệ thống của bạn
+              borderColor: 'color-mix(in srgb, var(--accent) 50%, transparent) !important'
+            }}
+          >
             Đang thực hiện
           </span>
         );

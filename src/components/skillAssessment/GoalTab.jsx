@@ -41,7 +41,7 @@
         
         {/* Badge định hướng */}
         <div className="mb-3">
-            <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+            <span className="badge bg-success bg-opacity-10 text-white border border-success border-opacity-25 px-3 py-2 rounded-pill">
             Bước 1 — Khảo sát nhanh
             </span>
         </div>
