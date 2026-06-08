@@ -1,7 +1,8 @@
 import React from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 // Nhớ import các icon nếu bạn dùng react-icons, hoặc thay bằng thẻ <i> font-awesome
-import { FaFacebookF, FaYoutube, FaLinkedinIn, FaTwitter } from 'react-icons/fa'; 
+import { FaFacebookF, FaYoutube, FaLinkedinIn, FaTwitter } from 'react-icons/fa';
+import Logo from './Logo'; 
 
 function Footer() {
   return (
@@ -11,9 +12,7 @@ function Footer() {
           {/* Cột 1: Giới thiệu & Mạng xã hội */}
           <Col lg={4} md={12}>
             <div className="fw-bold text-white fs-4 mb-3">
-              <span style={{ background: 'linear-gradient(to right, #00bfa5 0%, #00bfa5 30%, #ffffff 70%, #ffffff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', fontWeight: '900', fontSize: '1.5rem' }}>
-                AICareer
-              </span>
+              <Logo size="lg" /> 
             </div>
             <p style={{ maxWidth: '320px', lineHeight: '1.6', fontSize: '0.85rem' }}>
               Nền tảng AI học tập & nghề nghiệp cho sinh viên CNTT Việt Nam, thu hẹp khoảng cách giữa đại học và thị trường.
