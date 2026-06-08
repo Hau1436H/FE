@@ -70,8 +70,8 @@ function StatsTab({ result, onNavigateToRoadmap }) {
       <div className="col-lg-6">
         <div className="card h-100 border-secondary border-opacity-25 p-4 d-flex flex-column justify-content-between" style={{ backgroundColor: '#0b0c16' }}>
           <div>
-            <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mb-3 px-3 py-2 rounded-pill">
-              📊 Báo cáo từ AI Expert
+            <span className="badge bg-success bg-opacity-10 text-white border border-success border-opacity-25 mb-3 px-3 py-2 rounded-pill">
+              Báo cáo từ AI Expert
             </span>
             <h3 className="fw-bold text-white mb-3">Phân Tích Khung Năng Lực</h3>
             

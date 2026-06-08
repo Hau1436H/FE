@@ -4,6 +4,7 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Button from 'react-bootstrap/Button';
 import { Link } from 'react-router-dom'; // Thay đổi ở đây
+import Logo from './Logo'; // Import component Logo
 
 function MyNavbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -49,17 +50,7 @@ function MyNavbar() {
       >
         <Container>
           <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4">
-              <span style={{
-                background: 'linear-gradient(to right, #00bfa5 0%, #00bfa5 30%, #ffffff 70%, #ffffff 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                display: 'inline-block',
-                fontWeight: '900',
-                fontSize: '1.25rem'
-
-              }}>
-                AICareer
-              </span>
+            <Logo size="md" />
           </Navbar.Brand>
 
           <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-secondary" />

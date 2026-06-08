@@ -5,6 +5,7 @@ import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import MyNavbar from '../components/MyNavbar';
 import MyFooter from '../components/MyFooter';
+import Logo from '../components/Logo';
 
 function Home() {
   // Thay link ảnh nền của bạn vào đây hoặc import từ thư mục assets

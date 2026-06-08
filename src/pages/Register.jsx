@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import Logo from '../components/Logo';
 
 const Register = () => {
     const leftBgImage = 'https://i.pinimg.com/736x/2a/2a/33/2a2a337f02b6c63548fb8e03b24a796a.jpg';
@@ -79,14 +80,7 @@ const Register = () => {
                     }}>
                     <div className="fw-bold fs-4" style={{ color: '#10b981', letterSpacing: '0.5px' }}>
                         <Link to="/" className="text-white text-decoration-none">
-                            <span style={{
-                                background: 'linear-gradient(to right, #00bfa5 0%, #00bfa5 30%, #ffffff 70%, #ffffff 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                display: 'inline-block',
-                                fontWeight: '900',
-                                fontSize: '1.25rem'
-                            }}>AICareer</span>
+                           <Logo size="md" />
                         </Link>
                     </div>
 
