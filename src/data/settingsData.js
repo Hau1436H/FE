@@ -22,32 +22,32 @@ export const SETTINGS_DATA = {
   settingsNav: [
     {
       id: 'billing',
-      icon: '💳',
+      
       label: 'Gói & Thanh toán',
       sub: 'Quản lý gói đăng ký, hoá đơn và sử dụng',
       badge: 'Pro',
     },
     {
       id: 'appearance',
-      icon: '🎨',
+    
       label: 'Giao diện',
       sub: 'Theme, màu sắc, cỡ chữ',
     },
     {
       id: 'notifications',
-      icon: '🔔',
+   
       label: 'Thông báo',
       sub: 'Kênh, tần suất, loại thông báo',
     },
     {
       id: 'privacy',
-      icon: '🔒',
+   
       label: 'Quyền riêng tư & Bảo mật',
       sub: 'Hiển thị hồ sơ, 2FA, thiết bị, dữ liệu',
     },
     {
       id: 'support',
-      icon: '❓',
+  
       label: 'Cần hỗ trợ?',
       sub: 'Liên hệ team hỗ trợ qua chat hoặc email',
       link: 'Mở chat hỗ trợ →',
