@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 .env
-
+all_project_code.txt
 node_modules
 dist
 dist-ssr
