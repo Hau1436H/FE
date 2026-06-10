@@ -5,6 +5,7 @@ import { useAppSettings } from '../../components/dashboard/setting/AppSettingsCo
 import AppearanceTab from '../../components/dashboard/setting/AppearanceTab';
 import NotificationsTab from '../../components/dashboard/setting/NotificationsTab';
 import PrivacyTab from '../../components/dashboard/setting/PrivacyTab';
+import BillingSettings from '../../components/dashboard/setting/BillingSettings';
 import { SETTINGS_DATA } from '../../data/settingsData';
 
 function Settings() {
@@ -136,6 +137,8 @@ function Settings() {
                     {savedMessage ? <span className="text-success small">{savedMessage}</span> : null}
                   </div>
                 </>
+              ) : activeTab === 'billing' ? (
+                <BillingSettings />
               ) : (
                 <div className="card border-0 rounded-4 p-4 text-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
                   <h5 className="text-white mb-1">{SETTINGS_DATA.settingsNav.find((item) => item.id === activeTab)?.label || 'Cài đặt'}</h5>
