@@ -1,84 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAppSettings } from './AppSettingsContext';
-
-const pricingPlans = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    description: 'Miễn phí cho người mới bắt đầu',
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    badge: null,
-    buttonText: 'Hạ cấp',
-    buttonVariant: 'outline-light',
-    isActive: false,
-    disabled: false,
-    features: [
-      { label: 'Truy cập giới hạn thư viện khoá học', included: true },
-      { label: 'AI đề xuất cơ bản', included: true },
-      { label: 'Job matches cơ bản', included: true },
-      { label: 'Hỗ trợ mentor', included: false },
-      { label: 'Báo cáo nâng cao', included: false },
-      { label: 'Tài liệu premium', included: false },
-      { label: 'Ưu tiên hỗ trợ', included: false },
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Tiết kiệm thời gian với bộ công cụ nâng cao',
-    monthlyPrice: 49,
-    yearlyPrice: 470,
-    badge: 'Phổ biến',
-    buttonText: 'Đang dùng',
-    buttonVariant: 'success',
-    isActive: true,
-    disabled: true,
-    features: [
-      { label: 'Thư viện khoá học không giới hạn', included: true },
-      { label: 'AI đề xuất nâng cao', included: true },
-      { label: 'Job matches ưu tiên', included: true },
-      { label: 'Hỗ trợ mentor cơ bản', included: true },
-      { label: 'Báo cáo tiến độ chi tiết', included: true },
-      { label: 'Mẫu code premium', included: false },
-      { label: 'Ưu tiên hỗ trợ', included: false },
-    ],
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    description: 'Toàn diện cho đội nhóm và dự án lớn',
-    monthlyPrice: 99,
-    yearlyPrice: 948,
-    badge: 'Toàn diện',
-    buttonText: 'Nâng cấp',
-    buttonVariant: 'warning',
-    isActive: false,
-    disabled: false,
-    features: [
-      { label: 'Thư viện khoá học không giới hạn', included: true },
-      { label: 'AI đề xuất cao cấp', included: true },
-      { label: 'Job matches ưu tiên + phỏng vấn', included: true },
-      { label: 'Hỗ trợ mentor 1:1', included: true },
-      { label: 'Báo cáo nâng cao & phân tích', included: true },
-      { label: 'Tài liệu premium mở rộng', included: true },
-      { label: 'Ưu tiên hỗ trợ 24/7', included: true },
-    ],
-  },
-];
-
-const usageMetrics = [
-  { label: 'AI Chat', used: 312, total: 500, unit: 'lượt', color: '#22c55e' },
-  { label: 'Khoá học', used: 18, total: 30, unit: 'khóa', color: '#38bdf8' },
-  { label: 'Job Matches', used: 3, total: 5, unit: 'buổi', color: '#f59e0b' },
-  { label: 'Mentor', used: 3, total: 5, unit: 'buổi', color: '#a855f7' },
-];
-
-const invoiceHistory = [
-  { date: '15/05/2026', description: 'Thanh toán gói Pro - Hàng tháng', amount: '₫49.000', status: 'Đã thanh toán' },
-  { date: '15/04/2026', description: 'Thanh toán gói Pro - Hàng tháng', amount: '₫49.000', status: 'Đã thanh toán' },
-  { date: '15/03/2026', description: 'Thanh toán gói Pro - Hàng tháng', amount: '₫49.000', status: 'Đã thanh toán' },
-];
+import { pricingPlans, usageMetrics, invoiceHistory } from '../../../data/billingData';
 
 function BillingSettings() {
   const { accentObj } = useAppSettings();
@@ -100,21 +22,38 @@ function BillingSettings() {
     <>
       <div className="row gy-4">
         <div className="col-12">
-          <div className="card border-0 rounded-4 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
-            <div className="p-4" style={{ background: `linear-gradient(135deg, ${accentObj.value}30, ${accentObj.dark}20)` }}>
-              <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                <div>
-                  <div className="text-white opacity-75 small">Gói hiện tại</div>
-                  <h5 className="mb-1 text-white">{currentPlan.name}</h5>
-                  <div className="text-white-50 small">{cycleLabel} · Gia hạn tiếp theo: 15/06/2026</div>
+          <div className="row g-3">
+            <div className="col-12 col-md-4">
+              <div className="card border-0 rounded-4 p-4 h-100" style={{ backgroundColor: '#101827', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="text-white-50 small mb-2">Ưu tiên hỗ trợ</div>
+                <h6 className="text-white mb-4">Hạ cấp</h6>
+                <p className="text-white-50 small">Thu gọn gói nếu bạn muốn tiết kiệm hơn nữa.</p>
+                <button type="button" className="btn btn-outline-light rounded-pill mt-4">Hạ cấp</button>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="card border-0 rounded-4 h-100" style={{ backgroundColor: accentObj.value, color: '#fff' }}>
+                <div className="p-4">
+                  <div className="text-white-50 small mb-2">Gói hiện tại</div>
+                  <h5 className="fw-semibold mb-3">{currentPlan.name}</h5>
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <div className="fw-bold fs-4">{formatPrice(planPrice)}</div>
+                      <div className="small opacity-75">{billingCycle === 'monthly' ? '/ tháng' : '/ năm'}</div>
+                    </div>
+                    <span className="badge rounded-pill bg-white text-dark">Pro</span>
+                  </div>
+                  <p className="mb-3 small opacity-75">Gia hạn tiếp theo: 15/06/2026</p>
+                  <button type="button" className="btn btn-light text-dark rounded-pill w-100">Đang dùng</button>
                 </div>
-                <div className="text-white text-end">
-                  <div className="fw-semibold fs-4">{formatPrice(planPrice)}</div>
-                  <div className="small text-white-50">{billingCycle === 'monthly' ? '/ tháng' : '/ năm'}</div>
-                </div>
-                <button type="button" className="btn btn-danger rounded-pill px-4" onClick={() => setShowCancelModal(true)}>
-                  Huỷ gói
-                </button>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="card border-0 rounded-4 p-4 h-100" style={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="text-white-50 small mb-2">Ưu tiên hỗ trợ 24/7</div>
+                <h6 className="text-white mb-4">Nâng cấp</h6>
+                <p className="text-white-50 small">Mở khóa toàn bộ tính năng cao cấp và ưu tiên hỗ trợ.</p>
+                <button type="button" className="btn btn-warning rounded-pill mt-4 w-100">Nâng cấp</button>
               </div>
             </div>
           </div>
@@ -150,7 +89,7 @@ function BillingSettings() {
                 const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
                 const isActive = plan.isActive;
                 return (
-                  <div key={plan.id} className="col-12 col-md-4">
+                  <div key={plan.id} className="col-12 col-xl-4">
                     <div className={`card h-100 border-0 rounded-4 ${isActive ? 'border border-success' : 'border border-secondary'} p-4`} style={{ backgroundColor: isActive ? '#152e21' : 'rgba(255,255,255,0.04)' }}>
                       <div className="d-flex align-items-center justify-content-between mb-3">
                         <div>
@@ -192,30 +131,36 @@ function BillingSettings() {
         </div>
 
         <div className="col-12">
-          <div className="card border-0 rounded-4 p-4" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <div>
-                <h5 className="text-white mb-1">Sử dụng tháng này</h5>
-                <p className="text-white-50 mb-0 small">Theo dõi tốc độ sử dụng tính năng trong tháng.</p>
-              </div>
-              <span className="badge rounded-pill bg-primary bg-opacity-10 text-info">Cập nhật gần nhất</span>
+          <div className="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mb-3">
+            <div>
+              <h5 className="text-white mb-1">Sử dụng tháng này</h5>
+              <p className="text-white-50 mb-0 small">Theo dõi giới hạn và mức sử dụng hiện tại.</p>
             </div>
-            <div className="mt-3">
-              {usageMetrics.map((metric) => {
-                const percent = Math.round((metric.used / metric.total) * 100);
-                return (
-                  <div key={metric.label} className="mb-4">
-                    <div className="d-flex justify-content-between mb-1">
-                      <span className="text-white small">{metric.label}</span>
-                      <span className="text-white-50 small">{metric.used}/{metric.total} {metric.unit} · {percent}%</span>
+            <span className="badge rounded-pill bg-primary bg-opacity-10 text-info">Cập nhật gần nhất</span>
+          </div>
+          <div className="row g-3">
+            {usageMetrics.map((metric) => {
+              const percent = Math.round((metric.used / metric.total) * 100);
+              return (
+                <div key={metric.label} className="col-12 col-md-6 col-xl-4">
+                  <div className="card border-0 rounded-4 p-4 h-100" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                      <div>
+                        <div className="text-white small mb-1">{metric.label}</div>
+                        <div className="text-white fw-semibold" style={{ fontSize: '1.35rem' }}>{metric.used}/{metric.total} {metric.unit}</div>
+                      </div>
+                      <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: 36, height: 36, backgroundColor: metric.color + '33' }}>
+                        <span className="text-white small">{percent}%</span>
+                      </div>
                     </div>
                     <div className="progress" style={{ height: 10, backgroundColor: 'rgba(255,255,255,0.08)' }}>
                       <div className="progress-bar" role="progressbar" style={{ width: `${percent}%`, backgroundColor: metric.color }} aria-valuenow={percent} aria-valuemin="0" aria-valuemax="100" />
                     </div>
+                    <div className="text-white-50 small mt-2">{percent}% đã dùng</div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -229,23 +174,26 @@ function BillingSettings() {
               <button type="button" className="btn btn-sm btn-outline-light rounded-pill">Xem tất cả</button>
             </div>
             <div className="table-responsive">
-              <table className="table table-borderless mb-0 text-white">
+              <table className="table table-borderless mb-0 text-white align-middle">
                 <thead>
                   <tr className="text-white-50 small">
                     <th>Ngày</th>
-                    <th>Mô tả</th>
+                    <th>Gói</th>
                     <th className="text-end">Số tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Hoá đơn</th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoiceHistory.map((invoice) => (
-                    <tr key={invoice.date} style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                      <td className="align-middle text-white-50" style={{ width: '110px' }}>{invoice.date}</td>
+                    <tr key={invoice.invoiceId} style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                      <td className="align-middle text-white-50" style={{ width: '100px' }}>{invoice.date}</td>
+                      <td className="align-middle text-white">{invoice.plan}</td>
+                      <td className="align-middle text-end text-white fw-semibold">{invoice.amount}</td>
                       <td className="align-middle">
-                        <div>{invoice.description}</div>
                         <span className="badge rounded-pill bg-success bg-opacity-10 text-success small">{invoice.status}</span>
                       </td>
-                      <td className="align-middle text-end text-white fw-semibold">{invoice.amount}</td>
+                      <td className="align-middle text-white-50 small">{invoice.invoiceId}</td>
                     </tr>
                   ))}
                 </tbody>

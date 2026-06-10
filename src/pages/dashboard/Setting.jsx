@@ -89,7 +89,7 @@ function Settings() {
           </div>
 
           <div className="row g-4">
-            <div className="col-12 col-lg-3">
+            <div className="col-12 col-md-4 col-lg-3">
               <div className="card border-0 rounded-4 p-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
                 {navItems.map((item) => (
                   <button
@@ -112,7 +112,7 @@ function Settings() {
               </div>
             </div>
 
-            <div className="col-12 col-lg-9">
+            <div className="col-12 col-md-8 col-lg-9">
               {activeTab === 'appearance' ? (
                 <>
                   <AppearanceTab />
