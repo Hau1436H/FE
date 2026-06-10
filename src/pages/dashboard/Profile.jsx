@@ -43,7 +43,6 @@ function Profile() {
           {activeTab === 'profile' ? (
             <>
               {/* Thống kê Huy chương */}
-              <Badges badges={PROFILE_DATA.badges} />
 
               {/* Form chứa thông tin cá nhân liên hệ (Đã đổi p-3 và gap-3 outline) */}
               <InfoForm info={PROFILE_DATA.personalInfo} />
