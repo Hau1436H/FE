@@ -28,16 +28,20 @@ const Register = () => {
 
         try {
             const response = await axiosClient.post('/api/Auth/register', {
-                fullName,
-                email,
-                password
+                fullName: fullName.trim(),
+                email: email.trim(),
+                password: password
             });
-            setMessage({ type: 'success', content: response.data.message });
+            
+            setMessage({ 
+                type: 'success', 
+                content: response.data?.message || 'Đăng ký thành công! Vui lòng kiểm tra mã OTP trong Email.' 
+            });
             setStep(2); // Chuyển sang bước nhập OTP
         } catch (error) {
             setMessage({ 
                 type: 'error', 
-                content: error.response?.data?.message || 'Có lỗi xảy ra khi kết nối server.' 
+                content: error.response?.data?.message || 'Có lỗi xảy ra khi đăng ký tài khoản.' 
             });
         } finally {
             setIsLoading(false);
@@ -52,26 +56,41 @@ const Register = () => {
 
         try {
             const response = await axiosClient.post('/api/Auth/verify-account', {
-                email,
-                otpCode
+                email: email.trim(),
+                otpCode: otpCode.trim()
             });
             
-            alert(response.data.message); // Hiển thị thông báo thành công
-            navigate('/login'); // Chuyển hướng sang trang đăng nhập
+            setMessage({ 
+                type: 'success', 
+                content: response.data?.message || 'Xác thực tài khoản thành công! Đang chuyển hướng đăng nhập...' 
+            });
+
+            // Chờ 1.5 giây để người dùng kịp đọc thông báo thành công trước khi chuyển trang
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
+
         } catch (error) {
             setMessage({ 
                 type: 'error', 
-                content: error.response?.data?.message || 'Mã OTP không hợp lệ.' 
+                content: error.response?.data?.message || 'Mã OTP không hợp lệ hoặc đã hết hạn.' 
             });
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Xử lý khi quay lại form đăng ký từ form OTP
+    const handleBackToRegister = () => {
+        setOtpCode('');
+        setMessage({ type: '', content: '' });
+        setStep(1);
+    };
+
     return (
         <div className="container-fluid min-vh-100 p-0 d-flex font-sans" style={{ backgroundColor: '#0d1117' }}>
             <div className="row g-0 w-100">
-                {/* --- BÊN TRÁI (Giữ nguyên giao diện của bạn) --- */}
+                {/* --- BÊN TRÁI --- */}
                 <div className="col-lg-6 d-none d-lg-flex flex-column justify-content-between p-5 position-relative border-end border-secondary border-opacity-25"
                     style={{
                         backgroundImage: `linear-gradient(rgba(10, 25, 20, 0.88), rgba(10, 20, 20, 0.92)), url(${leftBgImage})`,
@@ -86,16 +105,16 @@ const Register = () => {
 
                     <div className="my-auto mx-auto w-75 py-4" style={{ maxWidth: '400px' }}>
                         <div className="p-4 mb-3 rounded-4" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)' }}>
-                            <div className="d-flex align-items-center mb-3 text-emerald" style={{ color: '#10b981', fontSize: '14px', fontWeight: '500' }}>
+                            <div className="d-flex align-items-center mb-3" style={{ color: '#10b981', fontSize: '14px', fontWeight: '500' }}>
                                 <i className="bi bi-cpu me-2"></i> AI đang phân tích
                             </div>
                             <div className="d-flex flex-column gap-3 text-white-50" style={{ fontSize: '0.75rem' }}>
                                 <div>
                                     <div className="d-flex justify-content-between mb-1">
-                                        <span>Kỹ năng Frontend</span><span className="fw-bold" style={{ color: '#00bfa5' }}>87%</span>
+                                        <span>Kỹ năng Frontend</span><span className="fw-bold" style={{ color: '#10b981' }}>87%</span>
                                     </div>
                                     <div className="progress" style={{ height: '6px', backgroundColor: '#30363d' }}>
-                                        <div className="progress-bar" style={{ width: '87%', backgroundColor: '#00bfa5' }}></div>
+                                        <div className="progress-bar" style={{ width: '87%', backgroundColor: '#10b981' }}></div>
                                     </div>
                                 </div>
                                 <div>
@@ -118,7 +137,7 @@ const Register = () => {
                         </div>
 
                         <div className="p-4 mb-3 rounded-4" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)' }}>
-                            <div className="rounded-circle d-flex align-items-center justify-content-center text-warning" style={{ width: '32px', height: '32px', backgroundColor: 'rgba(255, 193, 7, 0.1)' }}>
+                            <div className="rounded-circle d-flex align-items-center justify-content-center text-warning mb-2" style={{ width: '32px', height: '32px', backgroundColor: 'rgba(255, 193, 7, 0.1)' }}>
                                 <i className="bi bi-lightbulb-fill"></i>
                             </div>
                             <div>
@@ -128,7 +147,7 @@ const Register = () => {
                         </div>
                     </div>
 
-                    <div className="mx-auto w-75" style={{ maxWidth: '400px' }}>
+                    <div className="mx-auto w-75 ps-3 border-start border-2" style={{ borderColor: '#10b981', maxWidth: '400px' }}>
                         <p className="text-white-50 fst-italic fw-light lh-base mb-2" style={{ fontSize: '0.85rem' }}>
                             "Tôi không ngờ một bài test 15 phút lại lộ ra đúng điểm yếu mà tôi né tránh suốt 2 năm học."
                         </p>
@@ -138,20 +157,20 @@ const Register = () => {
                     </div>
                 </div>
 
-                {/* --- BÊN PHẢI (Form Xử Lý) --- */}
-                <div className="col-10 col-sm-8 col-md-6 col-lg-6 mx-auto d-flex align-items-center justify-content-center p-4 p-md-5 bg-white text-dark min-vh-100">
+                {/* --- BÊN PHẢI --- */}
+                <div className="col-12 col-lg-6 mx-auto d-flex align-items-center justify-content-center p-4 p-md-5 bg-white text-dark min-vh-100">
                     <div className="w-100" style={{ maxWidth: '400px' }}>
                         <div className="text-center text-lg-start mb-4">
                             <h2 className="fw-bold tracking-tight text-dark mb-1" style={{ fontSize: '1.6rem' }}>
                                 {step === 1 ? 'Tạo tài khoản mới' : 'Xác thực Email'}
                             </h2>
-                            <p className="text-muted small mb-0">
+                            <div className="text-muted small">
                                 {step === 1 ? (
-                                    <>Đã có tài khoản? <Link to="/login" className="fw-medium text-decoration-none" style={{ color: '#00bfa5' }}>Đăng nhập ngay</Link></>
+                                    <>Đã có tài khoản? <Link to="/login" className="fw-medium text-decoration-none" style={{ color: '#10b981' }}>Đăng nhập ngay</Link></>
                                 ) : (
                                     <>Nhập mã OTP đã được gửi đến <strong className="text-dark">{email}</strong></>
                                 )}
-                            </p>
+                            </div>
                         </div>
 
                         {/* Hiển thị thông báo (Lỗi / Thành công) */}
@@ -161,12 +180,12 @@ const Register = () => {
                             </div>
                         )}
 
-                        {/* Conditional Rendering Form theo Step */}
+                        {/* Điều hướng Form dựa trên Step */}
                         {step === 1 ? (
                             // FORM ĐĂNG KÝ
                             <>
                                 <button onClick={() => navigate('/skill-assessment')} 
-                                className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2 mb-4 text-dark bg-transparent border-secondary border-opacity-25" style={{ fontSize: '0.85rem' }}>
+                                    className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2 mb-4 text-dark bg-transparent border-secondary border-opacity-25" style={{ fontSize: '0.85rem' }}>
                                     <svg className="bi" width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" /></svg>
                                     Tiếp tục với Google
                                 </button>
@@ -198,9 +217,9 @@ const Register = () => {
                                     </div>
                                     <div className="form-check d-flex gap-1 align-items-start pt-1 m-0">
                                         <input type="checkbox" id="terms" className="form-check-input mt-1 shadow-none" style={{ cursor: 'pointer' }} required />
-                                        <label htmlFor="terms" className="form-check-label text-muted lh-sm" style={{ fontSize: '0.75rem', cursor: 'pointer' }}>Tôi đồng ý với <a href="/terms" className="text-decoration-none" style={{ color: '#00bfa5' }}>Điều khoản dịch vụ</a> và <a href="/privacy" className="text-decoration-none" style={{ color: '#00bfa5' }}>Chính sách bảo mật</a>.</label>
+                                        <label htmlFor="terms" className="form-check-label text-muted lh-sm" style={{ fontSize: '0.75rem', cursor: 'pointer' }}>Tôi đồng ý với <a href="/terms" className="text-decoration-none" style={{ color: '#10b981' }}>Điều khoản dịch vụ</a> và <a href="/privacy" className="text-decoration-none" style={{ color: '#10b981' }}>Chính sách bảo mật</a>.</label>
                                     </div>
-                                    <button type="submit" className="btn border-0 w-100 d-flex align-items-center justify-content-center gap-1 py-2 text-white fw-medium shadow-sm mt-2" style={{ backgroundColor: '#00bfa5', fontSize: '0.85rem' }} disabled={isLoading}>
+                                    <button type="submit" className="btn border-0 w-100 d-flex align-items-center justify-content-center gap-1 py-2 text-white fw-medium shadow-sm mt-2" style={{ backgroundColor: '#10b981', fontSize: '0.85rem' }} disabled={isLoading}>
                                         {isLoading ? 'Đang xử lý...' : 'Đăng ký tài khoản'} <i className="bi bi-arrow-right fs-6"></i>
                                     </button>
                                 </form>
@@ -218,8 +237,8 @@ const Register = () => {
                                 <button type="submit" className="btn border-0 w-100 d-flex align-items-center justify-content-center gap-1 py-2 text-white fw-medium shadow-sm mt-2" style={{ backgroundColor: '#10b981', fontSize: '0.85rem' }} disabled={isLoading}>
                                     {isLoading ? 'Đang xác thực...' : 'Xác thực tài khoản'} <i className="bi bi-check-circle ms-1"></i>
                                 </button>
-                                <button type="button" className="btn btn-link text-muted mt-2" style={{ fontSize: '0.75rem' }} onClick={() => setStep(1)} disabled={isLoading}>
-                                    &larr; Quay lại
+                                <button type="button" className="btn btn-link text-muted mt-2 shadow-none text-decoration-none" style={{ fontSize: '0.75rem' }} onClick={handleBackToRegister} disabled={isLoading}>
+                                    &larr; Quay lại bước đăng ký
                                 </button>
                             </form>
                         )}

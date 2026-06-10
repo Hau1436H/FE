@@ -11,7 +11,7 @@ function Login() {
     const leftBgImage = 'https://i.pinimg.com/736x/2a/2a/33/2a2a337f02b6c63548fb8e03b24a796a.jpg';
     const navigate = useNavigate();
 
-    const [step, setStep] = useState(1); // 1: Đăng nhập, 2: Nhập OTP (nếu cần)
+    const [step, setStep] = useState(1); // 1: Đăng nhập, 2: Nhập OTP
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [otpCode, setOtpCode] = useState('');
@@ -19,7 +19,7 @@ function Login() {
     const [message, setMessage] = useState({ type: '', content: '' });
     const [isLoading, setIsLoading] = useState(false);
 
-    // Xử lý Login
+    // Xử lý Đăng nhập
     const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -27,23 +27,44 @@ function Login() {
 
         try {
             const response = await axiosClient.post('/api/Auth/login', {
-                email,
-                password
+                email: email.trim(),
+                password: password
             });
+            console.log("LOGIN RESPONSE:", response.data);
+            // Đăng nhập thành công -> Trích xuất dữ liệu từ API trả về
+            const { token, user, role } = response.data;
             
-            // Đăng nhập thành công
-            localStorage.setItem('token', response.data.token);
-            navigate('/dashboard'); // Trở về trang chủ
+            // Lưu token vào localStorage để axiosClient Interceptor tự động lấy sử dụng cho các request sau
+            localStorage.setItem('token', token);
+            
+            if (user) {
+                localStorage.setItem('user', JSON.stringify(user));
+            }
+            if (role) {
+                localStorage.setItem('role', role);
+            }
+
+            setMessage({ type: 'success', content: 'Đăng nhập thành công! Đang chuyển hướng...' });
+            
+            // Chờ hiệu ứng thông báo hiển thị một chút rồi điều hướng
+            setTimeout(() => {
+                window.dispatchEvent(new Event('authChange'));
+
+                navigate('/');
+            }, 800);
+
         } catch (error) {
             const errRes = error.response;
-            if (errRes && errRes.status === 403 && errRes.data.message.includes('chưa được xác thực')) {
-                // Tài khoản tồn tại nhưng chưa OTP -> Chuyển sang form OTP
-                setMessage({ type: 'error', content: errRes.data.message });
-                setStep(2);
+            const serverMessage = errRes?.data?.message || '';
+
+            // Kiểm tra mã lỗi 403 từ backend .NET (Tài khoản chưa được kích hoạt/xác thực OTP)
+            if (errRes && errRes.status === 403 && serverMessage.toLowerCase().includes('chưa được xác thực')) {
+                setMessage({ type: 'error', content: errRes.data.message || 'Tài khoản chưa kích hoạt. Vui lòng xác thực OTP.' });
+                setStep(2); // Chuyển giao diện sang bước nhập mã OTP
             } else {
                 setMessage({ 
                     type: 'error', 
-                    content: errRes?.data?.message || 'Sai email hoặc mật khẩu.' 
+                    content: errRes?.data?.message || 'Sai email hoặc mật khẩu hoặc tài khoản không tồn tại.' 
                 });
             }
         } finally {
@@ -51,7 +72,7 @@ function Login() {
         }
     };
 
-    // Xử lý Xác thực OTP (khi account bị block 403)
+    // Xử lý Xác thực OTP (khi tài khoản chưa kích hoạt)
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -59,16 +80,20 @@ function Login() {
 
         try {
             const response = await axiosClient.post('/api/Auth/verify-account', {
-                email,
-                otpCode
+                email: email.trim(),
+                otpCode: otpCode.trim()
             });
-            setMessage({ type: 'success', content: response.data.message });
+            
+            setMessage({ 
+                type: 'success', 
+                content: response.data?.message || 'Xác thực tài khoản thành công! Bạn có thể đăng nhập ngay.' 
+            });
             setOtpCode('');
-            setStep(1); // Trở về form login để đăng nhập lại
+            setStep(1); // Trở về form login ban đầu để người dùng nhập mật khẩu đăng nhập lại
         } catch (error) {
             setMessage({ 
                 type: 'error', 
-                content: error.response?.data?.message || 'Mã OTP không hợp lệ.' 
+                content: error.response?.data?.message || 'Mã OTP không đúng hoặc đã hết hạn.' 
             });
         } finally {
             setIsLoading(false);
@@ -78,7 +103,7 @@ function Login() {
     return (
         <Container fluid className="p-0" style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
             <Row className="g-0" style={{ minHeight: '100vh' }}>
-                {/* --- BÊN TRÁI (Giữ nguyên giao diện của bạn) --- */}
+                {/* --- BÊN TRÁI --- */}
                 <Col lg={6} className="d-none d-lg-flex flex-column justify-content-between p-5 position-relative text-white"
                     style={{
                         backgroundImage: `linear-gradient(rgba(10, 25, 20, 0.88), rgba(10, 20, 20, 0.92)), url(${leftBgImage})`,
@@ -86,9 +111,9 @@ function Login() {
                         backgroundPosition: 'center',
                     }}>
                     <div className="fw-bold fs-4" style={{ color: '#10b981', letterSpacing: '0.5px' }}>
-                        <Link to="/" className="text-white text-decoration-none">
+                        
                             <Logo size="md" />
-                        </Link>
+
                     </div>
 
                     <div className="mx-auto my-auto w-75" style={{ maxWidth: '420px' }}>
@@ -97,7 +122,6 @@ function Login() {
                                 <i className="bi bi-cpu me-2"></i> AI đang phân tích
                             </div>
                             <div className="d-flex flex-column gap-3 text-white-50" style={{ fontSize: '0.75rem' }}>
-                                {/* (Các progress bars tương tự Register) */}
                                 <div><div className="d-flex justify-content-between mb-1"><span>Kỹ năng Frontend</span><span className="fw-bold" style={{ color: '#00bfa5' }}>87%</span></div><div className="progress" style={{ height: '6px', backgroundColor: '#30363d' }}><div className="progress-bar" style={{ width: '87%', backgroundColor: '#00bfa5' }}></div></div></div>
                                 <div><div className="d-flex justify-content-between mb-1"><span>System Design</span><span className="fw-bold text-warning">47%</span></div><div className="progress" style={{ height: '6px', backgroundColor: '#30363d' }}><div className="progress-bar bg-warning" style={{ width: '47%' }}></div></div></div>
                                 <div><div className="d-flex justify-content-between mb-1"><span>DevOps & CI/CD</span><span className="fw-bold text-danger">11%</span></div><div className="progress" style={{ height: '6px', backgroundColor: '#30363d' }}><div className="progress-bar bg-danger" style={{ width: '11%' }}></div></div></div>
@@ -105,7 +129,7 @@ function Login() {
                         </div>
 
                         <div className="p-4 mb-3 rounded-4" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)' }}>
-                            <div className="rounded-circle d-flex align-items-center justify-content-center text-warning" style={{ width: '32px', height: '32px', backgroundColor: 'rgba(255, 193, 7, 0.1)' }}><i className="bi bi-lightbulb-fill"></i></div>
+                            <div className="rounded-circle d-flex align-items-center justify-content-center text-warning mb-2" style={{ width: '32px', height: '32px', backgroundColor: 'rgba(255, 193, 7, 0.1)' }}><i className="bi bi-lightbulb-fill"></i></div>
                             <div>
                                 <p className="m-0 fw-bold text-white" style={{ fontSize: '0.75rem' }}>Minh Tú vừa pass VNG!</p>
                                 <p className="m-0 text-white-50" style={{ fontSize: '0.7rem' }}>Sau 3 tháng luyện theo roadmap AI</p>
@@ -113,26 +137,26 @@ function Login() {
                         </div>
                     </div>
 
-                    <div className="w-100 ps-3 border-start border-2" style={{ borderColor: '#10b981 !important', maxWidth: '500px' }}>
+                    <div className="w-100 ps-3 border-start border-2" style={{ borderColor: '#10b981', maxWidth: '500px' }}>
                         <p className="fst-italic opacity-75 mb-2" style={{ fontSize: '15px', lineHeight: '1.6' }}>"Tôi không ngờ một bài test 15 phút lại lộ ra đúng điểm yếu mà tôi né tránh suốt 2 năm học."</p>
                         <div className="small fw-semibold">Phương Anh <span className="text-muted fw-normal">— Frontend Dev tại FPT</span></div>
                     </div>
                 </Col>
 
-                {/* --- BÊN PHẢI (Form xử lý Login / Xác thực) --- */}
+                {/* --- BÊN PHẢI --- */}
                 <Col lg={6} xs={12} className="d-flex flex-column justify-content-center align-items-center p-4 p-md-5">
                     <div className="w-100" style={{ maxWidth: '420px' }}>
                         <div className="text-center text-lg-start mb-4">
                             <h2 className="fw-bold text-dark mb-1">
                                 {step === 1 ? 'Chào mừng trở lại' : 'Xác thực tài khoản'}
                             </h2>
-                            <p className="text-muted small">
+                            <div className="text-muted small">
                                 {step === 1 ? (
                                     <>Chưa có tài khoản? <Link to="/register" className="text-decoration-none fw-medium" style={{ color: '#10b981' }}>Đăng ký miễn phí</Link></>
                                 ) : (
                                     <>Nhập mã OTP vừa được gửi đến <strong className="text-dark">{email}</strong></>
                                 )}
-                            </p>
+                            </div>
                         </div>
 
                         {message.content && (
@@ -172,7 +196,7 @@ function Login() {
                                         <input type="checkbox" id="terms" className="form-check-input mt-1 shadow-none" style={{ cursor: 'pointer' }} />
                                         <label htmlFor="terms" className="form-check-label text-muted lh-sm" style={{ fontSize: '0.75rem', cursor: 'pointer' }}>Ghi nhớ đăng nhập</label>
                                     </div>
-                                    <Button variant="success" type="submit" className="w-100 py-2.5 fw-semibold rounded-3 border-0 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#10b981' }} disabled={isLoading}>
+                                    <Button variant="success" type="submit" className="w-100 py-2 fw-semibold rounded-3 border-0 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#10b981' }} disabled={isLoading}>
                                         {isLoading ? 'Đang xử lý...' : 'Đăng nhập'} <i className="bi bi-arrow-right ms-2"></i>
                                     </Button>
                                 </form>
@@ -190,7 +214,7 @@ function Login() {
                                 <button type="submit" className="btn border-0 w-100 d-flex align-items-center justify-content-center gap-1 py-2 text-white fw-medium shadow-sm mt-2" style={{ backgroundColor: '#10b981', fontSize: '0.85rem' }} disabled={isLoading}>
                                     {isLoading ? 'Đang xác thực...' : 'Xác thực tài khoản'} <i className="bi bi-check-circle ms-1"></i>
                                 </button>
-                                <button type="button" className="btn btn-link text-muted mt-2" style={{ fontSize: '0.75rem' }} onClick={() => setStep(1)} disabled={isLoading}>
+                                <button type="button" className="btn btn-link text-muted mt-2 shadow-none text-decoration-none" style={{ fontSize: '0.75rem' }} onClick={() => setStep(1)} disabled={isLoading}>
                                     &larr; Quay lại đăng nhập
                                 </button>
                             </form>
