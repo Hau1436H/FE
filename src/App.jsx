@@ -1,6 +1,5 @@
 import React from "react";
 import MyNavbar from "./components/MyNavbar";
-import "bootstrap/dist/css/bootstrap.min.css";
 import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import 'bootstrap-icons/font/bootstrap-icons.css';

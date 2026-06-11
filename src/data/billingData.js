@@ -65,10 +65,10 @@ export const pricingPlans = [
 ];
 
 export const usageMetrics = [
-  { label: 'AI Chat', used: 312, total: 500, unit: 'lượt', color: '#22c55e' },
+  { label: 'AI Chat', used: 287, total: 500, unit: 'lượt', color: '#22c55e' },
   { label: 'Khoá học', used: 18, total: 30, unit: 'khóa', color: '#38bdf8' },
-  { label: 'Job Matches', used: 3, total: 5, unit: 'buổi', color: '#f59e0b' },
-  { label: 'Mentor', used: 3, total: 5, unit: 'buổi', color: '#a855f7' },
+  { label: 'Job Matches', used: 3, total: 50, unit: 'lượt', color: '#f59e0b' },
+  { label: 'Mentor Sessions', used: 2, total: 5, unit: 'buổi', color: '#a855f7' },
 ];
 
 export const invoiceHistory = [
