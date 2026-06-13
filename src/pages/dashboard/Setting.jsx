@@ -42,6 +42,7 @@ function Settings() {
     // Xóa thông báo sau 3 giây
     setTimeout(() => setSavedMessage(''), 3000);
   };
+q
 
   const toggleChannel = (id) => {
     setNotificationPrefs((prev) => ({
