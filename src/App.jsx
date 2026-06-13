@@ -14,6 +14,7 @@ import Notifications from "./pages/dashboard/Notifications";
 import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 function App() {
   // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx

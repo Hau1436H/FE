@@ -41,9 +41,7 @@ function Settings() {
     setSavedMessage('Đã lưu các thay đổi thành công!');
     // Xóa thông báo sau 3 giây
     setTimeout(() => setSavedMessage(''), 3000);
-  };
-q
-
+  }
   const toggleChannel = (id) => {
     setNotificationPrefs((prev) => ({
       ...prev,

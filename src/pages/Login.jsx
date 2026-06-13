@@ -7,11 +7,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Logo from '../components/Logo';
 
+// === 1. IMPORT THƯ VIỆN GOOGLE ===
+import { useGoogleLogin } from '@react-oauth/google';
+
 function Login() {
     const leftBgImage = 'https://i.pinimg.com/736x/2a/2a/33/2a2a337f02b6c63548fb8e03b24a796a.jpg';
     const navigate = useNavigate();
 
-    const [step, setStep] = useState(1); // 1: Đăng nhập, 2: Nhập OTP
+    const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [otpCode, setOtpCode] = useState('');
@@ -19,7 +22,50 @@ function Login() {
     const [message, setMessage] = useState({ type: '', content: '' });
     const [isLoading, setIsLoading] = useState(false);
 
-    // Xử lý Đăng nhập
+    // === 2. XỬ LÝ LOGIC ĐĂNG NHẬP GOOGLE ===
+    const loginWithGoogle = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            setIsLoading(true);
+            setMessage({ type: '', content: '' });
+            try {
+                // Google trả về một access_token tạm thời
+                const googleToken = tokenResponse.access_token;
+
+                // Gửi token này lên Backend .NET của bạn để xác thực/tạo tài khoản
+                const response = await axiosClient.post('/api/Auth/google-login', {
+                    token: googleToken
+                });
+
+                console.log("GOOGLE LOGIN RESPONSE:", response.data);
+                const { token, user, role } = response.data;
+
+                // Lưu thông tin giống hệt login truyền thống
+                localStorage.setItem('token', token);
+                if (user) localStorage.setItem('user', JSON.stringify(user));
+                if (role) localStorage.setItem('role', role);
+
+                setMessage({ type: 'success', content: 'Đăng nhập bằng Google thành công!' });
+                
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('authChange'));
+                    navigate('/');
+                }, 800);
+
+            } catch (error) {
+                setMessage({ 
+                    type: 'error', 
+                    content: error.response?.data?.message || 'Đăng nhập bằng Google thất bại.' 
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        onError: () => {
+            setMessage({ type: 'error', content: 'Ủy quyền Google thất bại.' });
+        }
+    });
+
+    // Xử lý Đăng nhập truyền thống
     const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -30,26 +76,16 @@ function Login() {
                 email: email.trim(),
                 password: password
             });
-            console.log("LOGIN RESPONSE:", response.data);
-            // Đăng nhập thành công -> Trích xuất dữ liệu từ API trả về
             const { token, user, role } = response.data;
             
-            // Lưu token vào localStorage để axiosClient Interceptor tự động lấy sử dụng cho các request sau
             localStorage.setItem('token', token);
-            
-            if (user) {
-                localStorage.setItem('user', JSON.stringify(user));
-            }
-            if (role) {
-                localStorage.setItem('role', role);
-            }
+            if (user) localStorage.setItem('user', JSON.stringify(user));
+            if (role) localStorage.setItem('role', role);
 
             setMessage({ type: 'success', content: 'Đăng nhập thành công! Đang chuyển hướng...' });
             
-            // Chờ hiệu ứng thông báo hiển thị một chút rồi điều hướng
             setTimeout(() => {
                 window.dispatchEvent(new Event('authChange'));
-
                 navigate('/');
             }, 800);
 
@@ -57,10 +93,9 @@ function Login() {
             const errRes = error.response;
             const serverMessage = errRes?.data?.message || '';
 
-            // Kiểm tra mã lỗi 403 từ backend .NET (Tài khoản chưa được kích hoạt/xác thực OTP)
             if (errRes && errRes.status === 403 && serverMessage.toLowerCase().includes('chưa được xác thực')) {
                 setMessage({ type: 'error', content: errRes.data.message || 'Tài khoản chưa kích hoạt. Vui lòng xác thực OTP.' });
-                setStep(2); // Chuyển giao diện sang bước nhập mã OTP
+                setStep(2);
             } else {
                 setMessage({ 
                     type: 'error', 
@@ -72,7 +107,7 @@ function Login() {
         }
     };
 
-    // Xử lý Xác thực OTP (khi tài khoản chưa kích hoạt)
+    // Xử lý Xác thực OTP
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -89,7 +124,7 @@ function Login() {
                 content: response.data?.message || 'Xác thực tài khoản thành công! Bạn có thể đăng nhập ngay.' 
             });
             setOtpCode('');
-            setStep(1); // Trở về form login ban đầu để người dùng nhập mật khẩu đăng nhập lại
+            setStep(1);
         } catch (error) {
             setMessage({ 
                 type: 'error', 
@@ -111,9 +146,7 @@ function Login() {
                         backgroundPosition: 'center',
                     }}>
                     <div className="fw-bold fs-4" style={{ color: '#10b981', letterSpacing: '0.5px' }}>
-                        
-                            <Logo size="md" />
-
+                        <Logo size="md" />
                     </div>
 
                     <div className="mx-auto my-auto w-75" style={{ maxWidth: '420px' }}>
@@ -166,12 +199,19 @@ function Login() {
                         )}
 
                         {step === 1 ? (
-                            // FORM ĐĂNG NHẬP
                             <>
-                                <button onClick={() => navigate('/dashboard')} className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2 mb-4 text-dark bg-transparent border-secondary border-opacity-25" style={{ fontSize: '0.85rem' }}>
+                                {/* === 3. THAY ĐỔI SỰ KIỆN CLICK NÚT GOOGLE === */}
+                                <button 
+                                    onClick={() => loginWithGoogle()} 
+                                    disabled={isLoading}
+                                    type="button"
+                                    className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2 mb-4 text-dark bg-transparent border-secondary border-opacity-25" 
+                                    style={{ fontSize: '0.85rem' }}
+                                >
                                     <svg className="bi" width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" /></svg>
-                                    Tiếp tục với Google
+                                    {isLoading ? 'Đang xử lý...' : 'Tiếp tục với Google'}
                                 </button>
+
                                 <div className="d-flex align-items-center my-4 text-muted small">
                                     <div className="flex-grow-1 border-bottom" style={{ borderColor: '#f3f4f6' }}></div>
                                     <span className="px-3" style={{ fontSize: '12px' }}>hoặc đăng nhập bằng email</span>
@@ -202,7 +242,6 @@ function Login() {
                                 </form>
                             </>
                         ) : (
-                            // FORM XÁC THỰC OTP
                             <form className="d-flex flex-column gap-3" onSubmit={handleVerifyOtp}>
                                 <div>
                                     <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>Mã OTP (6 chữ số)</label>
