@@ -15,6 +15,7 @@ import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx
@@ -30,17 +31,19 @@ function App() {
         
         <Routes>
           <Route index element={<Home />} />
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/learning" element={<Learning />}/>
-        <Route path="/dashboard/practice" element={<Practice />}/>
-        <Route path="/dashboard/jobs" element={<Jobs />}/>
-        <Route path="/dashboard/profile" element={<Profile />}/>
-        <Route path="/dashboard/notifications" element={<Notifications />}/>
-          <Route path="/dashboard/setting" element={<Setting />}/>
-          <Route path="/skill-assessment" element={<SkillAssessment />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/learning" element={<Learning />}/>
+            <Route path="/dashboard/practice" element={<Practice />}/>
+            <Route path="/dashboard/jobs" element={<Jobs />}/>
+            <Route path="/dashboard/profile" element={<Profile />}/>
+            <Route path="/dashboard/notifications" element={<Notifications />}/>
+            <Route path="/dashboard/setting" element={<Setting />}/>
+            <Route path="/skill-assessment" element={<SkillAssessment />} />
+          </Route>
         </Routes>
       </div>
     </AppSettingsProvider>

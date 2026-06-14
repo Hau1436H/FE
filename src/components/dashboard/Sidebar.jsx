@@ -1,5 +1,5 @@
 // Component chứa sidebar menu điều hướng bên trái của trang dashboard.
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from 'react-bootstrap';
 import { 
@@ -9,6 +9,7 @@ import {
 
 // Đmanager ĐÃ CẬP NHẬT: Import dữ liệu Profile động để đồng bộ thông tin người dùng toàn trang
 import { PROFILE_DATA } from '../../data/profileData';
+import axiosClient from '../../api/axiosClient'; 
 
 /**
  * COMPONENT: Sidebar
@@ -21,6 +22,24 @@ import { PROFILE_DATA } from '../../data/profileData';
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation(); // Lấy thông tin đường dẫn URL hiện tại của trình duyệt
+  const [user, setUser] = useState({});
+
+  useEffect(() => {
+    async function fetchUser() {
+      try{
+        const respone = await axiosClient.get('/api/Profile/me');
+        const result = respone.data;
+
+        if (result.data){
+          setUser(result.data);
+        }
+      }
+      catch(error){
+        console.error("Lỗi nạp dữ liệu", error);
+      }
+    }
+    fetchUser();
+  }, []);
 
   // DANH MỤC MENU: Khai báo icon, nhãn chữ và đường dẫn routing tương ứng của từng phân hệ
   const menuItems = [
@@ -61,22 +80,22 @@ function Sidebar() {
       {/* 2. KHỐI USER PROFILE (Đã kết nối đồng bộ động hoàn toàn với profileData) */}
       <div className="p-3 mb-4 rounded" style={{ backgroundColor: '#111122' }}>
         <div className="d-flex align-items-center gap-3">
-          {PROFILE_DATA.user.avatar ? (
+          {user.avatar ? (
             <img 
-              src={PROFILE_DATA.user.avatar} 
-              alt={PROFILE_DATA.user.name} 
+              src={user.avatar} 
+              alt={user.fullName} 
               className="rounded-circle" 
               style={{ width: '40px', height: '40px', objectFit: 'cover' }} 
             />
           ) : (
             <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center fw-bold text-dark" style={{ width: '40px', height: '40px' }}>
-              {PROFILE_DATA.user.name.charAt(0).toUpperCase()}
+             {user?.fullName?.charAt(0)?.toUpperCase() || "?"}
             </div>
           )}
           <div>
             {/* Tự động lấy tên rút gọn hoặc họ tên từ dữ liệu trung tâm */}
-            <div className="fw-semibold small text-white">{PROFILE_DATA.user.name}</div>
-            <div className="text-white-50 extra-small" style={{ fontSize: '12px' }}>{PROFILE_DATA.user.role}</div>
+            <div className="fw-semibold small text-white">{user.fullName}</div>
+            <div className="text-white-50 extra-small" style={{ fontSize: '12px' }}>{user.email}</div>
           </div>
         </div>
         

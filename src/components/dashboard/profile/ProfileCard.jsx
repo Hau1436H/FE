@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiEdit2 } from 'react-icons/fi';
 import { BiMap } from 'react-icons/bi';
 import { HiOutlineCalendar } from 'react-icons/hi';
+import axiosClient from '../../../api/axiosClient';
 
 /**
  * COMPONENT: ProfileCard
@@ -11,25 +12,49 @@ import { HiOutlineCalendar } from 'react-icons/hi';
  * - Render danh sách 5 thông số kỹ thuật cốt lõi (XP, Streak, Số kỹ năng, Giờ học, Điểm Test) dạng lưới ngang.
  */
 function ProfileCard({ data }) {
+
+  const [user, setUser] = useState({});
+
+  useEffect(() => {
+    async function fetchUser() {
+      try{
+        const respone = await axiosClient.get('/api/Profile/me');
+        const result = respone.data;
+
+        if (result.data){
+          setUser(result.data);
+        }
+      }
+      catch(error){
+        console.error("Lỗi nạp dữ liệu", error);
+      }
+    }
+    fetchUser();
+  }, []);
   return (
     <div className="rounded-4 p-4 mb-4" style={{ backgroundColor: '#131520', border: '1px solid #1e2235' }}>
       
       {/* KHỐI TRÊN: Thông tin định danh cá nhân & Nút Chỉnh sửa */}
       <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 border-bottom border-secondary border-opacity-10 pb-4 mb-4">
         <div className="d-flex gap-3 align-items-center flex-wrap">
-          {/* Ảnh Avatar bo tròn lấy từ link URL data */}
-          <img 
-            src={data.user.avatar} 
-            alt={data.user.name} 
-            className="rounded-circle object-cover border border-secondary border-opacity-25"
-            style={{ width: '80px', height: '80px', objectFit: 'cover' }}
-          />
+          {user.avatar ? (
+            <img 
+              src={user.avatar} 
+              alt={user.fullName} 
+              className="rounded-circle" 
+              style={{ width: '40px', height: '40px', objectFit: 'cover' }} 
+            />
+          ) : (
+            <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center fw-bold text-dark" style={{ width: '40px', height: '40px' }}>
+             {user?.fullName?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+          )}
           <div>
             {/* Tên & Badge chức danh công việc */}
             <div className="d-flex align-items-center gap-2 mb-1">
-              <h5 className="fw-bold text-white mb-0 fs-5">{data.user.name}</h5>
+              <h5 className="fw-bold text-white mb-0 fs-5">{user.fullName}</h5>
               <span className="badge text-success rounded-pill px-2.5 py-0.5 extra-small fw-medium" style={{ fontSize: '11px', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important' }}>
-                {data.user.role}
+                {user.email}
               </span>
             </div>
             {/* Trường đại học và thông tin phụ (Vị trí, ngày tham gia) */}
@@ -40,10 +65,6 @@ function ProfileCard({ data }) {
             </div>
           </div>
         </div>
-        {/* Nút hành động chỉnh sửa hồ sơ */}
-        <button className="btn btn-sm text-white-50 border border-secondary border-opacity-20 rounded-3 px-3 py-1.5 d-flex align-items-center gap-2" style={{ backgroundColor: 'rgba(255,255,255,0.02)', fontSize: '12.5px' }}>
-          <FiEdit2 size={12} /> Chỉnh sửa hồ sơ
-        </button>
       </div>
 
       {/* KHỐI DƯỚI: Vòng lặp kết xuất 5 ô chỉ số học tập (Stats Grid) */}

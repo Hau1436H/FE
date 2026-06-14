@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import ProfileCard from '../../components/dashboard/profile/ProfileCard';
@@ -10,6 +10,9 @@ import SocialLinks from '../../components/dashboard/profile/SocialLinks';
 
 // Import kho lưu trữ dữ liệu thô
 import { PROFILE_DATA } from '../../data/profileData';
+import axiosClient from '../../api/axiosClient';
+
+
 
 /**
  * COMPONENT CHÍNH: Profile (Page Component)
@@ -21,6 +24,25 @@ import { PROFILE_DATA } from '../../data/profileData';
 function Profile() {
   // State quản lý xem tab nào đang được người dùng lựa chọn để hiển thị thông tin
   const [activeTab, setActiveTab] = useState('profile');
+
+  const [user, setUser] = useState({});
+
+  useEffect(() => {
+    async function fetchUser() {
+      try{
+        const respone = await axiosClient.get('/api/Profile/me');
+        const result = respone.data;
+
+        if (result.data){
+          setUser(result.data);
+        }
+      }
+      catch(error){
+        console.error("Lỗi nạp dữ liệu", error);
+      }
+    }
+    fetchUser();
+  }, []);
 
   return (
     <div className="d-flex min-vh-100 w-100" style={{ backgroundColor: '#0b0c10' }}>
@@ -45,13 +67,13 @@ function Profile() {
               {/* Thống kê Huy chương */}
 
               {/* Form chứa thông tin cá nhân liên hệ (Đã đổi p-3 và gap-3 outline) */}
-              <InfoForm info={PROFILE_DATA.personalInfo} />
+              <InfoForm info={user} />
 
               {/* Thông tin Trường đào tạo */}
-              <Education edu={PROFILE_DATA.education} />
+              {/* <Education edu={PROFILE_DATA.education} /> */}
 
               {/* Hệ thống Link Social */}
-              <SocialLinks socials={PROFILE_DATA.socials} />
+              {/* <SocialLinks socials={PROFILE_DATA.socials} /> */}
             </>
           ) : (
             // Trạng thái dự phòng trống (Empty State) khi người dùng chọn các mục chưa kết nối database
