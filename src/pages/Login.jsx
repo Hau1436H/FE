@@ -65,7 +65,6 @@ function Login() {
         }
     });
 
-    // Xử lý Đăng nhập truyền thống
     const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -76,9 +75,16 @@ function Login() {
                 email: email.trim(),
                 password: password
             });
-            const { token, user, role } = response.data;
             
-            localStorage.setItem('token', token);
+            // ĐÃ SỬA: Lấy dữ liệu an toàn, hỗ trợ cả JSON viết hoa lẫn viết thường từ C#
+            const token = response.data.token || response.data.Token;
+            const user = response.data.user || response.data.User;
+            const role = response.data.role || response.data.Role;
+            
+            // Log ra xem Backend thực sự trả về những gì
+            console.log("Dữ liệu User từ Backend:", user);
+
+            if (token) localStorage.setItem('token', token);
             if (user) localStorage.setItem('user', JSON.stringify(user));
             if (role) localStorage.setItem('role', role);
 

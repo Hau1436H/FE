@@ -1,34 +1,36 @@
-// .\src\pages\dashboard\SkillAssessment.jsx
+// src/pages/dashboard/SkillAssessment.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AssessmentTest from '../components/skillAssessment/AssessmentTest';
+import CodeAssessment from '../components/skillAssessment/CodeAssessment';
 import GoalTab from '../components/skillAssessment/GoalTab';
 import StatsTab from '../components/skillAssessment/StatsTab';
 import RoadmapTab from '../components/skillAssessment/RoadmapTab';
 import Logo from '../components/Logo';
 
-const TAB_ORDER = ['goal', 'test', 'stats', 'roadmap'];
+// 1. Thêm 'code' vào luồng
+const TAB_ORDER = ['goal', 'test', 'code', 'stats', 'roadmap'];
 
 function SkillAssessment() {
   const [activeTab, setActiveTab] = useState('goal');
   const [maxUnlockedIdx, setMaxUnlockedIdx] = useState(0);
 
-  // Mảng danh sách các skillNodeId cần test lần lượt
-  const skillNodeIds = [1, 2];
-  // State theo dõi xem đang làm bài test cho vị trí index nào trong mảng skillNodeIds
+  // ĐÃ SỬA: Cập nhật thành 13 (JavaScript) và 15 (React) để map đúng với Database
+  const skillNodeIds = [13, 15];
   const [currentSkillIdx, setCurrentSkillIdx] = useState(0);
 
-  // Cấu trúc lưu trữ kết quả test tích lũy (Có thể sửa tùy thuộc cấu trúc dữ liệu Backend của bạn)
   const [testResult, setTestResult] = useState({
     hasTaken: false,
     score: 0,
     total: 0,
-    history: {} // Lưu chi tiết kết quả từng skillNodeId dưới dạng: { '1': score1, '2': score2 }
+    aiFeedback: '',
+    history: {}
   });
 
   const tabs = [
     { id: 'goal', label: 'Mục tiêu' },
-    { id: 'test', label: 'Assessment Test' },
+    { id: 'test', label: 'Lý thuyết' },
+    { id: 'code', label: 'Thực hành Code' }, // 2. Thêm tab hiển thị
     { id: 'stats', label: 'Thống kê kỹ năng' },
     { id: 'roadmap', label: 'Lộ trình học tập' }
   ];
@@ -45,30 +47,36 @@ function SkillAssessment() {
     }
   };
 
-  // HÀM XỬ LÝ KHI HOÀN THÀNH MỘT BÀI TEST THÀNH PHẦN
-  const handleTestComplete = (score, total) => {
+  const handleTestComplete = (score, total, feedback) => {
     const currentNodeId = skillNodeIds[currentSkillIdx];
 
-    // Cập nhật kết quả cộng dồn và lưu lịch sử test của Node ID đó
     setTestResult(prev => ({
       hasTaken: true,
       score: prev.score + score,
       total: prev.total + total,
+      aiFeedback: feedback ? (prev.aiFeedback + '\n\n' + feedback) : prev.aiFeedback, // Nối feedback nếu có nhiều bài
       history: {
         ...prev.history,
-        [currentNodeId]: { score, total }
+        [currentNodeId]: { score, total, feedback }
       }
     }));
 
-    // KIỂM TRA: Xem còn skillNodeId tiếp theo để làm test tiếp không
     if (currentSkillIdx + 1 < skillNodeIds.length) {
-      // Nếu còn -> Tăng index lên để ép AssessmentTest chuyển sang Node tiếp theo
       setCurrentSkillIdx(prevIdx => prevIdx + 1);
-      // Giữ nguyên tab 'test' để user tiếp tục làm bài khảo sát tiếp theo
     } else {
-      // Nếu đã làm hết toàn bộ danh sách skillNodeIds -> Mới mở khóa chuyển sang tab Thống kê
-      unlockNextTab('test');
+      unlockNextTab('test'); // Mở khóa tab Code sau khi làm xong trắc nghiệm
     }
+  };
+
+  // Hàm xử lý riêng cho bài test Code
+  const handleCodeComplete = (score, total, feedback) => {
+    setTestResult(prev => ({
+      hasTaken: true,
+      score: prev.score + score,
+      total: prev.total + total,
+      aiFeedback: prev.aiFeedback + '\n\n[ĐÁNH GIÁ CODE]: ' + feedback,
+    }));
+    unlockNextTab('code'); // Xong code thì sang Thống kê
   };
 
   const renderTabContent = () => {
@@ -78,11 +86,19 @@ function SkillAssessment() {
       case 'test': 
         return (
           <AssessmentTest 
-            key={skillNodeIds[currentSkillIdx]} // QUAN TRỌNG: Dùng key để React buộc re-mount lại component mới xóa sạch state cũ của bài test trước khi đổi ID
-            skillNodeId={skillNodeIds[currentSkillIdx]} // Truyền ID kỹ năng hiện tại xuống cho component con fetch API câu hỏi
-            currentStep={currentSkillIdx + 1} // Gửi thông tin bước hiện tại (Ví dụ: Bài test số 1/2)
-            totalSteps={skillNodeIds.length}  // Gửi tổng số bài test cần làm
+            key={`quiz-${skillNodeIds[currentSkillIdx]}`} 
+            skillNodeId={skillNodeIds[currentSkillIdx]}
+            currentStep={currentSkillIdx + 1}
+            totalSteps={skillNodeIds.length}
             onComplete={handleTestComplete} 
+          />
+        );
+      case 'code': // 3. Render component CodeAssessment
+        return (
+          <CodeAssessment 
+            // ĐÃ SỬA: Đổi ID từ 999 thành 13 để khớp bài tập JavaScript
+            skillNodeId={13} 
+            onComplete={handleCodeComplete} 
           />
         );
       case 'stats': 
@@ -104,9 +120,9 @@ function SkillAssessment() {
       
       <nav className="navbar navbar-dark border-bottom border-secondary border-opacity-10 py-3" style={{ backgroundColor: '#0b0c16' }}>
         <div className="container d-flex justify-content-between align-items-center">
-          <Link to="/" className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4 text-white m-0">
+          <div className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4 text-white m-0">
             <Logo size="md" />
-          </Link>
+          </div>
 
           {testResult.hasTaken && (
             <Link 
@@ -127,7 +143,6 @@ function SkillAssessment() {
           <p className="text-white-50 small">Xây dựng lộ trình học tập tối ưu cá nhân hóa bằng AI</p>
         </div>
 
-        {/* Thanh quản lý các Tab tuyến tính */}
         <div className="d-flex flex-wrap justify-content-center gap-2 mb-4 pb-3 border-bottom border-secondary border-opacity-25">
           {tabs.map((tab, index) => {
             const isLocked = index > maxUnlockedIdx;
@@ -154,7 +169,6 @@ function SkillAssessment() {
           })}
         </div>
 
-        {/* Khối hiển thị nội dung động */}
         <div className="mt-2">
           {renderTabContent()}
         </div>

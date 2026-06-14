@@ -16,12 +16,11 @@ import SkillAssessment from './pages/SkillAssessment';
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ProtectedRoute from './components/ProtectedRoute';
-
 function App() {
-  // Giờ đây useLocation() sẽ hoạt động bình thường vì App đã nằm trong <BrowserRouter> ở main.jsx
   const location = useLocation();
 
-  const noNavarPaths = ['/login', '/register', '/dashboard', '/skill-assessment'];
+  // Đã thêm '/learning-hub' vào danh sách ẩn Navbar chung mặc định
+  const noNavarPaths = ['/login', '/register', '/dashboard', '/skill-assessment', '/learning-hub'];
   const showNavbar = !noNavarPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -34,6 +33,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/learning" element={<Learning />}/>
@@ -43,6 +43,7 @@ function App() {
             <Route path="/dashboard/notifications" element={<Notifications />}/>
             <Route path="/dashboard/setting" element={<Setting />}/>
             <Route path="/skill-assessment" element={<SkillAssessment />} />
+            
           </Route>
         </Routes>
       </div>
