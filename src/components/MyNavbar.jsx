@@ -232,6 +232,14 @@ function MyNavbar() {
                       Hồ sơ cá nhân
                     </Dropdown.Item>
 
+                    <Dropdown.Item
+                      as={Link}
+                      to="/skill-assessment"
+                      className="py-2"
+                    >
+                      Làm bài test
+                    </Dropdown.Item>
+
                     <Dropdown.Divider className="border-secondary" />
 
                     <Dropdown.Item
