@@ -1,15 +1,31 @@
 // src/components/skillAssessment/GoalTab.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axiosClient from '../../api/axiosClient';
 
 function GoalTab({ onNextTab }) {
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [tags, setTags] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const roles = [
-    { id: 'backend', name: 'Backend Developer (.NET/C#)' },
-    { id: 'frontend', name: 'Frontend Developer (React)' },
-    { id: 'fullstack', name: 'Fullstack Developer' },
-    { id: 'devops', name: 'DevOps Engineer' }
-  ];
+  // GỌI API LẤY DANH SÁCH SKILL NODES (TAGS) TỪ BACKEND
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosClient.get('/api/assessments/all-skill-nodes');
+        const nodesData = response.data.data || response.data;
+        if (nodesData && nodesData.length > 0) {
+          setTags(nodesData);
+        }
+      } catch (error) {
+        console.error("Lỗi lấy danh sách Tags kỹ năng:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTags();
+  }, []);
 
   return (
     <div className="card border-secondary border-opacity-25 text-white p-5 mx-auto" style={{ backgroundColor: '#0b0c16', maxWidth: '800px' }}>
@@ -17,35 +33,41 @@ function GoalTab({ onNextTab }) {
         <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill mb-3">
           Bước 1 / 4
         </span>
-        <h3 className="fw-bold text-white mb-3">Xác Định Mục Tiêu Nghề Nghiệp</h3>
+        <h3 className="fw-bold text-white mb-3">Chọn Kỹ Năng Cần Đánh Giá</h3>
         <p className="text-white-50">
-          Để AI có thể xây dựng lộ trình và bài kiểm tra chính xác, hãy chọn vị trí (Role) mà bạn mong muốn ứng tuyển trong tương lai.
+          Hãy chọn một kỹ năng cụ thể dưới đây để hệ thống AI khởi tạo bài kiểm tra năng lực dành riêng cho bạn.
         </p>
       </div>
 
-      <div className="row g-3 mb-5">
-        {roles.map(role => (
-          <div className="col-md-6" key={role.id}>
+      {loading ? (
+        <div className="text-center py-4">
+          <div className="spinner-border text-success" role="status"></div>
+          <p className="text-white-50 mt-2 small">Đang tải danh sách kỹ năng...</p>
+        </div>
+      ) : (
+        <div className="d-flex flex-wrap justify-content-center gap-3 mb-5">
+          {tags.map(tag => (
             <button
-              className={`w-100 text-start btn p-4 rounded-3 border transition-all ${
-                selectedRole === role.id 
-                  ? 'btn-success border-success text-white shadow' 
-                  : 'btn-outline-secondary border-secondary border-opacity-25 text-white-50'
+              key={tag.id}
+              className={`btn rounded-pill px-4 py-2 transition-all fw-medium ${
+                selectedNodeId === tag.id 
+                  ? 'btn-success text-white shadow' 
+                  : 'btn-outline-secondary text-white-50 border-secondary border-opacity-25'
               }`}
-              style={{ backgroundColor: selectedRole === role.id ? '' : '#111324' }}
-              onClick={() => setSelectedRole(role.id)}
+              style={{ backgroundColor: selectedNodeId === tag.id ? '' : '#111324' }}
+              onClick={() => setSelectedNodeId(tag.id)}
             >
-              <h5 className="fw-bold mb-0">{role.name}</h5>
+              #{tag.name}
             </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="text-center border-top border-secondary border-opacity-25 pt-4">
         <button 
           className="btn btn-success px-5 py-2 fw-medium fs-5"
-          disabled={!selectedRole}
-          onClick={onNextTab}
+          disabled={!selectedNodeId || loading}
+          onClick={() => onNextTab(selectedNodeId)} 
         >
           Bắt đầu làm bài Test 🚀
         </button>

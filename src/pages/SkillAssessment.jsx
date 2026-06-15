@@ -7,16 +7,15 @@ import GoalTab from '../components/skillAssessment/GoalTab';
 import StatsTab from '../components/skillAssessment/StatsTab';
 import RoadmapTab from '../components/skillAssessment/RoadmapTab';
 import Logo from '../components/Logo';
-
-// 1. Thêm 'code' vào luồng
+import axiosClient from "../api/axiosClient";
 const TAB_ORDER = ['goal', 'test', 'code', 'stats', 'roadmap'];
 
 function SkillAssessment() {
   const [activeTab, setActiveTab] = useState('goal');
   const [maxUnlockedIdx, setMaxUnlockedIdx] = useState(0);
 
-  // ĐÃ SỬA: Cập nhật thành 13 (JavaScript) và 15 (React) để map đúng với Database
-  const skillNodeIds = [13, 15];
+  // ĐÃ SỬA: Thay thế mảng hardcode bằng State rỗng chờ dữ liệu từ API
+  const [skillNodeIds, setSkillNodeIds] = useState([]);
   const [currentSkillIdx, setCurrentSkillIdx] = useState(0);
 
   const [testResult, setTestResult] = useState({
@@ -30,7 +29,7 @@ function SkillAssessment() {
   const tabs = [
     { id: 'goal', label: 'Mục tiêu' },
     { id: 'test', label: 'Lý thuyết' },
-    { id: 'code', label: 'Thực hành Code' }, // 2. Thêm tab hiển thị
+    { id: 'code', label: 'Thực hành Code' },
     { id: 'stats', label: 'Thống kê kỹ năng' },
     { id: 'roadmap', label: 'Lộ trình học tập' }
   ];
@@ -47,6 +46,16 @@ function SkillAssessment() {
     }
   };
 
+  const handleGoalSubmit = (skillNodeId) => {
+    // Nhận trực tiếp ID kỹ năng (ví dụ: 13 cho JavaScript) từ GoalTab
+    // Gán ID đó vào mảng để bắt đầu làm bài test
+    setSkillNodeIds([skillNodeId]); 
+    setCurrentSkillIdx(0);        
+    
+    // Mở khóa chuyển sang tab Lý Thuyết ngay lập tức
+    unlockNextTab('goal'); 
+  };
+
   const handleTestComplete = (score, total, feedback) => {
     const currentNodeId = skillNodeIds[currentSkillIdx];
 
@@ -54,7 +63,7 @@ function SkillAssessment() {
       hasTaken: true,
       score: prev.score + score,
       total: prev.total + total,
-      aiFeedback: feedback ? (prev.aiFeedback + '\n\n' + feedback) : prev.aiFeedback, // Nối feedback nếu có nhiều bài
+      aiFeedback: feedback ? (prev.aiFeedback + '\n\n' + feedback) : prev.aiFeedback,
       history: {
         ...prev.history,
         [currentNodeId]: { score, total, feedback }
@@ -68,7 +77,6 @@ function SkillAssessment() {
     }
   };
 
-  // Hàm xử lý riêng cho bài test Code
   const handleCodeComplete = (score, total, feedback) => {
     setTestResult(prev => ({
       hasTaken: true,
@@ -82,25 +90,38 @@ function SkillAssessment() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'goal': 
-        return <GoalTab onNextTab={() => unlockNextTab('goal')} />;
+        // Truyền hàm gọi API vào Component GoalTab thay vì gán cứng
+        return <GoalTab onNextTab={handleGoalSubmit} />; 
+      
       case 'test': 
         return (
-          <AssessmentTest 
-            key={`quiz-${skillNodeIds[currentSkillIdx]}`} 
-            skillNodeId={skillNodeIds[currentSkillIdx]}
-            currentStep={currentSkillIdx + 1}
-            totalSteps={skillNodeIds.length}
-            onComplete={handleTestComplete} 
-          />
+          skillNodeIds.length > 0 ? (
+            <AssessmentTest 
+              key={`quiz-${skillNodeIds[currentSkillIdx]}`} 
+              skillNodeId={skillNodeIds[currentSkillIdx]}
+              currentStep={currentSkillIdx + 1}
+              totalSteps={skillNodeIds.length}
+              onComplete={handleTestComplete} 
+            />
+          ) : (
+            <div className="text-center text-white-50 p-5">
+              <div className="spinner-border text-success mb-3" role="status"></div>
+              <div>Đang tải dữ liệu lộ trình...</div>
+            </div>
+          )
         );
-      case 'code': // 3. Render component CodeAssessment
+        
+      case 'code': 
         return (
-          <CodeAssessment 
-            // ĐÃ SỬA: Đổi ID từ 999 thành 13 để khớp bài tập JavaScript
-            skillNodeId={13} 
-            onComplete={handleCodeComplete} 
-          />
+          skillNodeIds.length > 0 && (
+            <CodeAssessment 
+              // Gán bài Code Assessment cho Node ID đầu tiên trong mảng (hoặc có thể tuỳ chỉnh tùy logic DB của bạn)
+              skillNodeId={skillNodeIds[0]} 
+              onComplete={handleCodeComplete} 
+            />
+          )
         );
+        
       case 'stats': 
         return (
           <StatsTab 
@@ -108,10 +129,12 @@ function SkillAssessment() {
             onNavigateToRoadmap={() => unlockNextTab('stats')} 
           />
         );
+        
       case 'roadmap': 
         return <RoadmapTab result={testResult} />;
+        
       default: 
-        return <GoalTab onNextTab={() => unlockNextTab('goal')} />;
+        return <GoalTab onNextTab={handleGoalSubmit} />;
     }
   };
 
