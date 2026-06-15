@@ -30,7 +30,7 @@ function GoalTab({ onNextTab }) {
   return (
     <div className="card border-secondary border-opacity-25 text-white p-5 mx-auto" style={{ backgroundColor: '#0b0c16', maxWidth: '800px' }}>
       <div className="text-center mb-5">
-        <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill mb-3">
+        <span className="badge text-success border border-success border-opacity-25 px-3 py-2 rounded-pill mb-3" style={{backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important'}}>
           Bước 1 / 4
         </span>
         <h3 className="fw-bold text-white mb-3">Chọn Kỹ Năng Cần Đánh Giá</h3>
