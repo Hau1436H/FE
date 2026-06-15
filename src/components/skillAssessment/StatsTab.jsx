@@ -1,17 +1,22 @@
 // src/components/skillAssessment/StatsTab.jsx
-// Đã gỡ bỏ `import React from 'react'` để fix lỗi "React is defined but never used"
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
 import { Radar } from 'react-chartjs-2';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
-// Component này nhận testResult chứa thông tin đã lưu từ API trả về
 function StatsTab({ result, onNavigateToRoadmap }) {
-  const { hasTaken = false, score = 0, total = 0, aiFeedback = '' } = result || {};
+  const hasTaken = result?.hasTaken || false;
 
-  const percentScore = total > 0 ? Math.round((score / total) * 100) : 0;
+  // Xử lý chống NaN triệt để: Ép kiểu và cung cấp giá trị fallback
+  const rawScore = parseFloat(result?.score);
+  const rawTotal = parseFloat(result?.total);
+  
+  const score = isNaN(rawScore) ? 0 : rawScore;
+  const total = isNaN(rawTotal) || rawTotal === 0 ? 10 : rawTotal;
 
-  // Thuật toán giả lập phân bổ radar chart dựa trên tổng điểm (Vì API BE chưa có endpoint chia điểm theo mảng nhỏ)
+  const percentScore = Math.round((score / total) * 100);
+
+  // Thuật toán giả lập phân bổ radar chart
   const baseSkills = hasTaken 
     ? [percentScore, Math.min(percentScore + 15, 100), Math.max(percentScore - 10, 20), Math.min(percentScore + 5, 95), percentScore]
     : [0, 0, 0, 0, 0];
@@ -54,16 +59,15 @@ function StatsTab({ result, onNavigateToRoadmap }) {
             {hasTaken ? (
               <>
                 <div className="bg-dark bg-opacity-20 p-3 rounded-3 border border-secondary border-opacity-10 mb-4">
-                  <h4 className="text-warning fw-bold mb-0">👉 Đúng {score}/{total} câu (Đạt {percentScore}%)</h4>
+                  <h4 className="text-warning fw-bold mb-0">👉 Điểm số: {score}/{total} (Đạt {percentScore}%)</h4>
                 </div>
-                {/* Đổ dữ liệu thật từ Backend vào đây */}
                 <p className="text-white-50 lh-base" style={{ whiteSpace: 'pre-line' }}>
-                  {aiFeedback || "Hệ thống AI đang xử lý đánh giá chi tiết cho bạn..."}
+                  {result?.aiFeedback || "Hệ thống AI đang xử lý đánh giá chi tiết cho bạn..."}
                 </p>
               </>
             ) : (
               <div className="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning rounded-3 small mb-4">
-                ⚠️ Hãy hoàn thành tab "Assessment Test" để nhận phân tích chính xác.
+                ⚠️ Hãy hoàn thành bài kiểm tra để nhận phân tích chính xác.
               </div>
             )}
           </div>

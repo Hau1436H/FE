@@ -13,13 +13,15 @@ import Profile from "./pages/dashboard/Profile";
 import Notifications from "./pages/dashboard/Notifications";
 import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
+import AssessmentHistory from './pages/dashboard/AssessmentHistory';
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   const location = useLocation();
 
-  // Đã thêm '/learning-hub' vào danh sách ẩn Navbar chung mặc định
+  // Ẩn Navbar chung mặc định cho các đường dẫn này
   const noNavarPaths = ['/login', '/register', '/dashboard', '/skill-assessment', '/learning-hub'];
   const showNavbar = !noNavarPaths.some(path => location.pathname.startsWith(path));
 
@@ -34,6 +36,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
+          {/* Các route yêu cầu đăng nhập */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/learning" element={<Learning />}/>
@@ -44,6 +47,8 @@ function App() {
             <Route path="/dashboard/setting" element={<Setting />}/>
             <Route path="/skill-assessment" element={<SkillAssessment />} />
             
+            {/* Route Lịch sử đánh giá với ID động */}
+            <Route path="/dashboard/assessment-history/:studentId" element={<AssessmentHistory />} />
           </Route>
         </Routes>
       </div>

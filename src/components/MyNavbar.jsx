@@ -25,13 +25,6 @@ function MyNavbar() {
 
     try {
       const response = await axiosClient.get('/api/Profile/me');
-
-      // API trả về:
-      // {
-      //   message: "...",
-      //   data: { ...user }
-      // }
-
       setUser(response.data.data);
     } catch (error) {
       console.error('Get profile failed:', error);
@@ -74,7 +67,6 @@ function MyNavbar() {
 
   const getFirstLetter = (name) => {
     if (!name) return 'A';
-
     return name.trim().charAt(0).toUpperCase();
   };
 
@@ -127,10 +119,10 @@ function MyNavbar() {
         }}
       >
         <Container>
+          {/* ĐÃ FIX: Đổi as={Link} thành as="div" và xóa to="/" để tránh lồng thẻ <a> */}
           <Navbar.Brand
-            as={Link}
-            to="/"
-            className="fw-bold text-white fs-4"
+            as="div"
+            className="fw-bold text-white fs-4 p-0 m-0"
           >
             <Logo size="md" />
           </Navbar.Brand>
