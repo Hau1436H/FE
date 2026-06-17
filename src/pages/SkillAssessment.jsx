@@ -1,4 +1,3 @@
-// src/pages/dashboard/SkillAssessment.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AssessmentTest from '../components/skillAssessment/AssessmentTest';
@@ -8,23 +7,41 @@ import StatsTab from '../components/skillAssessment/StatsTab';
 import RoadmapTab from '../components/skillAssessment/RoadmapTab';
 import Logo from '../components/Logo';
 import axiosClient from "../api/axiosClient";
+
 const TAB_ORDER = ['goal', 'test', 'code', 'stats', 'roadmap'];
 
 function SkillAssessment() {
   const [activeTab, setActiveTab] = useState('goal');
   const [maxUnlockedIdx, setMaxUnlockedIdx] = useState(0);
 
-  // ĐÃ SỬA: Thay thế mảng hardcode bằng State rỗng chờ dữ liệu từ API
   const [skillNodeIds, setSkillNodeIds] = useState([]);
-  const [currentSkillIdx, setCurrentSkillIdx] = useState(0);
+  const [targetSkillId, setTargetSkillId] = useState(null);
+
+  // STATE MỚI: Gom chung dữ liệu làm bài để nộp 1 lần
+  const [examData, setExamData] = useState({
+    quizAnswers: [],
+    codeSubmission: null
+  });
 
   const [testResult, setTestResult] = useState({
     hasTaken: false,
+    quizScore: 0,
+    codeScore: 0,
     score: 0,
-    total: 0,
-    aiFeedback: '',
-    history: {}
+    total: 20, // (10 điểm Quiz + 10 điểm Code)
+    aiFeedback: ''
   });
+
+  const getStudentId = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.studentId || payload.StudentId || payload.sub;
+    } catch (e) {
+      return null;
+    }
+  };
 
   const tabs = [
     { id: 'goal', label: 'Mục tiêu' },
@@ -46,113 +63,95 @@ function SkillAssessment() {
     }
   };
 
-  const handleGoalSubmit = (skillNodeId) => {
-    // Nhận trực tiếp ID kỹ năng (ví dụ: 13 cho JavaScript) từ GoalTab
-    // Gán ID đó vào mảng để bắt đầu làm bài test
-    setSkillNodeIds([skillNodeId]); 
-    setCurrentSkillIdx(0);        
-    
-    // Mở khóa chuyển sang tab Lý Thuyết ngay lập tức
-    unlockNextTab('goal'); 
-  };
+  const handleGoalSubmit = async (roleId) => {
+    try {
+      const response = await axiosClient.get(`/api/v1/roles/${roleId}/skills`);
+      const skillsArray = response.data.data || response.data;
 
-  const handleTestComplete = (score, total, feedback) => {
-    const currentNodeId = skillNodeIds[currentSkillIdx];
-
-    setTestResult(prev => ({
-      hasTaken: true,
-      score: prev.score + score,
-      total: prev.total + total,
-      aiFeedback: feedback ? (prev.aiFeedback + '\n\n' + feedback) : prev.aiFeedback,
-      history: {
-        ...prev.history,
-        [currentNodeId]: { score, total, feedback }
+      if (!skillsArray || skillsArray.length === 0) {
+        alert("Hiện tại chưa có bộ dữ liệu cho ngành nghề này. Vui lòng chọn ngành khác!");
+        return;
       }
-    }));
-
-    if (currentSkillIdx + 1 < skillNodeIds.length) {
-      setCurrentSkillIdx(prevIdx => prevIdx + 1);
-    } else {
-      unlockNextTab('test'); // Mở khóa tab Code sau khi làm xong trắc nghiệm
+      setSkillNodeIds(skillsArray); 
+      setTargetSkillId(skillsArray[0]);        
+      unlockNextTab('goal'); 
+    } catch (error) {
+      alert("Lỗi kết nối máy chủ. Không thể khởi tạo bài test.");
     }
   };
 
-  const handleCodeComplete = (score, total, feedback) => {
-    setTestResult(prev => ({
-      hasTaken: true,
-      score: prev.score + score,
-      total: prev.total + total,
-      aiFeedback: prev.aiFeedback + '\n\n[ĐÁNH GIÁ CODE]: ' + feedback,
-    }));
-    unlockNextTab('code'); // Xong code thì sang Thống kê
+  // NHẬN DỮ LIỆU QUIZ NHƯNG KHÔNG GỌI API
+  const handleTestComplete = (answers) => {
+    setExamData(prev => ({ ...prev, quizAnswers: answers }));
+    unlockNextTab('test'); // Chuyển sang Code
+  };
+
+  // NHẬN DỮ LIỆU CODE -> GỌI API /submit-exam DUY NHẤT Ở ĐÂY
+  const handleCodeComplete = async (codePayload) => {
+    const studentId = getStudentId();
+    if (!studentId) {
+      alert("Phiên đăng nhập hết hạn. Vui lòng thử lại.");
+      return;
+    }
+
+    try {
+      const fullPayload = {
+        studentId: studentId,
+        skillNodeId: targetSkillId,
+        quizAnswers: examData.quizAnswers,
+        codeSubmission: codePayload
+      };
+
+      const response = await axiosClient.post('/api/assessments/submit-exam', fullPayload);
+      const data = response.data;
+
+      // Cập nhật kết quả cuối cùng để show lên màn Stats
+      setTestResult({
+        hasTaken: true,
+        quizScore: data.quizScore || 0,
+        codeScore: data.codeScore || 0,
+        score: (data.quizScore || 0) + (data.codeScore || 0),
+        total: 20,
+        aiFeedback: data.message || "Đã phân tích xong bộ test."
+      });
+      
+      unlockNextTab('code'); 
+    } catch (error) {
+      console.error(error);
+      alert("Có lỗi xảy ra khi chấm và lưu bài. Vui lòng kiểm tra lại mạng.");
+    }
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'goal': 
-        // Truyền hàm gọi API vào Component GoalTab thay vì gán cứng
-        return <GoalTab onNextTab={handleGoalSubmit} />; 
-      
+      case 'goal': return <GoalTab onNextTab={handleGoalSubmit} />; 
       case 'test': 
-        return (
-          skillNodeIds.length > 0 ? (
-            <AssessmentTest 
-              key={`quiz-${skillNodeIds[currentSkillIdx]}`} 
-              skillNodeId={skillNodeIds[currentSkillIdx]}
-              currentStep={currentSkillIdx + 1}
-              totalSteps={skillNodeIds.length}
-              onComplete={handleTestComplete} 
-            />
-          ) : (
-            <div className="text-center text-white-50 p-5">
-              <div className="spinner-border text-success mb-3" role="status"></div>
-              <div>Đang tải dữ liệu lộ trình...</div>
-            </div>
-          )
-        );
+        return targetSkillId ? (
+          <AssessmentTest key={`quiz-${targetSkillId}`} skillNodeId={targetSkillId} onComplete={handleTestComplete} />
+        ) : (<div className="text-center text-white p-5"><div className="spinner-border"></div></div>);
         
       case 'code': 
-        return (
-          skillNodeIds.length > 0 && (
-            <CodeAssessment 
-              // Gán bài Code Assessment cho Node ID đầu tiên trong mảng (hoặc có thể tuỳ chỉnh tùy logic DB của bạn)
-              skillNodeId={skillNodeIds[0]} 
-              onComplete={handleCodeComplete} 
-            />
-          )
+        return targetSkillId && (
+          <CodeAssessment skillNodeId={targetSkillId} onComplete={handleCodeComplete} />
         );
         
       case 'stats': 
-        return (
-          <StatsTab 
-            result={testResult} 
-            onNavigateToRoadmap={() => unlockNextTab('stats')} 
-          />
-        );
+        return <StatsTab result={testResult} onNavigateToRoadmap={() => unlockNextTab('stats')} />;
         
       case 'roadmap': 
         return <RoadmapTab result={testResult} />;
         
-      default: 
-        return <GoalTab onNextTab={handleGoalSubmit} />;
+      default: return <GoalTab onNextTab={handleGoalSubmit} />;
     }
   };
 
   return (
     <div style={{ backgroundColor: '#020205', minHeight: '100vh', fontFamily: 'system-ui' }}>
-      
       <nav className="navbar navbar-dark border-bottom border-secondary border-opacity-10 py-3" style={{ backgroundColor: '#0b0c16' }}>
         <div className="container d-flex justify-content-between align-items-center">
-          <div className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4 text-white m-0">
-            <Logo size="md" />
-          </div>
-
+          <div className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4 text-white m-0"><Logo size="md" /></div>
           {testResult.hasTaken && (
-            <Link 
-              to="/dashboard" 
-              className="btn btn-sm btn-success px-3 py-2 fw-medium rounded-2 transition-all shadow-sm"
-              style={{ backgroundColor: '#198754', borderColor: '#198754', fontSize: '0.85rem' }}
-            >
+            <Link to="/dashboard" className="btn btn-sm btn-success px-3 py-2 fw-medium rounded-2 shadow-sm">
               Về Dashboard
             </Link>
           )}
@@ -160,31 +159,23 @@ function SkillAssessment() {
       </nav>
 
       <div className="container pt-4 pb-5">
-        
         <div className="mb-4 text-center">
-          <h2 className="text-white fw-bold mb-1">Đánh Giá Kỹ Năng</h2>
-          <p className="text-white-50 small">Xây dựng lộ trình học tập tối ưu cá nhân hóa bằng AI</p>
+          <h2 className="text-white fw-bold mb-1">Đánh Giá Kỹ Năng Toàn Diện</h2>
         </div>
 
         <div className="d-flex flex-wrap justify-content-center gap-2 mb-4 pb-3 border-bottom border-secondary border-opacity-25">
           {tabs.map((tab, index) => {
             const isLocked = index > maxUnlockedIdx;
             const isActive = activeTab === tab.id;
-
             return (
               <button
                 key={tab.id}
                 disabled={isLocked}
                 onClick={() => setActiveTab(tab.id)}
                 className={`btn btn-sm px-4 py-2 rounded-pill fw-medium transition-all ${
-                  isActive
-                    ? 'btn-success text-white shadow'
-                    : isLocked
-                    ? 'btn-dark text-secondary border-0 opacity-25'
-                    : 'btn-outline-secondary border-secondary border-opacity-25 text-white-50'
+                  isActive ? 'btn-success text-white shadow' : isLocked ? 'btn-dark text-secondary border-0 opacity-25' : 'btn-outline-secondary border-secondary border-opacity-25 text-white-50'
                 }`}
                 style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
-                title={isLocked ? "Bạn cần hoàn thành bước trước để mở khóa tab này" : ""}
               >
                 {tab.label} {isLocked && '🔒'}
               </button>
@@ -192,11 +183,8 @@ function SkillAssessment() {
           })}
         </div>
 
-        <div className="mt-2">
-          {renderTabContent()}
-        </div>
+        <div className="mt-2">{renderTabContent()}</div>
       </div>
-
     </div>
   );
 }
