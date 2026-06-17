@@ -14,6 +14,7 @@ import Notifications from "./pages/dashboard/Notifications";
 import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
 import AssessmentHistory from './pages/dashboard/AssessmentHistory';
+import PublicPortfolio from './pages/PublicPortfolio'; // <-- IMPORT FILE MỚI VÀO ĐÂY
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,8 +22,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   const location = useLocation();
 
-  // Ẩn Navbar chung mặc định cho các đường dẫn này
-  const noNavarPaths = ['/login', '/register', '/dashboard', '/skill-assessment', '/learning-hub'];
+  // Ẩn Navbar chung mặc định cho các đường dẫn này (Thêm '/p/' để nhà tuyển dụng không thấy Navbar)
+  const noNavarPaths = ['/login', '/register', '/dashboard', '/skill-assessment', '/learning-hub', '/p/'];
   const showNavbar = !noNavarPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -35,6 +36,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
+          {/* ROUTE PUBLIC: Dành cho nhà tuyển dụng xem E-Portfolio (Bắt buộc nằm ngoài ProtectedRoute) */}
+          <Route path="/p/:slug" element={<PublicPortfolio />} />
           
           {/* Các route yêu cầu đăng nhập */}
           <Route element={<ProtectedRoute />}>

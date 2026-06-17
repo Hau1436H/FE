@@ -119,7 +119,6 @@ function MyNavbar() {
         }}
       >
         <Container>
-          {/* ĐÃ FIX: Đổi as={Link} thành as="div" và xóa to="/" để tránh lồng thẻ <a> */}
           <Navbar.Brand
             as="div"
             className="fw-bold text-white fs-4 p-0 m-0"
@@ -155,11 +154,14 @@ function MyNavbar() {
                 Mentor
               </Nav.Link>
 
+              {/* ĐÃ THÊM: Nút E-Portfolio Demo để bảo vệ đồ án */}
               <Nav.Link
-                href="#about"
-                className="text-white opacity-75"
+                as={Link}
+                to="/p/bb0bdb5d" 
+                className="fw-bold"
+                style={{ color: '#10b981' }}
               >
-                Về chúng tôi
+                🔥 E-Portfolio Mẫu
               </Nav.Link>
             </Nav>
 
@@ -221,7 +223,7 @@ function MyNavbar() {
                       to="/dashboard/profile"
                       className="py-2"
                     >
-                      Hồ sơ cá nhân
+                      Hồ sơ & E-Portfolio
                     </Dropdown.Item>
 
                     <Dropdown.Item
