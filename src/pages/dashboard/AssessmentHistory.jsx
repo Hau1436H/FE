@@ -4,8 +4,10 @@ import Editor from '@monaco-editor/react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import axiosClient from '../../api/axiosClient';
-// 1. IMPORT COMPONENT ROADMAP CÓ SẴN CỦA BẠN VÀO ĐÂY
 import RoadmapTab from '../../components/skillAssessment/RoadmapTab';
+
+// 1. IMPORT COMPONENT STATS TAB
+import StatsTab from '../../components/skillAssessment/StatsTab';
 
 function AssessmentHistory() {
   const { studentId } = useParams();
@@ -19,8 +21,8 @@ function AssessmentHistory() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState(null);
 
-  // 2. STATE HIỆN TẠI HỖ TRỢ 3 TAB: 'quiz', 'code', 'roadmap'
-  const [detailTab, setDetailTab] = useState('quiz'); 
+  // 2. Mặc định mở tab Thống kê (stats) khi mới vào xem chi tiết
+  const [detailTab, setDetailTab] = useState('stats'); 
 
   useEffect(() => {
     const fetchHistoryList = async () => {
@@ -40,7 +42,7 @@ function AssessmentHistory() {
 
   const handleViewDetail = async (assessmentId) => { 
     setViewMode('detail'); 
-    setDetailTab('quiz'); // Mặc định mở tab Quiz trước
+    setDetailTab('stats'); // Reset về tab stats mỗi khi mở bài mới
     setLoadingDetail(true);
     setError(null);
 
@@ -154,6 +156,13 @@ function AssessmentHistory() {
               <div className="card bg-dark border-secondary">
                 {/* Custom Tabs */}
                 <div className="card-header border-secondary d-flex flex-wrap gap-3 p-3 bg-opacity-50">
+                  {/* TAB THỐNG KÊ MỚI */}
+                  <button 
+                    className={`btn ${detailTab === 'stats' ? 'btn-primary text-white fw-bold shadow' : 'btn-outline-secondary text-white'}`}
+                    onClick={() => setDetailTab('stats')}
+                  >
+                    <i className="bi bi-bar-chart-fill me-2"></i>Thống kê
+                  </button>
                   <button 
                     className={`btn ${detailTab === 'quiz' ? 'btn-info text-dark fw-bold' : 'btn-outline-secondary text-white'}`}
                     onClick={() => setDetailTab('quiz')}
@@ -166,7 +175,6 @@ function AssessmentHistory() {
                   >
                     <i className="bi bi-code-slash me-2"></i>Thực hành Code ({detailData.totalCodeScore || 0}/10)
                   </button>
-                  {/* 3. NÚT TAB LỘ TRÌNH HỌC TẬP */}
                   <button 
                     className={`btn ${detailTab === 'roadmap' ? 'btn-success text-white fw-bold shadow' : 'btn-outline-secondary text-white'}`}
                     onClick={() => setDetailTab('roadmap')}
@@ -176,6 +184,22 @@ function AssessmentHistory() {
                 </div>
 
                 <div className="card-body p-4">
+                  
+                  {/* 3. NỘI DUNG TAB THỐNG KÊ (STATS) */}
+                  {detailTab === 'stats' && (
+                    <div className="bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25 p-3">
+                      <StatsTab 
+                        result={{
+                          hasTaken: true, 
+                          score: (detailData.totalQuizScore || detailData.testScore || 0) + (detailData.totalCodeScore || 0),
+                          total: 20,
+                          aiFeedback: detailData.codeDetail?.aiFeedback || detailData.aiFeedback
+                        }}
+                        onNavigateToRoadmap={() => setDetailTab('roadmap')}
+                      />
+                    </div>
+                  )}
+
                   {/* TAB QUIZ */}
                   {detailTab === 'quiz' && (
                     <div>
@@ -236,7 +260,7 @@ function AssessmentHistory() {
                   {detailTab === 'roadmap' && (
                     <div className="bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25 p-3">
                       <RoadmapTab 
-                        sessionId={detailData.sessionId || detailData.assessmentId} // TRUYỀN THÊM ID VÀO ĐÂY
+                        sessionId={detailData.sessionId || detailData.assessmentId}
                         result={{
                           hasTaken: true, 
                           score: (detailData.totalQuizScore || detailData.testScore || 0) + (detailData.totalCodeScore || 0),
