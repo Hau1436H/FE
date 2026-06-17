@@ -8,7 +8,6 @@ function CodeAssessment({ skillNodeId, onComplete }) {
   const [loadingProblem, setLoadingProblem] = useState(true);
   
   const [output, setOutput] = useState('');
-  const [aiChat, setAiChat] = useState([]);
   
   const [exerciseData, setExerciseData] = useState(null);
   const [code, setCode] = useState('');
@@ -97,14 +96,15 @@ function CodeAssessment({ skillNodeId, onComplete }) {
       </div>
 
       <div className="col-lg-4">
-        <div className="card border-secondary border-opacity-25 p-0 h-100" style={{ backgroundColor: '#0b0c16' }}>
-          <div className="p-3 border-bottom border-secondary" style={{ height: '200px', overflowY: 'auto' }}>
-            <h6 className="text-success fw-bold font-monospace mb-2">Terminal Output</h6>
-            <pre className="text-white-50 small mb-0">{output}</pre>
-          </div>
-          {/* Bạn có thể giữ phần Chat AI ở đây tuỳ ý */}
-        </div>
-      </div>
+  <div className="card border-secondary border-opacity-25 p-0 h-100" style={{ backgroundColor: '#0b0c16' }}>
+    <div className="p-3 border-bottom border-secondary" style={{ height: '200px', overflowY: 'auto' }}>
+      <h6 className="text-success fw-bold font-monospace mb-2">Terminal Output</h6>
+      <pre className="text-white-50 small mb-0">{output}</pre>
+    </div>
+    {/* BẠN NÊN XÓA DÒNG COMMENT DƯỚI ĐÂY */}
+    {/* Bạn có thể giữ phần Chat AI ở đây tuỳ ý */}
+  </div>
+</div>
     </div>
   );
 }
