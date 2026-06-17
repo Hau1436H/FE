@@ -1,3 +1,4 @@
+// src/components/dashboard/myJob/JobCard.jsx
 import React from 'react';
 import { BiMap } from 'react-icons/bi';
 import { FiBookmark } from 'react-icons/fi';
@@ -14,7 +15,7 @@ function JobCard({ job }) {
         <div className="d-flex gap-3">
           {/* Thẻ <img> hiển thị Logo thực tế từ URL */}
           <img 
-            src={job.companyLogo} 
+            src={job.companyLogo || 'https://via.placeholder.com/56'} // Dự phòng link lỗi mặc định
             alt={job.companyName} 
             className="rounded-3 object-cover shadow-sm"
             style={{ width: '56px', height: '56px', objectFit: 'cover' }}
@@ -29,7 +30,7 @@ function JobCard({ job }) {
             className="rounded-3 align-items-center justify-content-center fw-bold text-white shadow-sm"
             style={{ width: '56px', height: '56px', backgroundColor: '#2d3142', fontSize: '14px', display: 'none' }}
           >
-            {job.companyName.charAt(0)}
+            {job.companyName?.charAt(0) || 'C'}
           </div>
 
           <div>
@@ -57,10 +58,10 @@ function JobCard({ job }) {
       {/* 2. Hàng Badge thông tin cơ bản */}
       <div className="d-flex flex-wrap gap-2 mb-3">
         <span className="badge bg-secondary bg-opacity-20 text-white-50 fw-normal px-2.5 py-1.5 rounded-2" style={{ fontSize: '12px' }}>
-          🗄️ {job.type}
+          🗄️ {job.type || 'Toàn thời gian'}
         </span>
         <span className="badge bg-secondary bg-opacity-20 text-white-50 fw-normal px-2.5 py-1.5 rounded-2" style={{ fontSize: '12px' }}>
-          {job.level}
+          {job.level || 'Middle'}
         </span>
         <span className="badge bg-secondary bg-opacity-20 text-white-50 fw-normal px-2.5 py-1.5 rounded-2 d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
           <BiMap size={14} /> {locationText}
@@ -69,32 +70,55 @@ function JobCard({ job }) {
 
       {/* 3. Hiển thị Mức Lương */}
       <div className="text-success fw-bold mb-3 d-flex align-items-center gap-1.5" style={{ fontSize: '18px' }}>
-        Cast: {job.salary} <span className="text-white-50 fw-normal" style={{ fontSize: '13px' }}>/tháng (gross)</span>
+        Cast: {job.salary || 'Thỏa thuận'} <span className="text-white-50 fw-normal" style={{ fontSize: '13px' }}>/tháng (gross)</span>
       </div>
 
       {/* 4. Đoạn mô tả ngắn */}
       <p className="text-white-50 mb-4" style={{ fontSize: '13px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '38px', lineHeight: '1.5' }}>
-        {job.description}
+        {job.description || 'Tham gia thiết kế, phát triển và tối ưu hệ thống dựa trên yêu cầu dự án thực tế.'}
       </p>
 
       {/* 5. Vùng kỹ năng phù hợp */}
       <div className="mb-3">
         <div className="text-white-50 extra-small mb-2" style={{ fontSize: '12px' }}>Kỹ năng phù hợp</div>
         <div className="d-flex flex-wrap gap-2">
-          {job.skills.map((skill, idx) => (
-            <span 
-              key={idx} 
-              className="badge bg-success bg-opacity-10 text-white-50 border border-success border-opacity-20 px-2.5 py-1.5 rounded-pill fw-medium" 
-              style={{ fontSize: '12px', backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent) !important' , borderColor: 'color-mix(in srgb, var(--accent) 20%, transparent) !important' }}
-            >
-              ✓ {skill}
-            </span>
-          ))}
+          {/* ĐÃ SỬA: Thêm ?.map để tránh lỗi khi job.skills là undefined */}
+          {job.matchedSkills?.length > 0 ? (
+            job.matchedSkills.map((skill, idx) => (
+              <span 
+                key={idx} 
+                className="badge bg-success bg-opacity-10 text-white-50 border border-success border-opacity-20 px-2.5 py-1.5 rounded-pill fw-medium" 
+                style={{ fontSize: '12px', backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent) !important' , borderColor: 'color-mix(in srgb, var(--accent) 20%, transparent) !important' }}
+              >
+                ✓ {skill}
+              </span>
+            ))
+          ) : (
+            <span className="text-white-50" style={{ fontSize: '12px' }}>Chưa có kỹ năng phù hợp</span>
+          )}
         </div>
       </div>
 
+      {/* Vùng kỹ năng còn thiếu (Tính năng thêm dựa trên JobMatchDto) */}
+      {job.missingSkills?.length > 0 && (
+        <div className="mb-3">
+          <div className="text-white-50 extra-small mb-2" style={{ fontSize: '12px' }}>Cần học thêm</div>
+          <div className="d-flex flex-wrap gap-2">
+            {job.missingSkills.map((skill, idx) => (
+              <span 
+                key={idx} 
+                className="badge bg-danger bg-opacity-10 text-white-50 border border-danger border-opacity-20 px-2.5 py-1.5 rounded-pill fw-medium" 
+                style={{ fontSize: '12px' }}
+              >
+                - {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 6. Chế độ phúc lợi phụ */}
-      <div className="d-flex flex-wrap gap-2 mb-4">
+      <div className="d-flex flex-wrap gap-2 mb-4 mt-auto">
         {['Đào tạo nội bộ', 'Lộ trình thăng tiến rõ ràng', 'ESOP'].map((benefit, idx) => (
           <span key={idx} className="text-white-50 extra-small bg-secondary bg-opacity-10 px-2 py-1 rounded-2" style={{ fontSize: '11px' }}>
             {benefit}
@@ -104,8 +128,8 @@ function JobCard({ job }) {
       </div>
 
       {/* 7. Phần Chân Card */}
-      <div className="mt-auto pt-3 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-        <span className="text-white-50 extra-small" style={{ fontSize: '12px' }}>3 ngày trước</span>
+      <div className="pt-3 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
+        <span className="text-white-50 extra-small" style={{ fontSize: '12px' }}>Nguồn: {job.source || 'Hệ thống'}</span>
         
         <div className="d-flex gap-2">
           <button 

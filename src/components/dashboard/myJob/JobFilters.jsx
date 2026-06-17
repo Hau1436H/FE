@@ -2,30 +2,30 @@ import React, { useState } from 'react';
 import { Form, Dropdown } from 'react-bootstrap';
 
 function JobFilters({ 
-  currentTab, onTabChange, totalCount, tabCounts,
-  filters, onFilterChange 
+  currentTab, onTabChange, totalCount = 0, tabCounts = {},
+  filters = {}, onFilterChange 
 }) {
-  const [showAdvancedFilters] = useState(true); // Luôn mở mặc định đồng bộ với Mentor
+  const [showAdvancedFilters] = useState(true);
 
   const jobTypes = ['Tất cả', 'Remote', 'Hybrid', 'Onsite', 'Part-time'];
   const jobLevels = ['Tất cả', 'Junior', 'Mid-level', 'Senior'];
-  const skillsList = ['JavaScript', 'React', 'TypeScript', 'Node.js', 'HTML5', 'CSS3', 'Git', 'Vue.js', 'Python'];
+  const skillsList = ['JavaScript', 'React', 'TypeScript', 'Node.js', 'HTML5', 'CSS3', 'Git', 'C#', '.NET Core', 'SQL Server']; // Bổ sung kỹ năng .NET theo đồ án
 
   const tabs = [
     { id: 'all', text: 'Tất cả việc làm', count: totalCount },
-    { id: 'matched', text: 'Phù hợp cao', count: tabCounts.matched || 0 },
-    { id: 'applied', text: 'Mới ứng tuyển', count: tabCounts.applied || 0 },
+    { id: 'matched', text: 'Phù hợp cao', count: tabCounts?.matched || 0 },
+    { id: 'applied', text: 'Mới ứng tuyển', count: tabCounts?.applied || 0 },
   ];
 
   return (
     <div className="mb-4">
-      {/* 1. Ô tìm kiếm và Dropdown Sắp xếp nằm ngang hàng */}
+      {/* 1. Ô tìm kiếm và Dropdown */}
       <div className="d-flex gap-3 mb-4">
         <div className="flex-grow-1 position-relative">
           <Form.Control
             type="text"
             placeholder="🔍 Tìm công ty, vị trí, kỹ năng..."
-            value={filters.search}
+            value={filters.search || ''}
             onChange={(e) => onFilterChange('search', e.target.value)}
             className="border-0 text-white py-2 px-3 small rounded-3"
             style={{ backgroundColor: '#0f111a', fontSize: '14px', border: '1px solid #1e2235' }}
@@ -38,7 +38,7 @@ function JobFilters({
             className="text-white border-secondary rounded-3 px-3" 
             style={{ fontSize: '14px' }}
           >
-            Match % cao nhất
+            {filters.sortBy === 'newest' ? 'Mới nhất' : 'Match % cao nhất'}
           </Dropdown.Toggle>
           <Dropdown.Menu variant="dark">
             <Dropdown.Item onClick={() => onFilterChange('sortBy', 'match')}>Match % cao nhất</Dropdown.Item>
@@ -47,12 +47,11 @@ function JobFilters({
         </Dropdown>
       </div>
 
-      {/* 2. Khối chứa bộ lọc nâng cao đồng bộ cấu trúc với MentorFilters */}
+      {/* 2. Khối lọc nâng cao */}
       {showAdvancedFilters && (
         <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: '#131520', border: '1px solid #1e2235' }}>
           <div className="row g-4 mb-4">
             
-            {/* Cột Trái: HÌNH THỨC LÀM VIỆC */}
             <div className="col-12 col-md-4">
               <div className="text-white-50 text-uppercase fw-bold mb-3" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
                 HÌNH THỨC LÀM VIỆC
@@ -62,13 +61,11 @@ function JobFilters({
                   const isSelected = filters.type === t;
                   return (
                     <button 
-                      key={t}
-                      type="button"
+                      key={t} type="button"
                       className="btn btn-sm rounded-pill px-3 py-1 fw-medium border-0 transition-all"
                       style={{ 
                         backgroundColor: isSelected ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)', 
-                        color: isSelected ? '#000' : '#a0aec0',
-                        fontSize: '12.5px'
+                        color: isSelected ? '#000' : '#a0aec0', fontSize: '12.5px'
                       }}
                       onClick={() => onFilterChange('type', t)}
                     >
@@ -79,7 +76,6 @@ function JobFilters({
               </div>
             </div>
 
-            {/* Cột Giữa: CẤP ĐỘ (Đổi sang tông màu Cam đồng điệu Mentor) */}
             <div className="col-12 col-md-4">
               <div className="text-white-50 text-uppercase fw-bold mb-3" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
                 CẤP ĐỘ
@@ -89,13 +85,11 @@ function JobFilters({
                   const isSelected = filters.level === l;
                   return (
                     <button 
-                      key={l}
-                      type="button"
+                      key={l} type="button"
                       className="btn btn-sm rounded-pill px-3 py-1 fw-medium border-0 transition-all"
                       style={{ 
                         backgroundColor: isSelected ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)', 
-                        color: isSelected ? '#000' : '#a0aec0',
-                        fontSize: '12.5px'
+                        color: isSelected ? '#000' : '#a0aec0', fontSize: '12.5px'
                       }}
                       onClick={() => onFilterChange('level', l)}
                     >
@@ -106,54 +100,48 @@ function JobFilters({
               </div>
             </div>
 
-            {/* Cột Phải: MATCH TỐI THIỂU */}
             <div className="col-12 col-md-4">
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <span className="text-white-50 text-uppercase fw-bold" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
-                  MATCH TỐI THIỂU: <span style={{ color: '#10b981' }}>{filters.minMatch}%</span>
+                  MATCH TỐI THIỂU: <span style={{ color: '#10b981' }}>{filters.minMatch || 0}%</span>
                 </span>
               </div>
               <div className="px-1">
                 <Form.Range 
-                  min="0" 
-                  max="90" 
-                  step="10"
-                  value={filters.minMatch}
+                  min="0" max="90" step="10"
+                  value={filters.minMatch || 0}
                   onChange={(e) => onFilterChange('minMatch', parseInt(e.target.value))}
                   className="custom-range-slider"
                 />
                 <div className="d-flex justify-content-between text-white-50 mt-1" style={{ fontSize: '10px' }}>
-                  <span>0%</span>
-                  <span>50%</span>
-                  <span>90%</span>
+                  <span>0%</span><span>50%</span><span>90%</span>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* Hàng Dưới: LỌC THEO KỸ NĂNG (Giống hàng Chuyên Môn của Mentor) */}
+          {/* Lọc kỹ năng */}
           <div className="pt-4 border-top border-secondary border-opacity-10">
             <div className="text-white-50 text-uppercase fw-bold mb-3" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
               LỌC THEO KỸ NĂNG
             </div>
             <div className="d-flex flex-wrap gap-2">
               {skillsList.map(skill => {
-                const isSelected = filters.skills.includes(skill);
+                const safeSkills = filters.skills || [];
+                const isSelected = safeSkills.includes(skill);
                 return (
                   <button 
-                    key={skill}
-                    type="button"
+                    key={skill} type="button"
                     className="btn btn-sm rounded-pill px-3 py-1 fw-medium border-0 transition-all"
                     style={{ 
                       backgroundColor: isSelected ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)', 
-                      color: isSelected ? '#fff' : '#a0aec0',
-                      fontSize: '12.5px'
+                      color: isSelected ? '#fff' : '#a0aec0', fontSize: '12.5px'
                     }}
                     onClick={() => {
                       const nextSkills = isSelected 
-                        ? filters.skills.filter(s => s !== skill) 
-                        : [...filters.skills, skill];
+                        ? safeSkills.filter(s => s !== skill) 
+                        : [...safeSkills, skill];
                       onFilterChange('skills', nextSkills);
                     }}
                   >
@@ -166,14 +154,13 @@ function JobFilters({
         </div>
       )}
 
-      {/* 3. Danh sách các Tab trạng thái (Nằm dưới cùng của khối Filter) */}
+      {/* 3. Danh sách các Tab trạng thái */}
       <div className="d-flex gap-2 align-items-center mb-2 flex-wrap">
         {tabs.map((tab) => {
           const isTargetActive = currentTab === tab.id;
           return (
             <button
-              key={tab.id}
-              type="button"
+              key={tab.id} type="button"
               className={`btn btn-sm rounded-3 px-3 py-1.5 border-0 small transition-all ${isTargetActive ? 'text-dark fw-semibold' : 'text-white-50'}`}
               style={{ backgroundColor: isTargetActive ? 'var(--accent)' : 'transparent', fontSize: '13px' }}
               onClick={() => onTabChange(tab.id)}

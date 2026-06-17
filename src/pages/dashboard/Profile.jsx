@@ -1,3 +1,4 @@
+// src/pages/dashboard/Profile.jsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
@@ -8,11 +9,12 @@ import InfoForm from '../../components/dashboard/profile/InfoForm';
 import Education from '../../components/dashboard/profile/Education';
 import SocialLinks from '../../components/dashboard/profile/SocialLinks';
 
+// Import Component E-Portfolio Github vừa tạo
+import GithubPortfolioSync from '../../components/dashboard/profile/GithubPortfolioSync';
+
 // Import kho lưu trữ dữ liệu thô
 import { PROFILE_DATA } from '../../data/profileData';
 import axiosClient from '../../api/axiosClient';
-
-
 
 /**
  * COMPONENT CHÍNH: Profile (Page Component)
@@ -24,20 +26,32 @@ import axiosClient from '../../api/axiosClient';
 function Profile() {
   // State quản lý xem tab nào đang được người dùng lựa chọn để hiển thị thông tin
   const [activeTab, setActiveTab] = useState('profile');
-
   const [user, setUser] = useState({});
+
+  // Hàm giải mã Token để lấy StudentId an toàn
+  const getStudentId = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.studentId || payload.StudentId || payload.sub;
+    } catch (e) { 
+      return null; 
+    }
+  };
+
+  const studentId = getStudentId();
 
   useEffect(() => {
     async function fetchUser() {
-      try{
-        const respone = await axiosClient.get('/api/Profile/me');
-        const result = respone.data;
+      try {
+        const response = await axiosClient.get('/api/Profile/me');
+        const result = response.data;
 
-        if (result.data){
+        if (result.data) {
           setUser(result.data);
         }
-      }
-      catch(error){
+      } catch (error) {
         console.error("Lỗi nạp dữ liệu", error);
       }
     }
@@ -65,9 +79,19 @@ function Profile() {
           {activeTab === 'profile' ? (
             <>
               {/* Thống kê Huy chương */}
+              {/* <Badges /> */}
 
-              {/* Form chứa thông tin cá nhân liên hệ (Đã đổi p-3 và gap-3 outline) */}
+              {/* Form chứa thông tin cá nhân liên hệ */}
               <InfoForm info={user} />
+
+              {/* MODULE E-PORTFOLIO TÍCH HỢP AI */}
+              {studentId ? (
+                <GithubPortfolioSync studentId={studentId} />
+              ) : (
+                <div className="alert alert-warning mt-4 text-center border-0 bg-warning bg-opacity-10 text-warning">
+                  Đang tải thông tin định danh để đồng bộ GitHub...
+                </div>
+              )}
 
               {/* Thông tin Trường đào tạo */}
               {/* <Education edu={PROFILE_DATA.education} /> */}
@@ -77,7 +101,7 @@ function Profile() {
             </>
           ) : (
             // Trạng thái dự phòng trống (Empty State) khi người dùng chọn các mục chưa kết nối database
-            <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10">
+            <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4">
               Nội dung tab "{activeTab}" đang được đồng bộ dữ liệu hệ thống...
             </div>
           )}

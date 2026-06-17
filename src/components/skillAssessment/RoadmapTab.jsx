@@ -1,3 +1,4 @@
+// src/components/skillAssessment/RoadmapTab.jsx
 import { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 
@@ -9,34 +10,42 @@ function RoadmapTab({ sessionId, result }) {
   const [stages, setStages] = useState([]);
   const [isLoading, setIsLoading] = useState(hasTaken);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiAdvice, setAiAdvice] = useState(''); // Lưu lời khuyên từ AI
+  const [aiAdvice, setAiAdvice] = useState('');
 
-  const fetchRoadmapData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axiosClient.get('/api/roadmap/skill-tree');
-      const roadmapData = response.data.data || response.data || [];
-      setStages(roadmapData); // Cập nhật data thật từ DB, rỗng thì mảng = []
-    } catch (error) {
-      console.error("Lỗi lấy dữ liệu lộ trình:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // SỬ DỤNG TRIGGER ĐỂ RE-FETCH DATA CHUẨN REACT HOOKS
+  const [refreshKey, setRefreshKey] = useState(0);
 
+  // ĐƯA HÀM FETCH VÀO TRONG USEEFFECT ĐỂ FIX LỖI ESLINT
   useEffect(() => {
-    if (hasTaken) fetchRoadmapData();
-  }, [hasTaken]);
+    const fetchRoadmapData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axiosClient.get('/api/roadmap/skill-tree');
+        const roadmapData = response.data.data || response.data || [];
+        setStages(roadmapData);
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu lộ trình:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (hasTaken) {
+      fetchRoadmapData();
+    }
+  }, [hasTaken, refreshKey]); // Lắng nghe thêm refreshKey
 
   // HÀM GỌI API YÊU CẦU AI PHÂN TÍCH VÀ TẠO LỘ TRÌNH
   const handleGenerateAiRoadmap = async () => {
     setIsGenerating(true);
     try {
       const response = await axiosClient.post(`/api/roadmap-engine/generate-from-session/${sessionId}`);
-      setAiAdvice(response.data.message); // Nhận lời nhắn động viên từ Gemini
-      await fetchRoadmapData(); // Load lại cây giao diện
+      setAiAdvice(response.data.message);
+      
+      // TĂNG REFRESH KEY ĐỂ TRIGGER USEEFFECT TỰ ĐỘNG TẢI LẠI DATA
+      setRefreshKey(oldKey => oldKey + 1); 
+      
     } catch (error) {
-      // SỬA Ở ĐÂY: Hiển thị đúng thông báo lỗi mà Backend gửi về
       const errorMsg = error.response?.data?.message || error.response?.data?.Error || "Lỗi hệ thống khi gọi AI.";
       alert(`Backend báo lỗi: ${errorMsg}`);
     } finally {
