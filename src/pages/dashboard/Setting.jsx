@@ -7,6 +7,7 @@ import NotificationsTab from '../../components/dashboard/setting/NotificationsTa
 import PrivacyTab from '../../components/dashboard/setting/PrivacyTab';
 import BillingSettings from '../../components/dashboard/setting/BillingSettings';
 import { SETTINGS_DATA } from '../../data/settingsData';
+import discordVideo from '../../data/Discord.mp4';
 
 const navConfig = SETTINGS_DATA.settingsNav.map((item) => ({
   ...item,
@@ -170,8 +171,22 @@ function Settings() {
                       </div>
                       <div className="col-12 col-md-6">
                         <div className="rounded-4 p-3 text-white" style={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)' }}>
-                          <div className="fw-semibold mb-2">Discord</div>
-                          <a href={SETTINGS_DATA.support.discordLink} target="_blank" rel="noreferrer" className="small text-success text-decoration-none">{SETTINGS_DATA.support.discordLink}</a>
+                          <div className="d-flex flex-column align-items-center gap-3 mb-2">
+                            <a href={SETTINGS_DATA.support.discordLink} target="_blank" rel="noreferrer" aria-label="Tham gia Discord" style={{ width: 120, height: 120, overflow: 'hidden', borderRadius: 24, backgroundColor: '#0f172a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <video
+                                src={discordVideo}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            </a>
+                            <div className="fw-semibold">Discord</div>
+                          </div>
+                          <div>
+                            <a href={SETTINGS_DATA.support.discordLink} target="_blank" rel="noreferrer" className="small text-success text-decoration-none">{SETTINGS_DATA.support.discordLink}</a>
+                          </div>
                         </div>
                       </div>
                     </div>
