@@ -36,6 +36,8 @@ export const PROFILE_DATA = {
   socials: {
     github: "github.com/minhttu-dev",
     linkedin: "linkedin.com/in/minhttu",
-    portfolio: "minhttu.dev"
+    portfolio: "minhttu.dev",
+    zalo: "zalo.me/0901234567",
+    discord: "discord.gg/your-server"
   }
 };

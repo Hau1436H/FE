@@ -97,7 +97,7 @@ function Profile() {
               {/* <Education edu={PROFILE_DATA.education} /> */}
 
               {/* Hệ thống Link Social */}
-              {/* <SocialLinks socials={PROFILE_DATA.socials} /> */}
+              <SocialLinks socials={PROFILE_DATA.socials} />
             </>
           ) : (
             // Trạng thái dự phòng trống (Empty State) khi người dùng chọn các mục chưa kết nối database

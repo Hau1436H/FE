@@ -8,13 +8,10 @@ import PrivacyTab from '../../components/dashboard/setting/PrivacyTab';
 import BillingSettings from '../../components/dashboard/setting/BillingSettings';
 import { SETTINGS_DATA } from '../../data/settingsData';
 
-const navConfig = [
-  { id: 'billing', label: 'Gói & Thanh toán', sub: 'Quản lý gói, hoá đơn và sử dụng', icon: CreditCard },
-  { id: 'appearance', label: 'Giao diện', sub: 'Theme, màu sắc, cỡ chữ', icon: Palette },
-  { id: 'notifications', label: 'Thông báo', sub: 'Kênh, tần suất, loại thông báo', icon: Bell },
-  { id: 'privacy', label: 'Quyền riêng tư & Bảo mật', sub: 'Hiển thị hồ sơ, 2FA, thiết bị, dữ liệu', icon: ShieldCheck },
-  { id: 'support', label: 'Cần hỗ trợ?', sub: 'Liên hệ team hỗ trợ qua chat hoặc email', icon: HelpCircle },
-];
+const navConfig = SETTINGS_DATA.settingsNav.map((item) => ({
+  ...item,
+  icon: item.id === 'billing' ? CreditCard : item.id === 'appearance' ? Palette : item.id === 'notifications' ? Bell : item.id === 'privacy' ? ShieldCheck : HelpCircle,
+}));
 
 function Settings() {
   // Chuyển tab mặc định sang Billing để phù hợp với hình ảnh
@@ -161,9 +158,28 @@ function Settings() {
                 ) : (
                   <div className="text-center py-5">
                     <HelpCircle size={48} className="text-white-50 mb-3" />
-                    <h6 className="text-white mb-1">Cần hỗ trợ?</h6>
-                    <p className="text-white-50 mb-3 small">Liên hệ team hỗ trợ qua chat hoặc email nếu bạn cần trợ giúp thêm.</p>
-                    <button type="button" className="btn btn-success rounded-pill px-4">Mở chat hỗ trợ</button>
+                    <h6 className="text-white mb-1">{SETTINGS_DATA.support.title}</h6>
+                    <p className="text-white-50 mb-4 small">{SETTINGS_DATA.support.description}</p>
+
+                    <div className="row gx-3 gy-3 justify-content-center mb-4">
+                      <div className="col-12 col-md-6">
+                        <div className="rounded-4 p-3 text-white" style={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <div className="fw-semibold mb-2">Zalo</div>
+                          <a href={SETTINGS_DATA.support.zaloLink} target="_blank" rel="noreferrer" className="small text-success text-decoration-none">{SETTINGS_DATA.support.zaloLink}</a>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <div className="rounded-4 p-3 text-white" style={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <div className="fw-semibold mb-2">Discord</div>
+                          <a href={SETTINGS_DATA.support.discordLink} target="_blank" rel="noreferrer" className="small text-success text-decoration-none">{SETTINGS_DATA.support.discordLink}</a>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="d-flex flex-column flex-sm-row justify-content-center align-items-center gap-3">
+                      <a href={SETTINGS_DATA.support.chatLink} className="btn btn-success rounded-pill px-4" target="_blank" rel="noreferrer">{SETTINGS_DATA.support.chatLabel}</a>
+                      <a href={`mailto:${SETTINGS_DATA.support.email}`} className="btn btn-outline-light rounded-pill px-4 text-white">{SETTINGS_DATA.support.email}</a>
+                    </div>
                   </div>
                 )}
               </div>

@@ -47,14 +47,23 @@ export const SETTINGS_DATA = {
     },
     {
       id: 'support',
-  
       label: 'Cần hỗ trợ?',
       sub: 'Liên hệ team hỗ trợ qua chat hoặc email',
       link: 'Mở chat hỗ trợ →',
     },
   ],
 
-  // ─── Dữ liệu Thông báo ───
+  support: {
+    title: 'Cần hỗ trợ?',
+    description: 'Liên hệ team hỗ trợ qua chat hoặc email nếu bạn cần trợ giúp thêm.',
+    zalo: 'Zalo',
+    zaloLink: 'https://zalo.me/0901234567',
+    discord: 'Discord',
+    discordLink: 'https://discord.gg/HjuJyTbB4',
+    chatLink: 'https://zalo.me/0901234567',
+    email: 'support@yourapp.com',
+    chatLabel: 'Mở chat hỗ trợ',
+  },
   notifications: {
     // 3 kênh nhận thông báo chính
     channels: [
