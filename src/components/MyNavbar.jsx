@@ -12,6 +12,9 @@ import axiosClient from '../api/axiosClient';
 function MyNavbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState(null);
+  
+  // 1. THÊM STATE ĐỂ LƯU SLUG ĐỘNG
+  const [portfolioSlug, setPortfolioSlug] = useState(null);
 
   const navigate = useNavigate();
 
@@ -20,19 +23,46 @@ function MyNavbar() {
 
     if (!token) {
       setUser(null);
+      setPortfolioSlug(null);
       return;
     }
 
     try {
+      // 1. Lấy thông tin user để hiển thị avatar, tên
       const response = await axiosClient.get('/api/Profile/me');
       setUser(response.data.data);
-    } catch (error) {
-      console.error('Get profile failed:', error);
 
+      // 2. LẤY STUDENT ID TỪ TOKEN (Giải mã giống hệt bên Profile.jsx)
+      let studentId = null;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        studentId = payload.studentId || payload.StudentId || payload.sub;
+      } catch (e) {
+        console.warn("Không thể giải mã token để lấy StudentId");
+      }
+
+      // 3. Gọi API lấy shareableUrl
+      if (studentId) {
+        try {
+          const portRes = await axiosClient.get(`/api/Portfolios/student/${studentId}`);
+          
+          if (portRes.data && portRes.data.shareableUrl) {
+            const url = portRes.data.shareableUrl;
+            const extractedSlug = url.substring(url.lastIndexOf('/') + 1);
+            setPortfolioSlug(extractedSlug);
+          }
+        } catch (portErr) {
+          console.warn('Ứng viên chưa khởi tạo E-Portfolio:', portErr);
+          setPortfolioSlug(null);
+        }
+      }
+
+    } catch (error) {
+      console.error('Lỗi xác thực:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-
       setUser(null);
+      setPortfolioSlug(null);
     }
   }, []);
 
@@ -59,6 +89,7 @@ function MyNavbar() {
     localStorage.removeItem('user');
 
     setUser(null);
+    setPortfolioSlug(null);
 
     window.dispatchEvent(new Event('authChange'));
 
@@ -72,6 +103,7 @@ function MyNavbar() {
 
   return (
     <>
+      {/* ... Giữ nguyên phần <style> của bạn ... */}
       <style>{`
         @media (max-width: 991.98px) {
           .navbar-collapse {
@@ -119,63 +151,36 @@ function MyNavbar() {
         }}
       >
         <Container>
-          <Navbar.Brand
-            as="div"
-            className="fw-bold text-white fs-4 p-0 m-0"
-          >
+          <Navbar.Brand as="div" className="fw-bold text-white fs-4 p-0 m-0">
             <Logo size="md" />
           </Navbar.Brand>
 
-          <Navbar.Toggle
-            aria-controls="basic-navbar-nav"
-            className="border-secondary"
-          />
+          <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-secondary" />
 
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="mx-auto gap-3 my-2 my-lg-0">
-              <Nav.Link
-                href="#features"
-                className="text-white opacity-75"
-              >
-                Tính năng
-              </Nav.Link>
+              <Nav.Link href="#features" className="text-white opacity-75">Tính năng</Nav.Link>
+              <Nav.Link href="#how-it-works" className="text-white opacity-75">Cách hoạt động</Nav.Link>
+              <Nav.Link href="#mentors" className="text-white opacity-75">Mentor</Nav.Link>
 
-              <Nav.Link
-                href="#how-it-works"
-                className="text-white opacity-75"
-              >
-                Cách hoạt động
-              </Nav.Link>
-
-              <Nav.Link
-                href="#mentors"
-                className="text-white opacity-75"
-              >
-                Mentor
-              </Nav.Link>
-
-              {/* ĐÃ THÊM: Nút E-Portfolio Demo để bảo vệ đồ án */}
-              <Nav.Link
-                as={Link}
-                to="/p/bb0bdb5d" 
-                className="fw-bold"
-                style={{ color: '#10b981' }}
-              >
-                🔥 E-Portfolio Mẫu
-              </Nav.Link>
+              {/* 3. HIỂN THỊ LINK ĐỘNG: Chỉ render khi user đã có portfolioSlug */}
+              {portfolioSlug && (
+                <Nav.Link
+                  as={Link}
+                  to={`/p/${portfolioSlug}`}
+                  className="fw-bold"
+                  style={{ color: '#10b981' }}
+                >
+                  🔥 E-Portfolio Của Tôi
+                </Nav.Link>
+              )}
             </Nav>
 
             <Nav className="ms-auto d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3 text-nowrap">
               {user ? (
-                <Dropdown
-                  align="end"
-                  className="w-100 w-lg-auto text-start"
-                >
-                  <Dropdown.Toggle
-                    variant="link"
-                    id="dropdown-user-avatar"
-                    className="avatar-dropdown p-0 border-0 d-flex align-items-center gap-2 text-decoration-none text-white"
-                  >
+                <Dropdown align="end" className="w-100 w-lg-auto text-start">
+                  {/* ... Giữ nguyên phần User Dropdown của bạn ... */}
+                  <Dropdown.Toggle variant="link" id="dropdown-user-avatar" className="avatar-dropdown p-0 border-0 d-flex align-items-center gap-2 text-decoration-none text-white">
                     {user?.avatar?.trim() ? (
                       <img
                         src={user.avatar}
@@ -183,86 +188,36 @@ function MyNavbar() {
                         className="rounded-circle border"
                         width="38"
                         height="38"
-                        style={{
-                          objectFit: 'cover',
-                          borderColor: '#10b981'
-                        }}
+                        style={{ objectFit: 'cover', borderColor: '#10b981' }}
                       />
                     ) : (
                       <div className="avatar-letter-fallback">
                         {getFirstLetter(user.fullName)}
                       </div>
                     )}
-
-                    <span className="d-lg-none fw-medium">
-                      {user.fullName}
-                    </span>
+                    <span className="d-lg-none fw-medium">{user.fullName}</span>
                   </Dropdown.Toggle>
 
                   <Dropdown.Menu className="dropdown-menu-dark border border-secondary shadow mt-2">
                     <Dropdown.Header className="text-gray-400 border-bottom border-secondary pb-2 mb-2">
-                      <div className="fw-bold text-white">
-                        {user.fullName}
-                      </div>
-
-                      <small className="text-white-50">
-                        {user.email}
-                      </small>
+                      <div className="fw-bold text-white">{user.fullName}</div>
+                      <small className="text-white-50">{user.email}</small>
                     </Dropdown.Header>
-
-                    <Dropdown.Item
-                      as={Link}
-                      to="/dashboard"
-                      className="py-2"
-                    >
-                      Bảng điều khiển
-                    </Dropdown.Item>
-
-                    <Dropdown.Item
-                      as={Link}
-                      to="/dashboard/profile"
-                      className="py-2"
-                    >
-                      Hồ sơ & E-Portfolio
-                    </Dropdown.Item>
-
-                    <Dropdown.Item
-                      as={Link}
-                      to="/skill-assessment"
-                      className="py-2"
-                    >
-                      Làm bài test
-                    </Dropdown.Item>
-
+                    <Dropdown.Item as={Link} to="/dashboard" className="py-2">Bảng điều khiển</Dropdown.Item>
+                    <Dropdown.Item as={Link} to="/dashboard/profile" className="py-2">Hồ sơ & E-Portfolio</Dropdown.Item>
+                    <Dropdown.Item as={Link} to="/skill-assessment" className="py-2">Làm bài test</Dropdown.Item>
                     <Dropdown.Divider className="border-secondary" />
-
-                    <Dropdown.Item
-                      onClick={handleLogout}
-                      className="py-2 text-danger"
-                    >
-                      Đăng xuất
-                    </Dropdown.Item>
+                    <Dropdown.Item onClick={handleLogout} className="py-2 text-danger">Đăng xuất</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               ) : (
                 <>
-                  <Nav.Link
-                    as={Link}
-                    to="/login"
-                    className="text-white fw-medium"
-                  >
-                    Đăng nhập
-                  </Nav.Link>
-
+                  <Nav.Link as={Link} to="/login" className="text-white fw-medium">Đăng nhập</Nav.Link>
                   <Button
                     as={Link}
                     to="/register"
                     className="px-4 py-2 fw-semibold rounded-pill w-100 w-lg-auto text-center"
-                    style={{
-                      backgroundColor: '#10b981',
-                      border: 'none',
-                      color: '#0a0a14'
-                    }}
+                    style={{ backgroundColor: '#10b981', border: 'none', color: '#0a0a14' }}
                   >
                     Bắt đầu miễn phí
                   </Button>
