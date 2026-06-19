@@ -35,24 +35,27 @@ function Jobs() {
 
       try {
         setLoading(true);
+        // FIX: Đã nhét đầy đủ các trường filter vào Payload gửi đi
         const payload = {
           keyword: jobFilters.search,
           sourcePlatform: "", 
           page: jobFilters.page,
-          pageSize: jobFilters.pageSize
+          pageSize: jobFilters.pageSize,
+          minMatch: jobFilters.minMatch,  // Gửi % Match tối thiểu
+          sortBy: jobFilters.sortBy,      // Gửi tiêu chí sắp xếp
+          skills: jobFilters.skills       // Gửi mảng Tag (ví dụ: ["Node.js"])
         };
 
         const response = await axiosClient.post(`/api/v1/MarketPulse/students/${studentId}/job-matches`, payload);
         const actualJobs = response.data.data || response.data;
         
-        // SỬA Ở ĐÂY: Thêm fallback `|| []` để đảm bảo mảng không bị undefined
         const mappedJobs = actualJobs.map(j => ({
           id: j.postingId || j.PostingId,
           title: j.jobTitle || j.JobTitle,
           companyName: j.companyName || j.CompanyName,
           match: j.matchPercentage || j.MatchPercentage || 0,
-          matchedSkills: j.matchedSkills || j.MatchedSkills || [], // Fallback
-          missingSkills: j.missingSkills || j.MissingSkills || [], // Fallback
+          matchedSkills: j.matchedSkills || j.MatchedSkills || [], 
+          missingSkills: j.missingSkills || j.MissingSkills || [], 
           source: j.sourcePlatform || j.SourcePlatform,
           isApplied: false
         }));
@@ -68,7 +71,8 @@ function Jobs() {
     if (currentMainTab === 'jobs') {
         fetchMatchingJobs();
     }
-  }, [jobFilters.search, jobFilters.page, currentMainTab, refreshTrigger]);
+  // FIX: Lắng nghe thêm sự thay đổi của skills, minMatch và sortBy
+  }, [jobFilters.search, jobFilters.page, jobFilters.skills, jobFilters.minMatch, jobFilters.sortBy, currentMainTab, refreshTrigger]);
 
   const handleTriggerScraper = async () => {
     try {

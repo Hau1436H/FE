@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 
-function AssessmentTest({ skillNodeId, onComplete }) {
+function AssessmentTest({ roleId, onComplete }) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -11,10 +11,17 @@ function AssessmentTest({ skillNodeId, onComplete }) {
     async function getQuiz() {
       try {
         setLoading(true);
-        const response = await axiosClient.get(`/api/assessments/quiz/${skillNodeId}`);
+        // GỌI API MỚI DÀNH CHO ROLE ĐỂ LẤY ĐỀ TOÀN DIỆN
+        const response = await axiosClient.get(`/api/assessments/quiz/role/${roleId}`);
         const result = response.data;
 
-        if (result && result.data) {
+        if (result && result.Data) {
+          const formattedQuestions = result.Data.map(q => {
+            const formattedOptions = Object.keys(q.Options).map(key => ({ id: key, text: q.Options[key] }));
+            return { id: q.QuestionId, question: q.QuestionText, options: formattedOptions };
+          });
+          setQuestions(formattedQuestions);
+        } else if (result && result.data) {
           const formattedQuestions = result.data.map(q => {
             const formattedOptions = Object.keys(q.options).map(key => ({ id: key, text: q.options[key] }));
             return { id: q.questionId, question: q.questionText, options: formattedOptions };
@@ -27,11 +34,11 @@ function AssessmentTest({ skillNodeId, onComplete }) {
         setLoading(false);
       }
     }
-    if (skillNodeId) getQuiz();
-  }, [skillNodeId]);
+    if (roleId) getQuiz();
+  }, [roleId]);
 
   if (loading) return <div className="text-white text-center p-5"><div className="spinner-border text-success"></div></div>;
-  if (questions.length === 0) return <div className="text-white text-center p-5">Không có câu hỏi cho kỹ năng này.</div>;
+  if (questions.length === 0) return <div className="text-white text-center p-5">Không có câu hỏi cho ngành nghề này.</div>;
 
   const currentQuestion = questions[currentIdx];
 
@@ -43,7 +50,6 @@ function AssessmentTest({ skillNodeId, onComplete }) {
     if (currentIdx < questions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
-      // KHÔNG GỌI API. CHỈ FORMAT DATA VÀ TRẢ VỀ CHA
       const formattedAnswers = Object.keys(selectedAnswers).map(qId => ({
         questionId: parseInt(qId),
         selectedOption: selectedAnswers[qId]

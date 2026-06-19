@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AssessmentTest from '../components/skillAssessment/AssessmentTest';
 import CodeAssessment from '../components/skillAssessment/CodeAssessment';
@@ -14,10 +14,10 @@ function SkillAssessment() {
   const [activeTab, setActiveTab] = useState('goal');
   const [maxUnlockedIdx, setMaxUnlockedIdx] = useState(0);
 
-  const [skillNodeIds, setSkillNodeIds] = useState([]);
+  // LƯU CẢ ROLE VÀ SKILL ĐỂ DÙNG CHO CÁC API KHÁC NHAU
+  const [targetRoleId, setTargetRoleId] = useState(null);
   const [targetSkillId, setTargetSkillId] = useState(null);
 
-  // STATE MỚI: Gom chung dữ liệu làm bài để nộp 1 lần
   const [examData, setExamData] = useState({
     quizAnswers: [],
     codeSubmission: null
@@ -25,10 +25,11 @@ function SkillAssessment() {
 
   const [testResult, setTestResult] = useState({
     hasTaken: false,
+    sessionId: null, // Thêm sessionId để truyền cho RoadmapTab
     quizScore: 0,
     codeScore: 0,
     score: 0,
-    total: 20, // (10 điểm Quiz + 10 điểm Code)
+    total: 20,
     aiFeedback: ''
   });
 
@@ -38,7 +39,7 @@ function SkillAssessment() {
       if (!token) return null;
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.studentId || payload.StudentId || payload.sub;
-    } catch (e) {
+    } catch {
       return null;
     }
   };
@@ -66,27 +67,27 @@ function SkillAssessment() {
   const handleGoalSubmit = async (roleId) => {
     try {
       const response = await axiosClient.get(`/api/v1/roles/${roleId}/skills`);
-      const skillsArray = response.data.data || response.data;
+      const skillsArray = response.data?.data || response.data;
 
       if (!skillsArray || skillsArray.length === 0) {
-        alert("Hiện tại chưa có bộ dữ liệu cho ngành nghề này. Vui lòng chọn ngành khác!");
+        alert("Hiện tại Database chưa có bộ dữ liệu cho ngành nghề này. Vui lòng chọn Backend hoặc Frontend!");
         return;
       }
-      setSkillNodeIds(skillsArray); 
+      
+      // LƯU STATE ĐỂ TRUYỀN XUỐNG COMPONENT CON
+      setTargetRoleId(roleId);
       setTargetSkillId(skillsArray[0]);        
       unlockNextTab('goal'); 
-    } catch (error) {
+    } catch {
       alert("Lỗi kết nối máy chủ. Không thể khởi tạo bài test.");
     }
   };
 
-  // NHẬN DỮ LIỆU QUIZ NHƯNG KHÔNG GỌI API
   const handleTestComplete = (answers) => {
     setExamData(prev => ({ ...prev, quizAnswers: answers }));
-    unlockNextTab('test'); // Chuyển sang Code
+    unlockNextTab('test');
   };
 
-  // NHẬN DỮ LIỆU CODE -> GỌI API /submit-exam DUY NHẤT Ở ĐÂY
   const handleCodeComplete = async (codePayload) => {
     const studentId = getStudentId();
     if (!studentId) {
@@ -97,7 +98,7 @@ function SkillAssessment() {
     try {
       const fullPayload = {
         studentId: studentId,
-        skillNodeId: targetSkillId,
+        skillNodeId: targetSkillId, // Submit vẫn cần 1 skill gốc để tính điểm
         quizAnswers: examData.quizAnswers,
         codeSubmission: codePayload
       };
@@ -105,9 +106,9 @@ function SkillAssessment() {
       const response = await axiosClient.post('/api/assessments/submit-exam', fullPayload);
       const data = response.data;
 
-      // Cập nhật kết quả cuối cùng để show lên màn Stats
       setTestResult({
         hasTaken: true,
+        sessionId: data.sessionId || data.SessionId, // BẮT BUỘC CÓ ĐỂ ROADMAP HOẠT ĐỘNG
         quizScore: data.quizScore || 0,
         codeScore: data.codeScore || 0,
         score: (data.quizScore || 0) + (data.codeScore || 0),
@@ -126,20 +127,20 @@ function SkillAssessment() {
     switch (activeTab) {
       case 'goal': return <GoalTab onNextTab={handleGoalSubmit} />; 
       case 'test': 
-        return targetSkillId ? (
-          <AssessmentTest key={`quiz-${targetSkillId}`} skillNodeId={targetSkillId} onComplete={handleTestComplete} />
+        return targetRoleId ? (
+          <AssessmentTest key={`quiz-${targetRoleId}`} roleId={targetRoleId} onComplete={handleTestComplete} />
         ) : (<div className="text-center text-white p-5"><div className="spinner-border"></div></div>);
         
       case 'code': 
-        return targetSkillId && (
-          <CodeAssessment skillNodeId={targetSkillId} onComplete={handleCodeComplete} />
+        return targetRoleId && (
+          <CodeAssessment roleId={targetRoleId} onComplete={handleCodeComplete} />
         );
         
       case 'stats': 
         return <StatsTab result={testResult} onNavigateToRoadmap={() => unlockNextTab('stats')} />;
         
       case 'roadmap': 
-        return <RoadmapTab result={testResult} />;
+        return <RoadmapTab sessionId={testResult.sessionId} result={testResult} />;
         
       default: return <GoalTab onNextTab={handleGoalSubmit} />;
     }
