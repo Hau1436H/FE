@@ -1,6 +1,7 @@
 // src/components/skillAssessment/RoadmapTab.jsx
 import { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
+import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
 function RoadmapTab({ sessionId, result }) {
   const hasTaken = result?.hasTaken || false;
@@ -12,10 +13,54 @@ function RoadmapTab({ sessionId, result }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiAdvice, setAiAdvice] = useState('');
 
-  // SỬ DỤNG TRIGGER ĐỂ RE-FETCH DATA CHUẨN REACT HOOKS
   const [refreshKey, setRefreshKey] = useState(0);
+  const [connection, setConnection] = useState(null);
 
-  // ĐƯA HÀM FETCH VÀO TRONG USEEFFECT ĐỂ FIX LỖI ESLINT
+  // KẾT NỐI SIGNALR ĐỂ AUTO REFRESH TIẾN ĐỘ
+  useEffect(() => {
+    const connectSignalR = async () => {
+      try {
+        const newConnection = new HubConnectionBuilder()
+          // LƯU Ý: Thay đổi domain/port cho khớp với backend của cậu
+          .withUrl("https://localhost:7196/hubs/roadmap", { 
+            accessTokenFactory: () => localStorage.getItem('token') 
+          })
+          .configureLogging(LogLevel.Information)
+          .withAutomaticReconnect()
+          .build();
+
+        newConnection.on("ReceiveRoadmapUpdate", (data) => {
+          console.log("Cập nhật Real-time từ Backend:", data);
+          setRefreshKey(oldKey => oldKey + 1); // Kích hoạt useEffect fetch lại data
+        });
+
+        await newConnection.start();
+        console.log("Đã kết nối SignalR - Roadmap Hub");
+
+        // Lấy userId để join group push thông báo. Bạn có thể sửa logic lấy userId tùy theo dự án
+        const userId = localStorage.getItem('userId'); 
+        if (userId) {
+          await newConnection.invoke("SubscribeToRoadmapUpdates", userId);
+        }
+
+        setConnection(newConnection);
+      } catch (error) {
+        console.error("Lỗi kết nối SignalR Roadmap:", error);
+      }
+    };
+
+    connectSignalR();
+
+    return () => {
+      if (connection) {
+        const userId = localStorage.getItem('userId');
+        if (userId) connection.invoke("UnsubscribeFromRoadmapUpdates", userId).catch(console.error);
+        connection.stop();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const fetchRoadmapData = async () => {
       setIsLoading(true);
@@ -33,18 +78,14 @@ function RoadmapTab({ sessionId, result }) {
     if (hasTaken) {
       fetchRoadmapData();
     }
-  }, [hasTaken, refreshKey]); // Lắng nghe thêm refreshKey
+  }, [hasTaken, refreshKey]); // re-fetch khi có refreshKey mới từ SignalR
 
-  // HÀM GỌI API YÊU CẦU AI PHÂN TÍCH VÀ TẠO LỘ TRÌNH
   const handleGenerateAiRoadmap = async () => {
     setIsGenerating(true);
     try {
       const response = await axiosClient.post(`/api/roadmap-engine/generate-from-session/${sessionId}`);
       setAiAdvice(response.data.message);
-      
-      // TĂNG REFRESH KEY ĐỂ TRIGGER USEEFFECT TỰ ĐỘNG TẢI LẠI DATA
       setRefreshKey(oldKey => oldKey + 1); 
-      
     } catch (error) {
       const errorMsg = error.response?.data?.message || error.response?.data?.Error || "Lỗi hệ thống khi gọi AI.";
       alert(`Backend báo lỗi: ${errorMsg}`);
@@ -65,7 +106,6 @@ function RoadmapTab({ sessionId, result }) {
   return (
     <div className="mx-auto pb-5" style={{ maxWidth: '800px', color: '#fff' }}>
       
-      {/* NẾU AI ĐÃ TRẢ LỜI KHUYÊN -> HIỂN THỊ */}
       {aiAdvice && (
         <div className="alert alert-success bg-success bg-opacity-10 border-success text-success mb-4 shadow-sm">
           <i className="bi bi-robot me-2"></i> <strong>AI Mentor: </strong>
@@ -74,7 +114,6 @@ function RoadmapTab({ sessionId, result }) {
       )}
 
       {stages.length === 0 ? (
-        /* GIAO DIỆN KHI CHƯA CÓ LỘ TRÌNH -> HIỆN NÚT KÍCH HOẠT AI */
         <div className="text-center py-5 border border-secondary border-opacity-25 rounded-3 bg-dark bg-opacity-50 mt-4">
           <div className="mb-4">
             <i className="bi bi-magic text-warning" style={{ fontSize: '3rem' }}></i>
@@ -96,7 +135,6 @@ function RoadmapTab({ sessionId, result }) {
           </button>
         </div>
       ) : (
-        /* GIAO DIỆN CÂY LỘ TRÌNH BÌNH THƯỜNG */
         <>
           <div className="mb-5 text-center mt-3">
             <h4 className="fw-bold text-white mb-2">Lộ Trình Học Tập Cá Nhân Hóa</h4>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import axiosClient from '../../api/axiosClient';
+import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
 function VirtualMentor() {
   const [chatInput, setChatInput] = useState('');
@@ -9,10 +10,10 @@ function VirtualMentor() {
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   
-  // States mới cho UI giống Gemini
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
-  
+  const [connection, setConnection] = useState(null);
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -23,24 +24,81 @@ function VirtualMentor() {
     scrollToBottom();
   }, [messages, isAiTyping]);
 
-  // 1. Sửa lại hàm fetchSessions (Dòng 27)
-  // 1. Sửa lại hàm fetchSessions để có Console.log
+  // KẾT NỐI SIGNALR
+  useEffect(() => {
+    const connectSignalR = async () => {
+      try {
+        const newConnection = new HubConnectionBuilder()
+          // LƯU Ý: Thay đổi domain/port cho khớp với backend của cậu
+          .withUrl("https://localhost:7196/hubs/virtualMentor", { 
+            accessTokenFactory: () => localStorage.getItem('token') 
+          })
+          .configureLogging(LogLevel.Information)
+          .withAutomaticReconnect()
+          .build();
+
+        // Lắng nghe AI trả về từng cụm từ (chunk)
+        newConnection.on("ReceiveMessageChunk", (chunk) => {
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg && lastMsg.sender === 'ai' && lastMsg.isStreaming) {
+              const updatedMessages = [...prev];
+              updatedMessages[updatedMessages.length - 1].text += chunk;
+              return updatedMessages;
+            } else {
+              return [...prev, {
+                id: Date.now().toString(),
+                sender: 'ai',
+                text: chunk,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isStreaming: true
+              }];
+            }
+          });
+        });
+
+        // Lắng nghe tín hiệu kết thúc câu trả lời
+        newConnection.on("EndMessageChunk", () => {
+          setIsAiTyping(false);
+          setMessages(prev => {
+            const updatedMessages = [...prev];
+            if (updatedMessages.length > 0) {
+              updatedMessages[updatedMessages.length - 1].isStreaming = false;
+            }
+            return updatedMessages;
+          });
+        });
+
+        await newConnection.start();
+        console.log("Đã kết nối SignalR - Virtual Mentor Hub");
+        setConnection(newConnection);
+      } catch (error) {
+        console.error("Lỗi kết nối SignalR:", error);
+      }
+    };
+
+    connectSignalR();
+
+    return () => {
+      if (connection) {
+        connection.stop();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
   const fetchSessions = async () => {
     try {
       const response = await axiosClient.get('/api/v1/VirtualMentor/sessions');
-      
-      // 👉 IN RA CONSOLE ĐỂ BẮT BỆNH:
-      console.log("1. Nguyên bản Response từ Backend:", response);
-
-      // Cách bóc tách dữ liệu chống trượt mọi trường hợp:
       const responseData = response.data || response;
       const sessionList = responseData.data || responseData.Data || responseData || [];
 
-      console.log("2. Danh sách Session lấy được:", sessionList);
-
       if (Array.isArray(sessionList)) {
         setSessions(sessionList);
-        
         if (sessionList.length > 0 && !activeSessionId) {
           handleSelectSession(sessionList[0].sessionId || sessionList[0].SessionId);
         }
@@ -48,23 +106,26 @@ function VirtualMentor() {
         console.warn("Dữ liệu trả về không phải là mảng (Array)!", sessionList);
         setSessions([]);
       }
-
     } catch (error) {
       console.error("Lỗi tải danh sách session:", error);
     }
   };
 
-  // 2. Sửa lại hàm handleSelectSession (Dòng 44)
   const handleSelectSession = async (sessionId) => {
+    if (connection && activeSessionId) {
+      await connection.invoke("LeaveChatSession", activeSessionId.toString());
+    }
+
     setActiveSessionId(sessionId);
     setIsLoadingHistory(true);
     setMessages([]);
 
+    if (connection && sessionId) {
+      await connection.invoke("JoinChatSession", sessionId.toString());
+    }
+
     try {
-      // SỬA Ở ĐÂY: Truyền biến ${sessionId} vào cuối URL
       const response = await axiosClient.get(`/api/v1/VirtualMentor/chat-history/${sessionId}`); 
-      
-      // SỬA Ở ĐÂY: Thêm chữ d viết thường
       const historyData = response.data.data || response.data.Data || [];
       
       if (historyData.length > 0) {
@@ -72,7 +133,8 @@ function VirtualMentor() {
           id: msg.messageId || msg.MessageId,
           sender: (msg.senderType || msg.SenderType).toLowerCase() === 'student' ? 'user' : 'ai',
           text: msg.messageText || msg.MessageText,
-          time: new Date(msg.sentAt || msg.SentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          time: new Date(msg.sentAt || msg.SentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isStreaming: false
         }));
         setMessages(formattedHistory);
       }
@@ -83,18 +145,17 @@ function VirtualMentor() {
     }
   };
 
-  // 3. Xử lý nút "Đoạn chat mới"
   const handleNewChat = () => {
     setActiveSessionId(null);
     setMessages([{
       id: 'welcome-msg',
       sender: 'ai',
       text: 'Xin chào! Mình là AI Career Mentor. Mình có thể giúp gì cho định hướng nghề nghiệp IT của bạn hôm nay?',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isStreaming: false
     }]);
   };
 
-  // 4. Xử lý gửi tin nhắn
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!chatInput.trim() || isAiTyping) return;
@@ -113,36 +174,30 @@ function VirtualMentor() {
 
     try {
       const payload = {
-        sessionId: activeSessionId, // Gửi ID lên. Nếu null, Backend sẽ tạo Session mới
+        sessionId: activeSessionId,
         userMessage: userText
       };
 
       const response = await axiosClient.post('/api/v1/VirtualMentor/chat', payload);
-      const aiText = response.data.aiResponse || response.data.AiResponse;
       const returnedSessionId = response.data.sessionId || response.data.SessionId;
 
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        sender: 'ai',
-        text: aiText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }]);
-
-      // Nếu đây là chat mới, Backend sẽ trả về ID mới. Ta cập nhật lại danh sách Sidebar
       if (!activeSessionId && returnedSessionId) {
         setActiveSessionId(returnedSessionId);
-        fetchSessions(); // Refresh lại Sidebar để hiện tên cuộc trò chuyện mới
+        if (connection) {
+           await connection.invoke("JoinChatSession", returnedSessionId.toString());
+        }
+        fetchSessions(); 
       }
 
     } catch (error) {
+      setIsAiTyping(false);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
         text: `❌ Lỗi kết nối: ${error.response?.data?.Error || error.message}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isStreaming: false
       }]);
-    } finally {
-      setIsAiTyping(false);
     }
   };
 
@@ -150,10 +205,9 @@ function VirtualMentor() {
     <div className="d-flex vh-100 overflow-hidden" style={{ backgroundColor: '#020205', color: '#e3e4ed', fontFamily: 'system-ui' }}>
       <Sidebar />
 
-      {/* Main Container chia 2 cột */}
       <div className="d-flex flex-grow-1 h-100 overflow-hidden p-3 gap-3" style={{ backgroundColor: '#07080f' }}>
         
-        {/* CỘT 1: Lịch sử Chat (Clone UI của Gemini/ChatGPT) */}
+        {/* CỘT 1: Lịch sử Chat */}
         <div className="d-flex flex-column rounded-4 border border-secondary border-opacity-10 overflow-hidden flex-shrink-0" 
              style={{ backgroundColor: '#0b0c16', width: '280px' }}>
           
@@ -193,7 +247,6 @@ function VirtualMentor() {
         <div className="d-flex flex-column flex-grow-1 h-100 rounded-4 border border-secondary border-opacity-10 overflow-hidden" 
              style={{ backgroundColor: '#0b0c16' }}>
           
-          {/* Header Phòng Tư vấn */}
           <div className="px-4 py-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center gap-3">
             <div className="rounded-circle bg-success d-flex align-items-center justify-content-center fs-5" style={{ width: '42px', height: '42px' }}>
               ✨
@@ -207,7 +260,6 @@ function VirtualMentor() {
             </div>
           </div>
 
-          {/* Vùng hiển thị tin nhắn */}
           <div className="flex-grow-1 overflow-auto p-4 d-flex flex-column gap-3 custom-scrollbar" style={{ scrollBehavior: 'smooth' }}>
             {isLoadingHistory ? (
               <div className="d-flex h-100 align-items-center justify-content-center flex-column gap-3 text-white-50">
@@ -234,7 +286,7 @@ function VirtualMentor() {
               ))
             )}
             
-            {isAiTyping && (
+            {isAiTyping && (!messages[messages.length - 1]?.isStreaming) && (
               <div className="d-flex align-items-start">
                 <div className="p-3 rounded-4" style={{ backgroundColor: '#1e1e24', borderBottomLeftRadius: '4px' }}>
                   <span className="spinner-grow spinner-grow-sm text-success me-1" style={{ width: '0.5rem', height: '0.5rem' }}></span>
@@ -246,7 +298,6 @@ function VirtualMentor() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Khu vực nhập liệu */}
           <div className="p-4 border-top border-secondary border-opacity-10" style={{ backgroundColor: '#07080f' }}>
             <form onSubmit={handleSendMessage} className="d-flex gap-2 mx-auto" style={{ maxWidth: '800px' }}>
               <input 
