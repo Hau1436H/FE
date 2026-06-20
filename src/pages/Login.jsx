@@ -169,7 +169,7 @@ function Login() {
                                         size="large"
                                         text="continue_with"
                                         shape="rectangular"
-                                        width="100%"
+                                        width={350}
                                         onSuccess={async (credentialResponse) => {
                                             setIsLoading(true);
                                             setMessage({ type: '', content: '' });

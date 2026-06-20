@@ -21,7 +21,6 @@ function RoadmapTab({ sessionId, result }) {
     const connectSignalR = async () => {
       try {
         const newConnection = new HubConnectionBuilder()
-          // LƯU Ý: Thay đổi domain/port cho khớp với backend của cậu
           .withUrl("https://localhost:7196/hubs/roadmap", { 
             accessTokenFactory: () => localStorage.getItem('token') 
           })
@@ -37,7 +36,6 @@ function RoadmapTab({ sessionId, result }) {
         await newConnection.start();
         console.log("Đã kết nối SignalR - Roadmap Hub");
 
-        // Lấy userId để join group push thông báo. Bạn có thể sửa logic lấy userId tùy theo dự án
         const userId = localStorage.getItem('userId'); 
         if (userId) {
           await newConnection.invoke("SubscribeToRoadmapUpdates", userId);
@@ -65,11 +63,12 @@ function RoadmapTab({ sessionId, result }) {
     const fetchRoadmapData = async () => {
       setIsLoading(true);
       try {
+        // Có thể thay bằng API lấy riêng lộ trình cho Node bị hỏng tùy backend của bạn
         const response = await axiosClient.get('/api/roadmap/skill-tree');
-        const roadmapData = response.data.data || response.data || [];
+        const roadmapData = response.data?.data || response.data || [];
         setStages(roadmapData);
       } catch (error) {
-        console.error("Lỗi lấy dữ liệu lộ trình:", error);
+        console.error("Lỗi lấy dữ liệu lộ trình chữa cháy:", error);
       } finally {
         setIsLoading(false);
       }
@@ -78,13 +77,13 @@ function RoadmapTab({ sessionId, result }) {
     if (hasTaken) {
       fetchRoadmapData();
     }
-  }, [hasTaken, refreshKey]); // re-fetch khi có refreshKey mới từ SignalR
+  }, [hasTaken, refreshKey]);
 
   const handleGenerateAiRoadmap = async () => {
     setIsGenerating(true);
     try {
       const response = await axiosClient.post(`/api/roadmap-engine/generate-from-session/${sessionId}`);
-      setAiAdvice(response.data.message);
+      setAiAdvice(response.data?.message || "AI đã thiết lập lộ trình học bù cho bạn.");
       setRefreshKey(oldKey => oldKey + 1); 
     } catch (error) {
       const errorMsg = error.response?.data?.message || error.response?.data?.Error || "Lỗi hệ thống khi gọi AI.";

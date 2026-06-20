@@ -2,18 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { FiEdit2, FiUser, FiMail, FiHash, FiAward, FiTarget, FiCheck, FiX } from 'react-icons/fi';
 import axiosClient from '../../../api/axiosClient';
 
-/**
- * COMPONENT: InfoForm
- * CHỨC NĂNG CHÍNH:
- * - Trình diễn và cho phép CHỈNH SỬA chi tiết các thông tin học viên theo API mới.
- * - Tự động chuyển đổi giữa chế độ Xem (View Mode) và chế độ Sửa (Edit Mode).
- * - Kết nối API cập nhật thông tin (Chỉ gửi các trường cần thiết, KHÔNG gửi email).
- */
 function InfoForm({ info, onUpdateSuccess }) {
-  // Trạng thái bật/tắt chế độ chỉnh sửa
   const [isEditing, setIsEditing] = useState(false);
+  const [targetRoles, setTargetRoles] = useState([]); // State lưu danh sách ngành nghề
   
-  // State quản lý form
   const [formData, setFormData] = useState({
     fullName: info?.fullName || '',
     studentCode: info?.studentCode || '',
@@ -21,13 +13,25 @@ function InfoForm({ info, onUpdateSuccess }) {
     targetRoleId: info?.targetRoleId || '',
   });
 
-  // ĐÃ THÊM: Tạo một bản backup local độc lập để hiển thị ở chế độ VIEW ngay lập tức khi lưu xong
   const [localDisplayInfo, setLocalDisplayInfo] = useState(null);
-
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Lắng nghe props `info` thay đổi từ component cha (ví dụ lúc mới tải trang hoặc cha fetch lại)
+  // Tải danh sách Target Roles từ Backend
+  useEffect(() => {
+    const fetchTargetRoles = async () => {
+      try {
+        const response = await axiosClient.get('/api/Profile/target-roles');
+        if (response.data && response.data.data) {
+          setTargetRoles(response.data.data);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách ngành nghề:", error);
+      }
+    };
+    fetchTargetRoles();
+  }, []);
+
   useEffect(() => {
     if (info) {
       const initialData = {
@@ -37,20 +41,19 @@ function InfoForm({ info, onUpdateSuccess }) {
         targetRoleId: info.targetRoleId || '',
       };
       setFormData(initialData);
-      setLocalDisplayInfo({ ...initialData, email: info.email }); // Lưu lại cả email để hiển thị
+      setLocalDisplayInfo({ ...initialData, email: info.email });
     }
   }, [info]);
 
-  // Hàm xử lý khi người dùng thay đổi dữ liệu trong ô input/textarea
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      // Ép kiểu về số nguyên nếu field là targetRoleId
+      [name]: name === 'targetRoleId' ? (value ? parseInt(value) : '') : value
     }));
   };
 
-  // Hàm hủy bỏ trạng thái chỉnh sửa, khôi phục lại dữ liệu ban đầu từ bản backup local gần nhất
   const handleCancel = () => {
     setFormData({
       fullName: localDisplayInfo?.fullName || '',
@@ -62,11 +65,8 @@ function InfoForm({ info, onUpdateSuccess }) {
     setIsEditing(false);
   };
 
-  // Hàm xử lý gửi dữ liệu cập nhật lên Server API
   const handleSave = async (e) => {
     e.preventDefault();
-    
-    // Validation cơ bản
     if (!formData.fullName.trim()) {
       setErrorMessage('Họ tên không được để trống.');
       return;
@@ -76,45 +76,42 @@ function InfoForm({ info, onUpdateSuccess }) {
     setErrorMessage('');
 
     try {
-      // Gọi API cập nhật thông tin
       const response = await axiosClient.put('/api/Profile/me', formData);
-      
       const updatedUser = response.data?.user || response.data;
 
       if (updatedUser) {
-        // Cập nhật lại object 'user' trong localStorage
         const currentLocalStorageUser = JSON.parse(localStorage.getItem('user')) || {};
         const newUserData = { ...currentLocalStorageUser, ...formData };
         localStorage.setItem('user', JSON.stringify(newUserData));
-
-        // Kích hoạt sự kiện toàn cục thông báo đổi tên hiển thị lập tức cho Navbar/Sidebar
         window.dispatchEvent(new Event('authChange'));
       }
 
-      // ĐÃ SỬA: Cập nhật ngay lập tức vào State hiển thị tại local của Component để UI đổi lập tức mà không cần reload
       setLocalDisplayInfo(prev => ({
         ...prev,
         ...formData
       }));
 
-      // Gọi hàm callback từ component cha để cập nhật state tổng ở component lớn (Profile.jsx)
       if (typeof onUpdateSuccess === 'function') {
         onUpdateSuccess({ ...formData, email: localDisplayInfo?.email }); 
       }
-
       setIsEditing(false);
     } catch (error) {
-      console.error("Update Profile Error:", error);
       setErrorMessage(error.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Hàm hỗ trợ dịch ID thành Tên
+  const getRoleName = (roleId) => {
+    if (!roleId) return 'Chưa thiết lập (Null)';
+    const role = targetRoles.find(r => r.id === roleId);
+    return role ? role.name : 'Đang tải...';
+  };
+
   return (
     <div className="rounded-4 p-4 mb-4" style={{ backgroundColor: '#131520', border: '1px solid #1e2235' }}>
       
-      {/* TIÊU ĐỀ KHỐI & NÚT HÀNH ĐỘNG */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h6 className="fw-bold text-white mb-0" style={{ fontSize: '15px' }}>
           Thông tin tài khoản & Học tập
@@ -153,7 +150,6 @@ function InfoForm({ info, onUpdateSuccess }) {
         )}
       </div>
 
-      {/* HIỂN THỊ BÁO LỖI NẾU CÓ */}
       {errorMessage && (
         <div className="alert alert-danger py-2 mb-3" style={{ fontSize: '12px' }}>
           {errorMessage}
@@ -161,7 +157,6 @@ function InfoForm({ info, onUpdateSuccess }) {
       )}
 
       <form onSubmit={handleSave}>
-        {/* HÀNG 1: Họ và tên & Mã số học viên (studentCode) */}
         <div className="row g-4 mb-4">
           <div className="col-12 col-md-6">
             <label className="text-white-50 extra-small d-block mb-2" style={{ fontSize: '12px', opacity: 0.6 }}>Họ và tên</label>
@@ -205,7 +200,6 @@ function InfoForm({ info, onUpdateSuccess }) {
           </div>
         </div>
 
-        {/* HÀNG 2: Địa chỉ Email (Chỉ xem) & ID vai trò mục tiêu (targetRoleId) */}
         <div className="row g-4 mb-4">
           <div className="col-12 col-md-6">
             <label className="text-white-50 extra-small d-block mb-2" style={{ fontSize: '12px', opacity: 0.6 }}>Địa chỉ Email (Không được sửa)</label>
@@ -216,28 +210,34 @@ function InfoForm({ info, onUpdateSuccess }) {
           </div>
 
           <div className="col-12 col-md-6">
-            <label className="text-white-50 extra-small d-block mb-2" style={{ fontSize: '12px', opacity: 0.6 }}>ID Vai trò mục tiêu (Target Role)</label>
+            <label className="text-white-50 extra-small d-block mb-2" style={{ fontSize: '12px', opacity: 0.6 }}>Định hướng nghề nghiệp (Target Role)</label>
             <div className="p-3 rounded-3 text-white-50 d-flex align-items-center gap-3" style={{ backgroundColor: '#0f111a', border: '1px solid #1e2235', fontSize: '13.5px' }}>
               <FiTarget size={15} className="opacity-50" />
               {isEditing ? (
-                <input 
-                  type="text" 
+                // THAY THẾ BẰNG THẺ SELECT
+                <select 
                   name="targetRoleId"
-                  placeholder="Nhập ID vai trò công việc..."
                   className="bg-transparent border-0 text-white w-100 p-0 shadow-none" 
-                  style={{ outline: 'none' }}
-                  value={formData.targetRoleId}
+                  style={{ outline: 'none', cursor: 'pointer' }}
+                  value={formData.targetRoleId || ''}
                   onChange={handleChange}
                   disabled={isLoading}
-                />
+                >
+                  <option value="" className="text-dark">-- Chọn định hướng nghề nghiệp --</option>
+                  {targetRoles.map(role => (
+                    <option key={role.id} value={role.id} className="text-dark">
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
               ) : (
-                <span className="text-white">{localDisplayInfo?.targetRoleId || 'Chưa thiết lập (Null)'}</span>
+                // DỊCH ID SANG TÊN CHO CHẾ ĐỘ XEM
+                <span className="text-white fw-bold text-success">{getRoleName(localDisplayInfo?.targetRoleId)}</span>
               )}
             </div>
           </div>
         </div>
 
-        {/* HÀNG 3: Tóm tắt năng lực tiềm ẩn (latentTalentSummary) */}
         <div>
           <label className="text-white-50 extra-small d-block mb-2" style={{ fontSize: '12px', opacity: 0.6 }}>Tóm tắt năng lực tiềm ẩn (Latent Talent Summary)</label>
           <div className="p-3 rounded-3 text-white-50 d-flex align-items-start gap-3" style={{ backgroundColor: '#0f111a', border: '1px solid #1e2235', fontSize: '13.5px', lineHeight: '1.5' }}>
