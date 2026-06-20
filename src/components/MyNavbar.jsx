@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
@@ -12,10 +12,7 @@ import axiosClient from '../api/axiosClient';
 function MyNavbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState(null);
-  
-  // 1. THÊM STATE ĐỂ LƯU SLUG ĐỘNG
   const [portfolioSlug, setPortfolioSlug] = useState(null);
-
   const navigate = useNavigate();
 
   const checkAuth = useCallback(async () => {
@@ -28,24 +25,24 @@ function MyNavbar() {
     }
 
     try {
-      // 1. Lấy thông tin user để hiển thị avatar, tên
+      // 1. Lấy thông tin user
       const response = await axiosClient.get('/api/Profile/me');
       setUser(response.data.data);
 
-      // 2. LẤY STUDENT ID TỪ TOKEN (Giải mã giống hệt bên Profile.jsx)
+      // 2. Lấy studentId từ token
       let studentId = null;
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         studentId = payload.studentId || payload.StudentId || payload.sub;
-      } catch (e) {
-        console.warn("Không thể giải mã token để lấy StudentId");
+      } catch (err) {
+        // Đổi tên biến catch thành err để không trùng nếu có biến e ở ngoài
+        console.warn("Không thể giải mã token để lấy StudentId", err);
       }
 
-      // 3. Gọi API lấy shareableUrl
+      // 3. Lấy shareableUrl
       if (studentId) {
         try {
           const portRes = await axiosClient.get(`/api/Portfolios/student/${studentId}`);
-          
           if (portRes.data && portRes.data.shareableUrl) {
             const url = portRes.data.shareableUrl;
             const extractedSlug = url.substring(url.lastIndexOf('/') + 1);
@@ -67,17 +64,29 @@ function MyNavbar() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
 
-    checkAuth();
+    // Bọc việc gọi API khởi tạo vào một hàm async cục bộ để tránh lỗi set-state-in-effect
+    const initAuth = async () => {
+        if(isMounted) {
+            await checkAuth();
+        }
+    }
+    
+    initAuth();
 
     window.addEventListener('scroll', handleScroll);
+    
+    // Gán trực tiếp reference của hàm useCallback vào event listener
     window.addEventListener('authChange', checkAuth);
     window.addEventListener('storage', checkAuth);
 
     return () => {
+      isMounted = false; // Cleanup
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('authChange', checkAuth);
       window.removeEventListener('storage', checkAuth);
@@ -92,7 +101,6 @@ function MyNavbar() {
     setPortfolioSlug(null);
 
     window.dispatchEvent(new Event('authChange'));
-
     navigate('/login');
   };
 
@@ -103,7 +111,6 @@ function MyNavbar() {
 
   return (
     <>
-      {/* ... Giữ nguyên phần <style> của bạn ... */}
       <style>{`
         @media (max-width: 991.98px) {
           .navbar-collapse {
@@ -163,7 +170,6 @@ function MyNavbar() {
               <Nav.Link href="#how-it-works" className="text-white opacity-75">Cách hoạt động</Nav.Link>
               <Nav.Link href="#mentors" className="text-white opacity-75">Mentor</Nav.Link>
 
-              {/* 3. HIỂN THỊ LINK ĐỘNG: Chỉ render khi user đã có portfolioSlug */}
               {portfolioSlug && (
                 <Nav.Link
                   as={Link}
@@ -179,7 +185,6 @@ function MyNavbar() {
             <Nav className="ms-auto d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3 text-nowrap">
               {user ? (
                 <Dropdown align="end" className="w-100 w-lg-auto text-start">
-                  {/* ... Giữ nguyên phần User Dropdown của bạn ... */}
                   <Dropdown.Toggle variant="link" id="dropdown-user-avatar" className="avatar-dropdown p-0 border-0 d-flex align-items-center gap-2 text-decoration-none text-white">
                     {user?.avatar?.trim() ? (
                       <img

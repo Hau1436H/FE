@@ -14,9 +14,10 @@ import Notifications from "./pages/dashboard/Notifications";
 import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
 import AssessmentHistory from './pages/dashboard/AssessmentHistory';
-import PublicPortfolio from './pages/PublicPortfolio'; // <-- IMPORT FILE MỚI VÀO ĐÂY
+import PublicPortfolio from './pages/PublicPortfolio';
+import VirtualMentor from './pages/dashboard/VirtualMentor'; // <-- IMPORT FILE MỚI VÀO ĐÂY
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
-import { GoogleOAuthProvider } from '@react-oauth/google';
+// import { GoogleOAuthProvider } from '@react-oauth/google'; // (Uncomment nếu dùng Google Auth)
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -53,6 +54,9 @@ function App() {
             
             {/* Route Lịch sử đánh giá với ID động */}
             <Route path="/dashboard/assessment-history/:studentId" element={<AssessmentHistory />} />
+
+            {/* THÊM ROUTE VIRTUAL MENTOR VÀO ĐÂY */}
+            <Route path="/dashboard/virtual-mentor" element={<VirtualMentor />} />
           </Route>
         </Routes>
       </div>

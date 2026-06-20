@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from 'react-bootstrap';
 import { 
   FaHome, FaGraduationCap, FaCode, FaBriefcase, 
-  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory 
+  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot // <-- THÊM IMPORT ICON FaRobot
 } from 'react-icons/fa';
 
 import { PROFILE_DATA } from '../../data/profileData';
@@ -30,17 +30,19 @@ function Sidebar() {
     fetchUser();
   }, []);
 
-const studentId = user?.userId || '';  
+  const studentId = user?.userId || '';  
   // ĐÃ SỬA LỖI TRÙNG LẶP: Không fallback về /dashboard nữa
- const historyPath = studentId 
-  ? `/dashboard/assessment-history/${studentId}` 
-  : `#`;
+  const historyPath = studentId 
+    ? `/dashboard/assessment-history/${studentId}` 
+    : `#`;
 
+  // BỔ SUNG MENU "Cố vấn AI" VÀO DANH SÁCH KHAI BÁO
   const menuItems = [
     { icon: <FaHome />, text: "Tổng quan", path: "/dashboard" },
     { icon: <FaGraduationCap />, text: "Learning Hub", path: "/dashboard/learning" },
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
     { icon: <FaBriefcase />, text: "Career & Jobs", path: "/dashboard/jobs" },
+    { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" }, // <-- MỤC MỚI ĐƯỢC THÊM VÀO ĐÂY
     { icon: <FaBell />, text: "Thông báo", path: "/dashboard/notifications" },
     { icon: <FaHistory />, text: "Lịch sử đánh giá", path: historyPath },
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
