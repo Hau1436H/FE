@@ -1,11 +1,13 @@
 // src/pages/dashboard/Profile.jsx
-import { useState, useEffect, useRef } from 'react';import Sidebar from '../../components/dashboard/Sidebar';
+import { useState, useEffect, useRef } from 'react';
+import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import ProfileCard from '../../components/dashboard/profile/ProfileCard';
 import ProfileNav from '../../components/dashboard/profile/ProfileNav';
 import InfoForm from '../../components/dashboard/profile/InfoForm';
 import SocialLinks from '../../components/dashboard/profile/SocialLinks';
 import GithubPortfolioSync from '../../components/dashboard/profile/GithubPortfolioSync';
+import AssessmentTab from '../../components/dashboard/profile/AssessmentTab';
 import { PROFILE_DATA } from '../../data/profileData';
 import axiosClient from '../../api/axiosClient';
 
@@ -42,27 +44,26 @@ function Profile() {
     }
   };
 
-  // Sửa đoạn code gọi fetchUser (khoảng dòng 45) thành:
-useEffect(() => {
-  let isMounted = true; // Tránh set state khi component đã unmount
+  useEffect(() => {
+    let isMounted = true; // Tránh set state khi component đã unmount
 
-  const loadUser = async () => {
-    try {
-      const response = await axiosClient.get('/api/Profile/me');
-      if (isMounted && response.data.data) {
-        setUser(response.data.data);
+    const loadUser = async () => {
+      try {
+        const response = await axiosClient.get('/api/Profile/me');
+        if (isMounted && response.data.data) {
+          setUser(response.data.data);
+        }
+      } catch (error) {
+        console.error("Lỗi nạp dữ liệu", error);
       }
-    } catch (error) {
-      console.error("Lỗi nạp dữ liệu", error);
-    }
-  };
+    };
 
-  loadUser();
+    loadUser();
 
-  return () => {
-    isMounted = false; // Cleanup function
-  };
-}, []);
+    return () => {
+      isMounted = false; // Cleanup function
+    };
+  }, []);
 
   // Hàm xử lý Upload Transcript (FR1.3)
   const handleTranscriptUpload = async (event) => {
@@ -162,9 +163,17 @@ useEffect(() => {
 
               <SocialLinks socials={PROFILE_DATA.socials} />
             </>
+          ) : activeTab === 'assessment' ? (
+            
+            <AssessmentTab studentId={studentId} />
+
+          ) : activeTab === 'chat' ? (
+            <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4">
+              Nội dung tab AI Chat History đang được cập nhật...
+            </div>
           ) : (
             <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4">
-              Nội dung tab "{activeTab}" đang được đồng bộ dữ liệu hệ thống...
+              Nội dung tab Cài đặt hệ thống...
             </div>
           )}
         </div>

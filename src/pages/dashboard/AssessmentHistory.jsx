@@ -1,3 +1,4 @@
+// src/pages/dashboard/AssessmentHistory.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react'; 
@@ -5,8 +6,6 @@ import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import axiosClient from '../../api/axiosClient';
 import RoadmapTab from '../../components/skillAssessment/RoadmapTab';
-
-// 1. IMPORT COMPONENT STATS TAB
 import StatsTab from '../../components/skillAssessment/StatsTab';
 
 function AssessmentHistory() {
@@ -21,7 +20,6 @@ function AssessmentHistory() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState(null);
 
-  // 2. Mặc định mở tab Thống kê (stats) khi mới vào xem chi tiết
   const [detailTab, setDetailTab] = useState('stats'); 
 
   useEffect(() => {
@@ -30,7 +28,11 @@ function AssessmentHistory() {
         setLoadingList(true);
         const response = await axiosClient.get(`/api/assessments/my-history/${studentId}`);
         const actualData = response.data.data || response.data || [];
-        setHistoryList(actualData);
+        
+        // CHỈ LẤY NHỮNG BÀI TEST THẬT (TESTED)
+        const testedOnly = actualData.filter(session => session.assessmentType !== 'SELF_DECLARED');
+        
+        setHistoryList(testedOnly);
       } catch (err) {
         console.error("Lỗi tải danh sách:", err);
       } finally {
@@ -42,7 +44,7 @@ function AssessmentHistory() {
 
   const handleViewDetail = async (assessmentId) => { 
     setViewMode('detail'); 
-    setDetailTab('stats'); // Reset về tab stats mỗi khi mở bài mới
+    setDetailTab('stats');
     setLoadingDetail(true);
     setError(null);
 
@@ -91,44 +93,79 @@ function AssessmentHistory() {
               <div className="alert alert-dark border-secondary text-center">Bạn chưa hoàn thành bộ bài đánh giá nào.</div>
             ) : (
               <div className="row g-4">
-                {historyList.map((session) => (
-                  <div key={session.assessmentId || session.sessionId} className="col-12 col-md-6 col-lg-4">
-                    <div className="card bg-dark border-secondary h-100 shadow-sm transition-all hover-shadow">
-                      <div className="card-body d-flex flex-column">
-                        <div className="mb-3">
-                          <h5 className="card-title text-success fw-bold mb-1">{session.nodeName} Assessment</h5>
-                          <p className="text-secondary small mb-0">
-                            <i className="bi bi-clock me-1"></i> {new Date(session.takenAt).toLocaleString('vi-VN')}
-                          </p>
+                {historyList.map((session) => {
+                  
+                  // BẮT CỜ TỪ API ĐỂ PHÂN BIỆT LOẠI BÀI TEST
+                  const isSelfDeclared = session.assessmentType === 'SELF_DECLARED';
+
+                  return (
+                    <div key={session.assessmentId || session.sessionId} className="col-12 col-md-6 col-lg-4">
+                      <div className={`card bg-dark h-100 shadow-sm transition-all hover-shadow ${isSelfDeclared ? 'border-info' : 'border-secondary'}`}>
+                        <div className="card-body d-flex flex-column">
+                          
+                          <div className="mb-3 d-flex justify-content-between align-items-start">
+                            <div>
+                              <h5 className={`card-title fw-bold mb-1 ${isSelfDeclared ? 'text-info' : 'text-success'}`}>
+                                {session.nodeName} Assessment
+                              </h5>
+                              <p className="text-secondary small mb-0">
+                                <i className="bi bi-clock me-1"></i> {new Date(session.takenAt).toLocaleString('vi-VN')}
+                              </p>
+                            </div>
+                            
+                            {/* HIỂN THỊ BADGE NẾU LÀ BÀI TỰ KHAI BÁO */}
+                            {isSelfDeclared && (
+                              <span className="badge bg-info text-dark bg-opacity-75">Tự khai báo</span>
+                            )}
+                          </div>
+                          
+                          {/* ĐỔI UI HIỂN THỊ ĐIỂM SỐ DỰA TRÊN LOẠI BÀI */}
+                          {isSelfDeclared ? (
+                            <div className="flex-grow-1 d-flex flex-column justify-content-center mb-4">
+                              <div className="alert alert-info bg-opacity-10 border-0 text-info text-center mb-0 p-3">
+                                <i className="bi bi-shield-check fs-4 d-block mb-1"></i>
+                                Miễn thi - Đã ghi nhận vốn kỹ năng từ khai báo cá nhân.
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="d-flex justify-content-between align-items-center mb-2 p-2 bg-secondary bg-opacity-10 rounded">
+                                <span className="text-white-50"><i className="bi bi-card-list me-2"></i>Điểm Lý thuyết:</span>
+                                <span className="fw-bold text-info">{session.totalQuizScore || session.testScore || 0}/10</span>
+                              </div>
+                              
+                              <div className="d-flex justify-content-between align-items-center mb-4 p-2 bg-secondary bg-opacity-10 rounded">
+                                <span className="text-white-50"><i className="bi bi-code-slash me-2"></i>Điểm Thực hành:</span>
+                                <span className="fw-bold text-warning">{session.totalCodeScore || 0}/10</span>
+                              </div>
+                            </>
+                          )}
+                          
+                          {/* ĐỔI TRẠNG THÁI NÚT THEO LOẠI BÀI */}
+                          <button 
+                            className={`btn mt-auto ${isSelfDeclared ? 'btn-outline-info disabled' : 'btn-outline-success'}`}
+                            onClick={() => !isSelfDeclared && handleViewDetail(session.assessmentId || session.sessionId)}
+                            disabled={isSelfDeclared}
+                          >
+                            {isSelfDeclared ? (
+                              <><i className="bi bi-check2-all me-2"></i>Kỹ năng đã được duyệt</>
+                            ) : (
+                              <><i className="bi bi-eye me-2"></i>Xem chi tiết bài làm</>
+                            )}
+                          </button>
+
                         </div>
-                        
-                        <div className="d-flex justify-content-between align-items-center mb-2 p-2 bg-secondary bg-opacity-10 rounded">
-                          <span className="text-white-50"><i className="bi bi-card-list me-2"></i>Điểm Lý thuyết:</span>
-                          <span className="fw-bold text-info">{session.totalQuizScore || session.testScore || 0}/10</span>
-                        </div>
-                        
-                        <div className="d-flex justify-content-between align-items-center mb-4 p-2 bg-secondary bg-opacity-10 rounded">
-                          <span className="text-white-50"><i className="bi bi-code-slash me-2"></i>Điểm Thực hành:</span>
-                          <span className="fw-bold text-warning">{session.totalCodeScore || 0}/10</span>
-                        </div>
-                        
-                        <button 
-                          className="btn btn-outline-success mt-auto"
-                          onClick={() => handleViewDetail(session.assessmentId || session.sessionId)}
-                        >
-                          <i className="bi bi-eye me-2"></i>Xem chi tiết bài làm
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
         )}
 
         {/* ==============================================
-            MÀN HÌNH CHI TIẾT (DETAIL)
+            MÀN HÌNH CHI TIẾT (DETAIL) - GIỮ NGUYÊN
         ============================================== */}
         {viewMode === 'detail' && (
           <>
@@ -154,9 +191,7 @@ function AssessmentHistory() {
 
             {!loadingDetail && !error && detailData && (
               <div className="card bg-dark border-secondary">
-                {/* Custom Tabs */}
                 <div className="card-header border-secondary d-flex flex-wrap gap-3 p-3 bg-opacity-50">
-                  {/* TAB THỐNG KÊ MỚI */}
                   <button 
                     className={`btn ${detailTab === 'stats' ? 'btn-primary text-white fw-bold shadow' : 'btn-outline-secondary text-white'}`}
                     onClick={() => setDetailTab('stats')}
@@ -184,8 +219,6 @@ function AssessmentHistory() {
                 </div>
 
                 <div className="card-body p-4">
-                  
-                  {/* 3. NỘI DUNG TAB THỐNG KÊ (STATS) */}
                   {detailTab === 'stats' && (
                     <div className="bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25 p-3">
                       <StatsTab 
@@ -200,7 +233,6 @@ function AssessmentHistory() {
                     </div>
                   )}
 
-                  {/* TAB QUIZ */}
                   {detailTab === 'quiz' && (
                     <div>
                       {detailData.quizDetails && detailData.quizDetails.length > 0 ? (
@@ -227,7 +259,6 @@ function AssessmentHistory() {
                     </div>
                   )}
 
-                  {/* TAB CODE */}
                   {detailTab === 'code' && (
                     <div className="row g-4">
                       <div className="col-lg-8">
@@ -256,7 +287,6 @@ function AssessmentHistory() {
                     </div>
                   )}
 
-                  {/* TAB LỘ TRÌNH AI */}
                   {detailTab === 'roadmap' && (
                     <div className="bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25 p-3">
                       <RoadmapTab 

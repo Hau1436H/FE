@@ -5,10 +5,11 @@ import JobHeader from '../../components/dashboard/myJob/JobHeader';
 import JobFilters from '../../components/dashboard/myJob/JobFilters';
 import JobCard from '../../components/dashboard/myJob/JobCard';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
+import SkillGapReport from '../../components/dashboard/myJob/SkillGapReport';
 import axiosClient from '../../api/axiosClient';
 
 function Jobs() {
-  const [currentMainTab, setCurrentMainTab] = useState('jobs');
+  const [currentMainTab, setCurrentMainTab] = useState('gap-analysis');
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isScraping, setIsScraping] = useState(false); 
@@ -35,15 +36,14 @@ function Jobs() {
 
       try {
         setLoading(true);
-        // FIX: Đã nhét đầy đủ các trường filter vào Payload gửi đi
         const payload = {
           keyword: jobFilters.search,
           sourcePlatform: "", 
           page: jobFilters.page,
           pageSize: jobFilters.pageSize,
-          minMatch: jobFilters.minMatch,  // Gửi % Match tối thiểu
-          sortBy: jobFilters.sortBy,      // Gửi tiêu chí sắp xếp
-          skills: jobFilters.skills       // Gửi mảng Tag (ví dụ: ["Node.js"])
+          minMatch: jobFilters.minMatch,  
+          sortBy: jobFilters.sortBy,      
+          skills: jobFilters.skills       
         };
 
         const response = await axiosClient.post(`/api/v1/MarketPulse/students/${studentId}/job-matches`, payload);
@@ -71,7 +71,6 @@ function Jobs() {
     if (currentMainTab === 'jobs') {
         fetchMatchingJobs();
     }
-  // FIX: Lắng nghe thêm sự thay đổi của skills, minMatch và sortBy
   }, [jobFilters.search, jobFilters.page, jobFilters.skills, jobFilters.minMatch, jobFilters.sortBy, currentMainTab, refreshTrigger]);
 
   const handleTriggerScraper = async () => {
@@ -89,6 +88,41 @@ function Jobs() {
     }
   };
 
+  // ĐÃ CẬP NHẬT: Hàm gọi API tải PDF
+  const handleExportPDF = async () => {
+    const studentId = getStudentId();
+    if (!studentId) {
+      alert("Không tìm thấy thông tin User!");
+      return;
+    }
+
+    try {
+      alert("Hệ thống đang sinh báo cáo PDF. Vui lòng chờ trong giây lát...");
+      
+      // Gọi xuống API bạn vừa tạo
+      const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/export-pdf`, {
+        responseType: 'blob', // Bắt buộc phải có để nhận file
+      });
+
+      // Tạo Blob và link ảo để tự động tải file
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      // Đặt tên file khi tải về
+      link.setAttribute('download', `Skill_Gap_Report_${studentId.substring(0,8)}.pdf`); 
+      document.body.appendChild(link);
+      link.click();
+      
+      // Dọn dẹp DOM
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error("Lỗi khi tải PDF:", error);
+      alert("Có lỗi xảy ra khi tải báo cáo PDF. Vui lòng kiểm tra lại server.");
+    }
+  };
+
   return (
     <div className="d-flex min-vh-100 w-100" style={{ backgroundColor: '#0b0c10' }}>
       <Sidebar />
@@ -102,11 +136,20 @@ function Jobs() {
             <div className="d-flex gap-2">
               <button 
                 className="btn btn-sm rounded-pill px-3 py-1.5 fw-medium transition-all" 
-                style={{ backgroundColor: currentMainTab === 'jobs' ? 'var(--accent)' : 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px', border: 'none' }}
+                style={{ backgroundColor: currentMainTab === 'gap-analysis' ? '#17a2b8' : 'rgba(255,255,255,0.05)', color: currentMainTab === 'gap-analysis' ? '#fff' : 'rgba(255,255,255,0.5)', fontSize: '13px', border: 'none' }}
+                onClick={() => setCurrentMainTab('gap-analysis')}
+              >
+                <i className="bi bi-radar me-1"></i> Phân tích Năng lực (Gap)
+              </button>
+
+              <button 
+                className="btn btn-sm rounded-pill px-3 py-1.5 fw-medium transition-all" 
+                style={{ backgroundColor: currentMainTab === 'jobs' ? 'var(--accent)' : 'rgba(255,255,255,0.05)', color: currentMainTab === 'jobs' ? '#fff' : 'rgba(255,255,255,0.5)', fontSize: '13px', border: 'none' }}
                 onClick={() => setCurrentMainTab('jobs')}
               >
-                Việc làm phù hợp
+                <i className="bi bi-briefcase me-1"></i> Việc làm phù hợp
               </button>
+
               <button 
                 className="btn btn-sm rounded-pill px-3 py-1.5 fw-medium transition-all" 
                 style={{ backgroundColor: currentMainTab === 'mentors' ? 'var(--accent)' : 'rgba(255,255,255,0.05)', color: currentMainTab === 'mentors' ? '#fff' : 'rgba(255,255,255,0.5)', fontSize: '13px', border: 'none' }}
@@ -124,7 +167,7 @@ function Jobs() {
                 disabled={isScraping}
               >
                 {isScraping ? (
-                  <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Đang quét Google Jobs & AI...</>
+                  <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Đang quét Google Jobs...</>
                 ) : (
                   <><i className="bi bi-cloud-arrow-down me-2"></i> Lấy dữ liệu Market mới</>
                 )}
@@ -132,7 +175,30 @@ function Jobs() {
             )}
           </div>
 
-          {currentMainTab === 'jobs' ? (
+          {currentMainTab === 'gap-analysis' ? (
+            
+            <div className="row mt-3">
+              <div className="col-12 mb-3 d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="text-white mb-1"><i className="bi bi-bar-chart-line text-info me-2"></i>Báo cáo Phân tích Khoảng trống Kỹ năng</h5>
+                  <p className="text-white-50 small mb-0">Hệ thống so sánh vốn kỹ năng hiện tại của bạn với yêu cầu thực tế của thị trường IT.</p>
+                </div>
+                <button 
+                  className="btn btn-outline-success btn-sm transition-all hover-bg-success"
+                  onClick={handleExportPDF}
+                >
+                  <i className="bi bi-file-earmark-pdf me-2"></i>Tải báo cáo PDF
+                </button>
+              </div>
+
+              <div className="col-12">
+                <div className="card bg-dark border-secondary border-opacity-25 p-4 rounded-4">
+                  <SkillGapReport studentId={getStudentId()} />
+                </div>
+              </div>
+            </div>
+
+          ) : currentMainTab === 'jobs' ? (
             <>
               <JobFilters 
                 currentTab="all" 
