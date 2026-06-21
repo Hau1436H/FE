@@ -79,10 +79,33 @@ function RoadmapTab({ sessionId, result }) {
     }
   }, [hasTaken, refreshKey]);
 
-  const handleGenerateAiRoadmap = async () => {
+  // HÀM GỌI AI VÀ XỬ LÝ KỊCH BẢN ĐỔI NGÀNH (CROSS-TRACK)
+  const handleGenerateAiRoadmap = async (isConfirming = false) => {
     setIsGenerating(true);
     try {
-      const response = await axiosClient.post(`/api/roadmap-engine/generate-from-session/${sessionId}`);
+      // Đẩy thêm tham số confirmSwitch lên API
+      const response = await axiosClient.post(`/api/roadmap-engine/generate-from-session/${sessionId}?confirmSwitch=${isConfirming}`);
+      
+      // Bắt tín hiệu 202 (Trái ngành)
+      if (response.status === 202 && response.data?.data?.requiresConfirmation) {
+          setIsGenerating(false); // Tạm dừng loading
+          
+          // Hiển thị Popup xác nhận
+          const userWantsToSwitch = window.confirm(
+              response.data.message + "\n\n- Nhấn OK: Để đổi sang ngành mới và tạo lộ trình.\n- Nhấn Cancel: Để giữ nguyên lộ trình cũ."
+          );
+
+          if (userWantsToSwitch) {
+              // KỊCH BẢN 2: Người dùng YES -> Gọi lại hàm này nhưng truyền true
+              handleGenerateAiRoadmap(true);
+          } else {
+              // KỊCH BẢN 1: Người dùng NO -> Không làm gì cả, chỉ hiện thông báo
+              setAiAdvice("Bạn đã chọn giữ nguyên mục tiêu nghề nghiệp cũ. Tiến độ của bài test này vẫn được lưu lại vào hệ thống dưới dạng kỹ năng bổ trợ (Side-quest).");
+          }
+          return; // Dừng lại ở đây, không chạy xuống code báo thành công bên dưới
+      }
+
+      // NẾU MỌI THỨ OK (Status 200)
       setAiAdvice(response.data?.message || "AI đã thiết lập lộ trình học bù cho bạn.");
       setRefreshKey(oldKey => oldKey + 1); 
     } catch (error) {
@@ -123,7 +146,7 @@ function RoadmapTab({ sessionId, result }) {
           </p>
           <button
             className="btn btn-warning fw-bold px-4 py-2 rounded-pill shadow hover-shadow"
-            onClick={handleGenerateAiRoadmap}
+            onClick={() => handleGenerateAiRoadmap(false)} // Gọi mặc định không truyền true ở lần đầu
             disabled={isGenerating}
           >
             {isGenerating ? (

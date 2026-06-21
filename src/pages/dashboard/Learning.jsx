@@ -12,8 +12,8 @@ function Learning() {
   const [skillNodes, setSkillNodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false); 
+  const [refreshKey, setRefreshKey] = useState(0); // State kích hoạt load lại dữ liệu
   
-  // State quản lý Khay trượt
   const [showDrawer, setShowDrawer] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const navigate = useNavigate();
@@ -22,7 +22,6 @@ function Learning() {
     const fetchRoadmap = async () => {
       try {
         setLoading(true);
-        // Gọi API mới: Không cần truyền ID, BE tự nhận diện qua Token
         const response = await axiosClient.get('/api/learning-hub/my-roadmap');
         
         if (response.data && response.data.data) {
@@ -31,7 +30,6 @@ function Learning() {
             title: node.nodeName, 
             nodeName: node.nodeName,
             description: node.description,
-            // Logic dịch từ DTO C# sang Status UI:
             status: node.isCompleted ? 'completed' : (node.isLocked ? 'locked' : 'learning')
           }));
           
@@ -39,7 +37,6 @@ function Learning() {
         }
       } catch (error) {
         console.error("Lỗi khi tải Lộ trình học tập:", error);
-        // Bắt cờ requiresOnboarding từ Backend đẩy về
         if (error.response?.status === 400 && error.response?.data?.requiresOnboarding) {
             setNeedsOnboarding(true);
         }
@@ -49,7 +46,7 @@ function Learning() {
     };
 
     fetchRoadmap();
-  }, []);
+  }, [refreshKey]); // Thêm refreshKey vào mảng dependencies
 
   return (
     <div className="d-flex" style={{ backgroundColor: '#020205', minHeight: '100vh', color: '#fff' }}>
@@ -63,7 +60,6 @@ function Learning() {
             <Spinner animation="border" variant="success" />
           </div>
         ) : needsOnboarding ? (
-          // HIỂN THỊ NẾU SINH VIÊN CHƯA CHỌN NGÀNH
           <div className="text-center py-5 border border-secondary border-opacity-25 rounded-3 bg-dark bg-opacity-50 mt-4">
             <div className="mb-4">
               <i className="bi bi-compass text-warning" style={{ fontSize: '3rem' }}></i>
@@ -74,14 +70,12 @@ function Learning() {
             </p>
             <button
               className="btn btn-success fw-bold px-4 py-2 rounded-pill shadow"
-              // Đã trỏ chính xác về Route cấu hình trong App.jsx
               onClick={() => navigate('/dashboard/profile')} 
             >
               <i className="bi bi-person-lines-fill me-2"></i> Thiết lập Mục tiêu ngay
             </button>
           </div>
         ) : (
-          // HIỂN THỊ CÂY LỘ TRÌNH BÌNH THƯỜNG
           <SkillTree 
             skillNodes={skillNodes} 
             onNodeClick={(node) => {
@@ -99,6 +93,7 @@ function Learning() {
           show={showDrawer} 
           handleClose={() => setShowDrawer(false)} 
           selectedNode={selectedNode} 
+          onUpdate={() => setRefreshKey(prev => prev + 1)} 
         />
       </div>
     </div>

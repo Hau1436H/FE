@@ -2,11 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Offcanvas, Button, Spinner } from 'react-bootstrap';
 import { FaBookOpen, FaVideo, FaCheckCircle, FaExternalLinkAlt } from 'react-icons/fa';
+import axiosClient from "../../../api/axiosClient";
 
-function NodeDrawer({ show, handleClose, selectedNode }) {
+function NodeDrawer({ show, handleClose, selectedNode, onUpdate }) {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
+  // FETCH TÀI LIỆU CỦA NODE TỪ BACKEND
   useEffect(() => {
     if (selectedNode) {
       const fetchResources = async () => {
@@ -28,20 +31,39 @@ function NodeDrawer({ show, handleClose, selectedNode }) {
     }
   }, [selectedNode]);
 
+  // XỬ LÝ NÚT BẤM HOÀN THÀNH KỸ NĂNG
+  const handleMarkCompleted = async () => {
+    setIsCompleting(true);
+    try {
+      const response = await axiosClient.post('/api/roadmap/complete-node', {
+        nodeId: selectedNode.id
+      });
+      alert(response.data?.message || "Đã xác nhận hoàn thành kỹ năng!");
+      
+      // Báo cho Learning.jsx biết để tải lại UI
+      if (onUpdate) onUpdate();
+      
+      handleClose(); // Tự động đóng Drawer sau khi xong
+    } catch (error) {
+      alert(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật tiến độ.");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   return (
     <Offcanvas 
       show={show} 
       onHide={handleClose} 
       placement="end" 
       style={{ 
-        backgroundColor: 'rgba(11, 12, 22, 0.95)', // Nền đen trong suốt mờ
-        backdropFilter: 'blur(15px)', // Kính mờ
+        backgroundColor: 'rgba(11, 12, 22, 0.95)',
+        backdropFilter: 'blur(15px)',
         color: '#fff', 
         borderLeft: '1px solid rgba(255,255,255,0.05)',
-        width: '450px' // Rộng ra một chút cho dễ đọc
+        width: '450px'
       }}
     >
-      {/* Inject Hover CSS cho Resource List */}
       <style>{`
         .resource-item {
           transition: all 0.2s ease;
@@ -59,7 +81,7 @@ function NodeDrawer({ show, handleClose, selectedNode }) {
           box-shadow: 0 4px 15px rgba(32, 201, 151, 0.3);
           transition: all 0.2s;
         }
-        .btn-glow:hover {
+        .btn-glow:hover:not(:disabled) {
           box-shadow: 0 6px 20px rgba(32, 201, 151, 0.5);
           transform: translateY(-2px);
         }
@@ -119,10 +141,18 @@ function NodeDrawer({ show, handleClose, selectedNode }) {
           </div>
         )}
 
-        {/* NÚT CẬP NHẬT TIẾN ĐỘ */}
         <div className="mt-auto pt-4">
-          <Button className="btn-glow w-100 fw-bold py-3 rounded-pill text-white" onClick={() => alert('Gọi API PUT /progress thành completed ở đây!')}>
-            <FaCheckCircle className="me-2 fs-5 mb-1" /> Xác nhận Đã Nắm Vững
+          <Button 
+            className="btn-glow w-100 fw-bold py-3 rounded-pill text-white d-flex justify-content-center align-items-center" 
+            onClick={handleMarkCompleted} 
+            disabled={isCompleting}
+          >
+            {isCompleting ? (
+              <Spinner animation="border" size="sm" className="me-2" />
+            ) : (
+              <FaCheckCircle className="me-2 fs-5" />
+            )}
+            {isCompleting ? 'Đang cập nhật...' : 'Xác nhận Đã Nắm Vững'}
           </Button>
         </div>
       </Offcanvas.Body>
