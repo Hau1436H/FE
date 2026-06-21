@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import axiosClient from '../../api/axiosClient';
@@ -13,8 +13,10 @@ const INITIAL_FORM = COURSE_FORM_DEFAULTS;
 
 function AdminCreateCourse() {
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [attachments, setAttachments] = useState([]);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const fileInputRef = useRef(null);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -24,36 +26,64 @@ function AdminCreateCourse() {
     }));
   };
 
+  const handleFilesChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    setAttachments((prevFiles) => {
+      const existingKeys = new Set(prevFiles.map((file) => `${file.name}-${file.size}-${file.lastModified}`));
+      const newFiles = files.filter((file) => !existingKeys.has(`${file.name}-${file.size}-${file.lastModified}`));
+      return [...prevFiles, ...newFiles];
+    });
+    event.target.value = '';
+  };
+
+  const handleRemoveAttachment = (index) => {
+    setAttachments((prevFiles) => prevFiles.filter((_, idx) => idx !== index));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setFeedback(null);
     setSaving(true);
 
-    const payload = {
-      title: formData.title,
-      description: formData.description,
-      instructor: formData.instructor,
-      category: formData.category,
-      level: formData.level,
-      type: formData.type,
-      duration: formData.duration,
-      lessons: Number(formData.lessons) || 0,
-      price: formData.price ? Number(formData.price) : undefined,
-      tags: formData.tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      imgBg: formData.imgBg,
-      isPublished: formData.isPublished,
-    };
+    const payload = new FormData();
+    payload.append('title', formData.title);
+    payload.append('description', formData.description);
+    payload.append('instructor', formData.instructor);
+    payload.append('category', formData.category);
+    payload.append('level', formData.level);
+    payload.append('type', formData.type);
+    payload.append('duration', formData.duration);
+    payload.append('lessons', Number(formData.lessons) || 0);
+    if (formData.price) payload.append('price', Number(formData.price));
+    payload.append(
+      'tags',
+      JSON.stringify(
+        formData.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      )
+    );
+    payload.append('imgBg', formData.imgBg);
+    payload.append('isPublished', formData.isPublished);
+
+    attachments.forEach((file) => {
+      payload.append('attachments', file);
+    });
 
     try {
-      const response = await axiosClient.post('/api/courses', payload);
+      const response = await axiosClient.post('/api/courses', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setFeedback({
         type: 'success',
         message: response.data?.message || 'Khoá học đã được gửi lên hệ thống thành công.',
       });
       setFormData(INITIAL_FORM);
+      setAttachments([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
       console.error('Lỗi khi tạo khoá học:', error);
       setFeedback({
@@ -238,6 +268,36 @@ function AdminCreateCourse() {
                     placeholder="React, TypeScript, Frontend"
                   />
                   <div className="form-text text-white-50">Ngăn cách bằng dấu phẩy.</div>
+                </div>
+
+                <div className="col-12">
+                  <label className="form-label text-white fw-semibold">Upload files</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="form-control bg-dark text-white border-secondary"
+                    onChange={handleFilesChange}
+                    multiple
+                  />
+                  <div className="form-text text-white-50">Hỗ trợ mọi loại file: PDF, PPT, DOCX, ZIP, ảnh, video...</div>
+                  {attachments.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-white fw-semibold mb-2">File đã chọn</div>
+                      <ul className="list-group list-group-flush">
+                        {attachments.map((file, index) => (
+                          <li key={`${file.name}-${file.size}-${file.lastModified}`} className="list-group-item bg-transparent border-secondary d-flex justify-content-between align-items-center px-0 py-2">
+                            <div>
+                              <div className="text-white">{file.name}</div>
+                              <div className="text-white-50 small">{(file.size / 1024).toFixed(1)} KB</div>
+                            </div>
+                            <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => handleRemoveAttachment(index)}>
+                              Xóa
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 <div className="col-12">
