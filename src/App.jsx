@@ -17,6 +17,7 @@ import AssessmentHistory from './pages/dashboard/AssessmentHistory';
 import PublicPortfolio from './pages/PublicPortfolio';
 import VirtualMentor from './pages/dashboard/VirtualMentor'; // <-- IMPORT FILE MỚI VÀO ĐÂY
 import AdminStats from './pages/dashboard/AdminStats';
+import AdminCreateCourse from './pages/dashboard/AdminCreateCourse';
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 // import { GoogleOAuthProvider } from '@react-oauth/google'; // (Uncomment nếu dùng Google Auth)
 import ProtectedRoute from './components/ProtectedRoute';
@@ -59,6 +60,7 @@ function App() {
             {/* THÊM ROUTE VIRTUAL MENTOR VÀO ĐÂY */}
             <Route path="/dashboard/virtual-mentor" element={<VirtualMentor />} />
             <Route path="/dashboard/admin" element={<AdminStats />} />
+            <Route path="/dashboard/admin/create-course" element={<AdminCreateCourse />} />
           </Route>
         </Routes>
       </div>

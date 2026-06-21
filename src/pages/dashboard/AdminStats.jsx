@@ -5,7 +5,8 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 import {
   ADMIN_METRICS,
   REVENUE_TREND,
-  ACTIVITY_FEED
+  ACTIVITY_FEED,
+  QUICK_RESULTS
 } from '../../data/adminStatsData';
 import {
   FaUserPlus,
@@ -26,7 +27,7 @@ const ICONS = {
 };
 
 function AdminStats() {
-  const chartData = useMemo(() => REVENUE_TREND.map(item => ({ ...item })), []);
+  const chartData = REVENUE_TREND;
 
   return (
     <div className="d-flex min-vh-100 w-100" style={{ backgroundColor: '#07090f' }}>
@@ -81,13 +82,17 @@ function AdminStats() {
                           <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
                           <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                         </linearGradient>
+                        <linearGradient id="accountsGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
+                        </linearGradient>
                       </defs>
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis dataKey="period" tick={{ fill: '#cbd5e1', fontSize: 12 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: '#cbd5e1', fontSize: 12 }} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={{ backgroundColor: '#0e1724', borderColor: 'rgba(255,255,255,0.08)', color: '#fff' }} />
-                      <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="url(#revenueGradient)" strokeWidth={3} />
-                      <Area type="monotone" dataKey="accounts" stroke="#38bdf8" fill="rgba(56,221,248,0.08)" strokeWidth={3} />
+                      <Area type="monotone" dataKey="revenue" name="Doanh thu" stroke="#10b981" fill="url(#revenueGradient)" strokeWidth={3} />
+                      <Area type="monotone" dataKey="accounts" name="Tài khoản mới" stroke="#38bdf8" fill="url(#accountsGradient)" strokeWidth={3} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -103,9 +108,9 @@ function AdminStats() {
                   </div>
                 </div>
 
-                <div className="list-group">
+                <div className="d-grid gap-3">
                   {ACTIVITY_FEED.map(item => (
-                    <div key={item.id} className="list-group-item p-3 mb-3 rounded-4" style={{ backgroundColor: '#02050d', borderColor: 'rgba(255,255,255,0.06)' }}>
+                    <div key={item.id} className="p-3 rounded-4" style={{ backgroundColor: '#02050d', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div className="d-flex align-items-start justify-content-between gap-3">
                         <div>
                           <h6 className="text-white mb-1">{item.title}</h6>
@@ -129,27 +134,15 @@ function AdminStats() {
             </div>
 
             <div className="row g-3">
-              <div className="col-12 col-sm-6 col-xl-4">
-                <div className="p-3 rounded-4" style={{ backgroundColor: '#02060f', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="text-white-50 small mb-2">Tỷ lệ chuyển đổi</div>
-                  <h4 className="text-white fw-bold mb-1">4.5%</h4>
-                  <div className="text-success small">+0.8% so với tuần trước</div>
+              {QUICK_RESULTS.map(item => (
+                <div key={item.id} className="col-12 col-sm-6 col-xl-4">
+                  <div className="p-3 rounded-4" style={{ backgroundColor: '#02060f', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="text-white-50 small mb-2">{item.label}</div>
+                    <h4 className="text-white fw-bold mb-1">{item.value}</h4>
+                    <div className={`text-${item.tone} small`}>{item.note}</div>
+                  </div>
                 </div>
-              </div>
-              <div className="col-12 col-sm-6 col-xl-4">
-                <div className="p-3 rounded-4" style={{ backgroundColor: '#02060f', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="text-white-50 small mb-2">Tài khoản hoạt động</div>
-                  <h4 className="text-white fw-bold mb-1">7.8k</h4>
-                  <div className="text-info small">Hoạt động trong 24h</div>
-                </div>
-              </div>
-              <div className="col-12 col-sm-6 col-xl-4">
-                <div className="p-3 rounded-4" style={{ backgroundColor: '#02060f', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="text-white-50 small mb-2">Mức hoàn thành khoá học</div>
-                  <h4 className="text-white fw-bold mb-1">84%</h4>
-                  <div className="text-warning small">Đạt mục tiêu đào tạo</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

@@ -70,3 +70,9 @@ export const ACTIVITY_FEED = [
   { id: 3, title: 'Tăng tốc API học viên', desc: 'Giảm thời gian tải trang quản trị xuống 18%.', time: '4 giờ trước' },
   { id: 4, title: 'Báo cáo doanh thu', desc: 'Doanh thu tháng này tăng 12% so với tháng trước.', time: '6 giờ trước' }
 ];
+
+export const QUICK_RESULTS = [
+  { id: 'conversion', label: 'Tỷ lệ chuyển đổi', value: '4.5%', note: '+0.8% so với tuần trước', tone: 'success' },
+  { id: 'activeAccounts', label: 'Tài khoản hoạt động', value: '7.8k', note: 'Hoạt động trong 24h', tone: 'info' },
+  { id: 'courseCompletion', label: 'Mức hoàn thành khoá học', value: '84%', note: 'Đạt mục tiêu đào tạo', tone: 'warning' }
+];

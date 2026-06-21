@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from 'react-bootstrap';
 import { 
   FaHome, FaGraduationCap, FaCode, FaBriefcase, 
-  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot, FaChartLine
+  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot, FaChartLine, FaPlusCircle
 } from 'react-icons/fa';
 
 import { PROFILE_DATA } from '../../data/profileData';
@@ -45,6 +45,7 @@ function Sidebar() {
     { icon: <FaBell />, text: "Thông báo", path: "/dashboard/notifications" },
     { icon: <FaHistory />, text: "Lịch sử đánh giá", path: historyPath },
     { icon: <FaChartLine />, text: "Admin Stats", path: "/dashboard/admin" },
+    { icon: <FaPlusCircle />, text: "Tạo khoá học", path: "/dashboard/admin/create-course" },
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
   ];
 
