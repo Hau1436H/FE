@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from 'react-bootstrap';
 import { 
   FaHome, FaGraduationCap, FaCode, FaBriefcase, 
-  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot // <-- THÊM IMPORT ICON FaRobot
+  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot, FaChartLine, FaPlusCircle
 } from 'react-icons/fa';
 
 import { PROFILE_DATA } from '../../data/profileData';
@@ -36,15 +36,16 @@ function Sidebar() {
     ? `/dashboard/assessment-history/${studentId}` 
     : `#`;
 
-  // BỔ SUNG MENU "Cố vấn AI" VÀO DANH SÁCH KHAI BÁO
   const menuItems = [
     { icon: <FaHome />, text: "Tổng quan", path: "/dashboard" },
     { icon: <FaGraduationCap />, text: "Learning Hub", path: "/dashboard/learning" },
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
     { icon: <FaBriefcase />, text: "Career & Jobs", path: "/dashboard/jobs" },
-    { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" }, // <-- MỤC MỚI ĐƯỢC THÊM VÀO ĐÂY
+    { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" },
     { icon: <FaBell />, text: "Thông báo", path: "/dashboard/notifications" },
     { icon: <FaHistory />, text: "Lịch sử đánh giá", path: historyPath },
+    { icon: <FaChartLine />, text: "Admin Stats", path: "/dashboard/admin" },
+    { icon: <FaPlusCircle />, text: "Tạo khoá học", path: "/dashboard/admin/create-course" },
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
   ];
 
