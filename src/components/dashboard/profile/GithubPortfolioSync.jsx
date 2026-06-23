@@ -55,12 +55,23 @@ function GithubPortfolioSync({ studentId }) {
   const handleSync = async () => {
     if (!username) return alert("Vui lòng nhập GitHub Username");
     setIsSyncing(true);
+    
+    console.log(`[Frontend] Bắt đầu gọi API đồng bộ cho username: ${username}...`); // THÊM LOG
+
     try {
-      await axiosClient.post(`/api/Portfolios/${studentId}/sync-github`, { githubUsername: username });
-      // LƯU Ý: Đã xóa isSyncing(false) ở đây. 
-      // Nút sẽ tiếp tục quay cho đến khi SignalR gọi sự kiện SyncCompleted
+      const res = await axiosClient.post(`/api/Portfolios/${studentId}/sync-github`, { githubUsername: username });
+      console.log("[Frontend] Gọi API thành công, chờ Backend xử lý và báo qua SignalR...", res.data); // THÊM LOG
     } catch (error) {
       setIsSyncing(false);
+      
+      // LOG TOÀN BỘ CẤU TRÚC LỖI
+      console.error("[Frontend] Lỗi khi gọi API đồng bộ GitHub:");
+      console.error("1. Thông báo lỗi:", error.message);
+      if (error.response) {
+         console.error("2. HTTP Status:", error.response.status);
+         console.error("3. Data từ Backend trả về:", error.response.data);
+      }
+      
       alert("Lỗi đồng bộ: " + (error.response?.data?.message || error.message));
     }
   };

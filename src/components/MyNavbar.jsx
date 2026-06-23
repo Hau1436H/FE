@@ -32,11 +32,31 @@ function MyNavbar() {
       // 2. Lấy studentId từ token
       let studentId = null;
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const base64Url = token.split('.')[1];
+        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        
+        // FIX LỖI CRASH ATOB: Tự động bù thêm dấu '=' cho đủ độ dài chuỗi Base64
+        while (base64.length % 4) {
+            base64 += '=';
+        }
+        
+        // Giải mã an toàn hỗ trợ cả ký tự Unicode (tiếng Việt)
+        const jsonPayload = decodeURIComponent(
+          atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join('')
+        );
+
+        const payload = JSON.parse(jsonPayload);
         studentId = payload.studentId || payload.StudentId || payload.sub;
       } catch (err) {
-        // Đổi tên biến catch thành err để không trùng nếu có biến e ở ngoài
         console.warn("Không thể giải mã token để lấy StudentId", err);
+        // Nếu giải mã thất bại mới ép đăng xuất
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+        setPortfolioSlug(null);
+        return; // Dừng lại không gọi API tiếp
       }
 
       // 3. Lấy shareableUrl
@@ -62,7 +82,7 @@ function MyNavbar() {
       setPortfolioSlug(null);
     }
   }, []);
-
+  
   useEffect(() => {
     let isMounted = true;
 

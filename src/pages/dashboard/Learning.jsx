@@ -57,13 +57,29 @@ function Learning() {
     if (!token) return;
 
     // Giải mã JWT Token để lấy UserId (sub)
-    let userId = "";
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      userId = payload.sub || payload.nameid; // 'sub' là Claim chuẩn cho User ID
-    } catch(e) { 
-      console.error("Lỗi parse token:", e); 
-    }
+    // Giải mã JWT Token an toàn để lấy UserId (sub)
+let userId = "";
+try {
+  const base64Url = token.split('.')[1];
+  let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  
+  // Tự động bù thêm dấu '=' cho đủ độ dài chuỗi Base64
+  while (base64.length % 4) {
+      base64 += '=';
+  }
+  
+  // Giải mã hỗ trợ cả Unicode
+  const jsonPayload = decodeURIComponent(
+    atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join('')
+  );
+
+  const payload = JSON.parse(jsonPayload);
+  userId = payload.sub || payload.nameid; 
+} catch(e) { 
+  console.error("Lỗi parse token an toàn:", e); 
+}
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("https://localhost:7196/hubs/roadmap", {

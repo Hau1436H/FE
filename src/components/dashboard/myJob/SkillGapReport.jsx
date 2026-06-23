@@ -19,7 +19,11 @@ function SkillGapReport({ studentId }) {
 
   useEffect(() => {
     const fetchGapData = async () => {
-      if (!studentId) return;
+      // SỬA LỖI XOAY VÒNG: Phải tắt loading nếu không có ID
+      if (!studentId) {
+        setLoading(false); 
+        return;
+      }
       
       try {
         setLoading(true);
@@ -27,13 +31,9 @@ function SkillGapReport({ studentId }) {
         
         const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/generate`);
         
-        // Cấu trúc response.data.Data lúc này là Object { TargetRoleName, LatentTalentSummary, GapItems }
         const resultObject = response.data?.data || response.data;
-        
-        // ĐÃ SỬA LỖI .MAP(): Lấy mảng từ thuộc tính gapItems
         const rawData = resultObject.gapItems || resultObject.GapItems || [];
         
-        // Lưu thông tin text
         setAiSummary(resultObject.latentTalentSummary || resultObject.LatentTalentSummary || "");
         setRoleName(resultObject.targetRoleName || resultObject.TargetRoleName || "Chưa xác định");
         
@@ -49,7 +49,7 @@ function SkillGapReport({ studentId }) {
         console.error("Lỗi lấy dữ liệu Skill Gap:", err);
         setError("Không thể tải báo cáo phân tích. Vui lòng kiểm tra lại kết nối hoặc Backend.");
       } finally {
-        setLoading(false);
+        setLoading(false); 
       }
     };
 
