@@ -1,6 +1,7 @@
 // src/components/dashboard/profile/GithubPortfolioSync.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../../api/axiosClient';
+import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
 function GithubPortfolioSync({ studentId }) {
   const [username, setUsername] = useState('');
@@ -8,27 +9,59 @@ function GithubPortfolioSync({ studentId }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [analyzingRepoId, setAnalyzingRepoId] = useState(null);
 
-  // Load portfolio hiện tại
-  useEffect(() => {
+  // Hàm load data tách riêng để tái sử dụng
+  const loadPortfolio = useCallback(() => {
     if (!studentId) return;
     axiosClient.get(`/api/Portfolios/student/${studentId}`)
       .then(res => setPortfolio(res.data))
-      .catch(() => setPortfolio(null)); // Có thể chưa tạo
+      .catch(() => setPortfolio(null));
   }, [studentId]);
+
+  // Load data lần đầu khi vừa vào trang
+  useEffect(() => {
+    loadPortfolio();
+  }, [loadPortfolio]);
+
+  // KẾT NỐI SIGNALR ĐỂ LẮNG NGHE BACKGROUND JOB
+  useEffect(() => {
+    // CHÚ Ý: Thay đổi domain/port (7196) cho đúng với link Backend đang chạy của bạn
+    const connection = new HubConnectionBuilder()
+      .withUrl("https://localhost:7196/portfolioHub") 
+      .configureLogging(LogLevel.Information)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.start()
+      .then(() => {
+        // Lắng nghe: Khi Hangfire đồng bộ GitHub xong
+        connection.on("SyncCompleted", (incomingStudentId) => {
+          if (incomingStudentId.toLowerCase() === studentId.toLowerCase()) {
+            setIsSyncing(false); // Tắt nút loading
+            loadPortfolio();     // Tự động kéo data mới về
+          }
+        });
+
+        // Lắng nghe: Khi AI phân tích code xong
+        connection.on("AnalysisCompleted", () => {
+          setAnalyzingRepoId(null); // Tắt hiệu ứng quay quay của nút
+          loadPortfolio();          // Cập nhật kết quả AI lên màn hình
+        });
+      })
+      .catch(err => console.error("Lỗi SignalR: ", err));
+
+    return () => connection.stop();
+  }, [studentId, loadPortfolio]);
 
   const handleSync = async () => {
     if (!username) return alert("Vui lòng nhập GitHub Username");
     setIsSyncing(true);
     try {
       await axiosClient.post(`/api/Portfolios/${studentId}/sync-github`, { githubUsername: username });
-      // Load lại data sau khi sync
-      const res = await axiosClient.get(`/api/Portfolios/student/${studentId}`);
-      setPortfolio(res.data);
-      alert("Đồng bộ GitHub thành công!");
+      // LƯU Ý: Đã xóa isSyncing(false) ở đây. 
+      // Nút sẽ tiếp tục quay cho đến khi SignalR gọi sự kiện SyncCompleted
     } catch (error) {
-      alert("Lỗi đồng bộ: " + (error.response?.data?.message || error.message));
-    } finally {
       setIsSyncing(false);
+      alert("Lỗi đồng bộ: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -36,13 +69,10 @@ function GithubPortfolioSync({ studentId }) {
     setAnalyzingRepoId(repoId);
     try {
       await axiosClient.post(`/api/Portfolios/repos/${repoId}/analyze`);
-      // Cập nhật lại UI
-      const res = await axiosClient.get(`/api/Portfolios/student/${studentId}`);
-      setPortfolio(res.data);
+      // Đã xóa trạng thái reset UI. Phải chờ SignalR báo AnalysisCompleted mới tắt.
     } catch (error) {
-      alert("Lỗi phân tích AI: " + (error.response?.data?.message || error.message));
-    } finally {
       setAnalyzingRepoId(null);
+      alert("Lỗi phân tích AI: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -64,7 +94,7 @@ function GithubPortfolioSync({ studentId }) {
           value={username} onChange={e => setUsername(e.target.value)}
         />
         <button className="btn btn-outline-light text-nowrap" onClick={handleSync} disabled={isSyncing}>
-          {isSyncing ? 'Đang đồng bộ...' : 'Sync GitHub'}
+          {isSyncing ? 'Đang cào dữ liệu ngầm...' : 'Sync GitHub'}
         </button>
         {portfolio && (
           <button className="btn btn-success text-nowrap" onClick={generateShareUrl}>
@@ -82,13 +112,12 @@ function GithubPortfolioSync({ studentId }) {
                 <button 
                   className="btn btn-sm btn-outline-warning" 
                   onClick={() => handleAnalyzeAI(repo.repoId)}
-                  disabled={analyzingRepoId === repo.repoId}
+                  disabled={analyzingRepoId === repo.repoId || analyzingRepoId !== null} 
                 >
-                  {analyzingRepoId === repo.repoId ? 'AI Đang đọc README...' : 'AI Phân Tích Code'}
+                  {analyzingRepoId === repo.repoId ? 'AI Đang đọc (10-15s)...' : 'AI Phân Tích Code'}
                 </button>
               </div>
               
-              {/* Hiển thị kết quả AI sau khi phân tích */}
               {repo.aiProjectSummary && (
                 <div className="mt-3 bg-dark p-2 rounded small text-white-50">
                   <p className="mb-1"><strong className="text-white">Summary:</strong> {repo.aiProjectSummary}</p>
