@@ -6,6 +6,7 @@ import JobFilters from '../../components/dashboard/myJob/JobFilters';
 import JobCard from '../../components/dashboard/myJob/JobCard';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import SkillGapReport from '../../components/dashboard/myJob/SkillGapReport';
+import MarketTrendChart from '../../components/dashboard/myJob/MarketTrendChart'; // Import component biểu đồ
 import axiosClient from '../../api/axiosClient';
 
 function Jobs() {
@@ -105,7 +106,6 @@ function Jobs() {
     }
   };
 
-  // ĐÃ CẬP NHẬT: Hàm gọi API tải PDF
   const handleExportPDF = async () => {
     const studentId = getStudentId();
     if (!studentId) {
@@ -116,21 +116,17 @@ function Jobs() {
     try {
       alert("Hệ thống đang sinh báo cáo PDF. Vui lòng chờ trong giây lát...");
       
-      // Gọi xuống API bạn vừa tạo
       const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/export-pdf`, {
-        responseType: 'blob', // Bắt buộc phải có để nhận file
+        responseType: 'blob', 
       });
 
-      // Tạo Blob và link ảo để tự động tải file
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      // Đặt tên file khi tải về
       link.setAttribute('download', `Skill_Gap_Report_${studentId.substring(0,8)}.pdf`); 
       document.body.appendChild(link);
       link.click();
       
-      // Dọn dẹp DOM
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -165,6 +161,15 @@ function Jobs() {
                 onClick={() => setCurrentMainTab('jobs')}
               >
                 <i className="bi bi-briefcase me-1"></i> Việc làm phù hợp
+              </button>
+
+              {/* Nút Xu hướng thị trường mới thêm */}
+              <button 
+                className="btn btn-sm rounded-pill px-3 py-1.5 fw-medium transition-all" 
+                style={{ backgroundColor: currentMainTab === 'market-trends' ? '#ffc107' : 'rgba(255,255,255,0.05)', color: currentMainTab === 'market-trends' ? '#000' : 'rgba(255,255,255,0.5)', fontSize: '13px', border: 'none' }}
+                onClick={() => setCurrentMainTab('market-trends')}
+              >
+                <i className="bi bi-graph-up-arrow me-1"></i> Xu hướng thị trường
               </button>
 
               <button 
@@ -212,6 +217,15 @@ function Jobs() {
                 <div className="card bg-dark border-secondary border-opacity-25 p-4 rounded-4">
                   <SkillGapReport studentId={getStudentId()} />
                 </div>
+              </div>
+            </div>
+
+          ) : currentMainTab === 'market-trends' ? (
+
+            /* Vùng render cho MarketTrendChart */
+            <div className="row mt-3">
+              <div className="col-12">
+                <MarketTrendChart />
               </div>
             </div>
 
