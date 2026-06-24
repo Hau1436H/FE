@@ -6,10 +6,11 @@ import Button from 'react-bootstrap/Button';
 import MyNavbar from '../components/MyNavbar';
 import MyFooter from '../components/MyFooter';
 import Logo from '../components/Logo';
+import Background from '../data/Background.jpg'
 
 function Home() {
   // Thay link ảnh nền của bạn vào đây hoặc import từ thư mục assets
-  const backgroundImage = 'https://i.pinimg.com/736x/2a/2a/33/2a2a337f02b6c63548fb8e03b24a796a.jpg';
+  const backgroundImage = Background;
 
   return (
     <>
