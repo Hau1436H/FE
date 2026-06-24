@@ -18,10 +18,11 @@ import PublicPortfolio from './pages/PublicPortfolio';
 import VirtualMentor from './pages/dashboard/VirtualMentor'; // <-- IMPORT FILE MỚI VÀO ĐÂY
 import AdminStats from './pages/dashboard/AdminStats';
 import AdminCreateCourse from './pages/dashboard/AdminCreateCourse';
+//import AdminManagement from './pages/dashboard/AdminManagement';  
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 // import { GoogleOAuthProvider } from '@react-oauth/google'; // (Uncomment nếu dùng Google Auth)
 import ProtectedRoute from './components/ProtectedRoute';
-
+import AdminManagement from './pages/dashboard/AdminManagement';
 function App() {
   const location = useLocation();
 
@@ -61,6 +62,7 @@ function App() {
             <Route path="/dashboard/virtual-mentor" element={<VirtualMentor />} />
             <Route path="/dashboard/admin" element={<AdminStats />} />
             <Route path="/dashboard/admin/create-course" element={<AdminCreateCourse />} />
+            <Route path="/dashboard/admin/management" element={<AdminManagement />} />
           </Route>
         </Routes>
       </div>

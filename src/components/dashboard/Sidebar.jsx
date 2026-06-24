@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from 'react-bootstrap';
 import { 
   FaHome, FaGraduationCap, FaCode, FaBriefcase, 
-  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot, FaChartLine, FaPlusCircle
+  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot, FaChartLine, FaPlusCircle, FaSlidersH
 } from 'react-icons/fa';
 
 import { PROFILE_DATA } from '../../data/profileData';
@@ -31,12 +31,10 @@ function Sidebar() {
   }, []);
 
   const studentId = user?.userId || '';  
-  // ĐÃ SỬA LỖI TRÙNG LẶP: Không fallback về /dashboard nữa
-  const historyPath = studentId 
-    ? `/dashboard/assessment-history/${studentId}` 
-    : `#`;
+  const historyPath = studentId ? `/dashboard/assessment-history/${studentId}` : '#';
 
-  const menuItems = [
+  // 1. Nhóm Menu dành cho tất cả mọi người (Học viên & Admin)
+  const baseMenuItems = [
     { icon: <FaHome />, text: "Tổng quan", path: "/dashboard" },
     { icon: <FaGraduationCap />, text: "Learning Hub", path: "/dashboard/learning" },
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
@@ -44,16 +42,51 @@ function Sidebar() {
     { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" },
     { icon: <FaBell />, text: "Thông báo", path: "/dashboard/notifications" },
     { icon: <FaHistory />, text: "Lịch sử đánh giá", path: historyPath },
-    { icon: <FaChartLine />, text: "Admin Stats", path: "/dashboard/admin" },
-    { icon: <FaPlusCircle />, text: "Tạo khoá học", path: "/dashboard/admin/create-course" },
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
   ];
+
+  // 2. Nhóm Menu chỉ hiển thị khi tài khoản đăng nhập có Role là Admin
+  const adminMenuItems = [
+    { icon: <FaChartLine />, text: "Admin Stats", path: "/dashboard/admin" },
+    { icon: <FaSlidersH />, text: "Quản lý hệ thống", path: "/dashboard/admin/management" },
+    { icon: <FaPlusCircle />, text: "Tạo khoá học", path: "/dashboard/admin/create-course" },
+  ];
+
+  // Kiểm tra xem user hiện tại có phải là Admin hay không (Không phân biệt chữ hoa/thường)
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
 
   const hourStat = PROFILE_DATA.stats.find(s => s.label === "Giờ học");
   const currentHours = parseInt(hourStat?.value?.replace(/[^0-9]/g, ''), 10) || 0;
   const targetHours = 100; 
 
   const goalPercentage = Math.min(100, Math.round((currentHours / targetHours) * 100));
+
+  // Hàm render dùng chung cho các item menu để tránh lặp code
+  const renderMenuItem = (item, index) => {
+    const isItemActive = item.text === "Lịch sử đánh giá"
+      ? location.pathname.includes('/assessment-history') 
+      : location.pathname === item.path && item.path !== '#';
+
+    return (
+      <li key={index}>
+        <button 
+          type="button"
+          className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 rounded-3 border-0 ${
+            isItemActive ? ' fw-semibold' : 'bg-transparent text-white-50'
+          }`}
+          style={isItemActive ? { color: '#fff', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important' } : {}}
+          onClick={() => item.path !== '#' && navigate(item.path)} 
+        >
+          <span className={isItemActive ? 'text-white' : 'text-white-50 d-flex align-items-center'}>
+            {item.icon}
+          </span>
+          <span className="text-white">
+            {item.text}
+          </span>
+        </button>
+      </li>
+    );
+  };
 
   return (
     <div className="d-flex flex-column p-3 text-white flex-shrink-0" style={{ width: '260px', backgroundColor: '#06060c', minHeight: '100vh', borderRight: '1px solid #1e1e2f' }}>
@@ -102,37 +135,23 @@ function Sidebar() {
         </div>
       </div>
 
-      <div className="small text-white mb-2 px-2 uppercase fw-bold" style={{ fontSize: '11px', letterSpacing: '1px' }}>MENU</div>
-      <ul className="nav nav-pills flex-column mb-auto gap-1">
-        {menuItems.map((item, index) => {
-          
-          // ĐÃ SỬA LOGIC SO SÁNH: Chặn lỗi nhận diện nhầm nút Active
-          const isItemActive = item.text === "Lịch sử đánh giá"
-            ? location.pathname.includes('/assessment-history') 
-            : location.pathname === item.path && item.path !== '#';
-
-          return (
-            <li key={index}>
-              <button 
-                type="button"
-                className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 rounded-3 border-0 ${
-                  isItemActive ? ' fw-semibold' : 'bg-transparent text-white-50'
-                }`}
-                style={isItemActive ? { color: '#fff', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important' } : {}}
-                // Không cho bấm nếu đang load ID (link '#')
-                onClick={() => item.path !== '#' && navigate(item.path)} 
-              >
-                <span className={isItemActive ? 'text-white' : 'text-white-50 d-flex align-items-center'}>
-                  {item.icon}
-                </span>
-                <span className={isItemActive ? 'text-white' : 'text-white'}>
-                  {item.text}
-                </span>
-              </button>
-            </li>
-          );
-        })}
+      {/* KHỐI MENU CHÍNH CHUNG */}
+      <div className="small text-white mb-2 px-2 uppercase fw-bold" style={{ fontSize: '11px', letterSpacing: '1px' }}>MENU THÀNH VIÊN</div>
+      <ul className="nav nav-pills flex-column gap-1 mb-3">
+        {baseMenuItems.map((item, index) => renderMenuItem(item, index))}
       </ul>
+
+      {/* KHỐI MENU QUẢN TRỊ (Chỉ hiển thị nếu là Admin) */}
+      {isAdmin && (
+        <>
+          <div className="small text-white mb-2 px-2 uppercase fw-bold mt-2" style={{ fontSize: '11px', letterSpacing: '1px', color: '#10b981' }}>QUẢN TRỊ VIÊN</div>
+          <ul className="nav nav-pills flex-column gap-1 mb-auto">
+            {adminMenuItems.map((item, index) => renderMenuItem(item, index))}
+          </ul>
+        </>
+      )}
+
+      {!isAdmin && <div className="mb-auto"></div>}
 
       <hr style={{ backgroundColor: '#22223b' }} />
 
@@ -144,7 +163,7 @@ function Sidebar() {
             onClick={() => navigate('/dashboard/setting')}
           >
             <FaCog className={location.pathname === '/dashboard/setting' ? 'text-white' : 'text-white-50'} /> 
-            <span className={location.pathname === '/dashboard/setting' ? 'text-white' : 'text-white'}>Cài đặt</span>
+            <span className="text-white">Cài đặt</span>
           </button>
         </li>
         <li>
