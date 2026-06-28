@@ -1,64 +1,130 @@
-// Đây là component Lộ trình học tập.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; 
+import {
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
+  ResponsiveContainer, Tooltip, Legend
+} from 'recharts';
+import axiosClient from '../../api/axiosClient';
 
-function LearningPath() {
-  // 1. Khởi tạo State chứa toàn bộ dữ liệu động (Sau này chỉ cần set dữ liệu từ API vào đây)
-  const [pathData, setPathData] = useState({
-    title: "Lộ trình của tôi",
-    totalProgress: 53,
-    currentCourse: {
-      name: "Nền tảng Lập trình",
-      progress: 68
-    },
-    topics: [
-      { id: 1, name: "HTML5 & CSS3 nâng cao", status: "completed" },
-      { id: 2, name: "JavaScript ES2024", status: "completed" },
-      { id: 3, name: "Data Structures cơ bản", status: "in-progress", detail: "(60%)" }
-    ]
-  });
+function SkillGapReport({ studentId }) {
+  const navigate = useNavigate();
+  const [data, setData] = useState([]);
+  
+  // ĐÃ THÊM: State lưu trữ AI Summary và Target Role Name
+  const [aiSummary, setAiSummary] = useState("");
+  const [roleName, setRoleName] = useState("");
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Hàm phụ trợ để hiển thị icon trạng thái động dựa trên dữ liệu
-  const renderStatusIcon = (status) => {
-    switch (status) {
-      case 'completed': return '🟢';
-      case 'in-progress': return '🟡';
-      default: return '⚪';
-    }
-  };
+  useEffect(() => {
+    const fetchGapData = async () => {
+      // SỬA LỖI XOAY VÒNG: Phải tắt loading nếu không có ID
+      if (!studentId) {
+        setLoading(false); 
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/generate`);
+        
+        const resultObject = response.data?.data || response.data;
+        const rawData = resultObject.gapItems || resultObject.GapItems || [];
+        
+        setAiSummary(resultObject.latentTalentSummary || resultObject.LatentTalentSummary || "");
+        setRoleName(resultObject.targetRoleName || resultObject.TargetRoleName || "Chưa xác định");
+        
+        const formattedData = rawData.map(item => ({
+          subject: item.nodeName || item.skillName || item.subject || 'Unknown Skill',
+          current: item.currentScore || item.current || 0,
+          required: item.targetScore || item.required || item.requiredScore || 0,
+          fullMark: 100
+        }));
+
+        setData(formattedData);
+      } catch (err) {
+        console.error("Lỗi lấy dữ liệu Skill Gap:", err);
+        setError("Không thể tải báo cáo phân tích. Vui lòng kiểm tra lại kết nối hoặc Backend.");
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    fetchGapData();
+  }, [studentId]);
+
+  const gaps = data
+    .filter(item => item.current < item.required)
+    .sort((a, b) => (b.required - b.current) - (a.required - a.current));
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-info mb-3"></div>
+        <p className="text-white-50">AI đang tổng hợp và phân tích dữ liệu kỹ năng của bạn...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="alert alert-danger bg-danger bg-opacity-10 border-danger text-danger text-center py-4">
+        <i className="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>
+        {error}
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="alert alert-warning bg-warning bg-opacity-10 border-warning text-warning text-center py-4">
+        <i className="bi bi-info-circle fs-2 d-block mb-2"></i>
+        Chưa có đủ dữ liệu để phân tích. Hãy đảm bảo bạn đã chọn "Mục tiêu nghề nghiệp" trong phần Hồ sơ nhé.
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: '#0f111a', border: '1px solid #1e2235' }}>
-      {/* Tiêu đề & Tổng tiến độ động */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h6 className="fw-bold text-white mb-0">{pathData.title}</h6>
-        <span className="text-success small fw-medium">{pathData.totalProgress}% tổng tiến độ</span>
-      </div>
+    <div className="d-flex flex-column gap-4">
       
-      {/* Khóa học hiện tại động */}
-      <div className="p-3 rounded-3" style={{ backgroundColor: '#161925', borderLeft: '4px solid #10b981' }}>
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <span className="fw-semibold">{pathData.currentCourse.name}</span>
-          <span className="text-success fw-bold">{pathData.currentCourse.progress}%</span>
-        </div>
-        <div className="progress" style={{ height: '6px', backgroundColor: '#22223b' }}>
-          <div 
-            className="progress-bar bg-success" 
-            style={{ width: `${pathData.currentCourse.progress}%`, transition: 'width 0.5s ease-in-out' }}
-          ></div>
-        </div>
+      {/* ĐÃ THÊM: KHỐI HIỂN THỊ AI SUMMARY TRÊN CÙNG */}
+      <div className="p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25">
+        <h6 className="text-success fw-bold mb-2">
+          <i className="bi bi-robot me-2"></i>AI Profile Summary & Lời khuyên
+        </h6>
+        <p className="text-white-50 mb-0 small" style={{ lineHeight: '1.6' }}>
+          {aiSummary || "Hệ thống đang thu thập thêm dữ liệu để phân tích năng lực cốt lõi của bạn."}
+        </p>
       </div>
-      
-      {/* Danh sách bài học/chủ đề động dùng vòng lặp map */}
-      <div className="mt-3 d-flex flex-column gap-2 small">
-        {pathData.topics.map((topic) => (
-          <div key={topic.id} className="d-flex align-items-center gap-2 text-white opacity-75">
-            <span>{renderStatusIcon(topic.status)}</span>
-            <span>{topic.name} {topic.detail && <span className="text-white-50">{topic.detail}</span>}</span>
+
+      <div>
+        {/* CỘT TRÁI: BIỂU ĐỒ RADAR */}
+          <div className="bg-black bg-opacity-25 rounded-4 p-3 border border-secondary border-opacity-25 h-100 d-flex flex-column">
+            <h6 className="text-white-50 text-center mb-3">Tương quan năng lực so với: <span className="text-white">{roleName}</span></h6>
+            <div style={{ width: '100%', height: '350px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
+                  <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1a1d24', border: '1px solid #333', borderRadius: '8px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }} />
+                  
+                  <Radar name="Yêu cầu thị trường" dataKey="required" stroke="#dc3545" fill="#dc3545" fillOpacity={0.2} />
+                  <Radar name="Năng lực của bạn" dataKey="current" stroke="#17a2b8" fill="#17a2b8" fillOpacity={0.5} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        ))}
       </div>
     </div>
   );
 }
 
-export default LearningPath;
+export default SkillGapReport;

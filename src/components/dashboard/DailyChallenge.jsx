@@ -6,7 +6,7 @@ function DailyChallenge() {
   // 1. Khởi tạo dữ liệu gốc từ API (Gợi ý: Backend nên trả về một mốc thời gian cụ thể)
   const [challenge, setChallenge] = useState({
     id: 724,
-    title: "Giải bài Leetcode #724 – Find Pivot Index",
+    title: "Tổng hợp kĩ năng và thị trường",
     xpReward: 150,
     challengeUrl: "https://leetcode.com",
     // Thiết lập thời gian hết hạn: Ví dụ lấy thời gian hiện tại cộng thêm 6 giờ 23 phút
@@ -67,35 +67,8 @@ function DailyChallenge() {
   };
 
   return (
-    <div className="p-3 rounded-4 mb-4 d-flex justify-content-between align-items-center position-relative overflow-hidden" 
-         style={{ 
-           background: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)', 
-           border: '1px solid #1e293b' 
-         }}>
-      <div className="d-flex align-items-center gap-3">
-        <div className="p-2 bg-warning bg-opacity-10 text-warning rounded-3 fs-4 d-flex align-items-center justify-content-center">
-          <FaFire />
-        </div>
-        <div>
-          <div className="text-warning fw-semibold small text-uppercase" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
-            ⚡ DAILY CHALLENGE
-          </div>
-          <h5 className="text-white mb-1 fw-bold mt-1">{challenge.title}</h5>
-          
-          <p className="text-white-50 mb-0 small">
-            Còn <span className="text-warning fw-mono">{timeLeftStr}</span> • <span className="text-success fw-medium">+{challenge.xpReward} XP</span> khi hoàn thành
-          </p>
-        </div>
-      </div>
-      
-      <button 
-        className={`btn px-4 py-2 fw-semibold rounded-3 ${isExpired ? 'btn-secondary text-white-50' : 'btn-success text-dark'}`}
-        style={isExpired ? { border: 'none' } : { backgroundColor: '#10b981', border: 'none' }}
-        onClick={handleStartChallenge}
-        disabled={isExpired} // Khóa nút nếu hết giờ
-      >
-        {isExpired ? "Đã kết thúc" : "Thử ngay"}
-      </button>
+    <div className="">
+      <h2 className="text-white mb-1 fw-bold mt-1">{challenge.title}</h2>
     </div>
   );
 }
