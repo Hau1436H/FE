@@ -186,9 +186,7 @@ function MyNavbar() {
 
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="mx-auto gap-3 my-2 my-lg-0">
-              <Nav.Link href="#features" className="text-white opacity-75">Tính năng</Nav.Link>
-              <Nav.Link href="#how-it-works" className="text-white opacity-75">Cách hoạt động</Nav.Link>
-              <Nav.Link href="#mentors" className="text-white opacity-75">Mentor</Nav.Link>
+              <Nav.Link as={Link} to="/skill-assessment" className="py-2">Làm bài test</Nav.Link>
 
               {portfolioSlug && (
                 <Nav.Link
