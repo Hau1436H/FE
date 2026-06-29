@@ -23,6 +23,7 @@ import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsC
 // import { GoogleOAuthProvider } from '@react-oauth/google'; // (Uncomment nếu dùng Google Auth)
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminManagement from './pages/dashboard/AdminManagement';
+import AdminRoute from './components/AdminRoute';
 function App() {
   const location = useLocation();
 
@@ -60,9 +61,13 @@ function App() {
 
             {/* THÊM ROUTE VIRTUAL MENTOR VÀO ĐÂY */}
             <Route path="/dashboard/virtual-mentor" element={<VirtualMentor />} />
-            <Route path="/dashboard/admin" element={<AdminStats />} />
-            <Route path="/dashboard/admin/create-course" element={<AdminCreateCourse />} />
-            <Route path="/dashboard/admin/management" element={<AdminManagement />} />
+
+            {/* Các route dành riêng cho Admin */}
+            <Route element={<AdminRoute />}>
+              <Route path="/dashboard/admin" element={<AdminStats />} />
+              <Route path="/dashboard/admin/create-course" element={<AdminCreateCourse />} />
+              <Route path="/dashboard/admin/management" element={<AdminManagement />} />
+            </Route>
           </Route>
         </Routes>
       </div>

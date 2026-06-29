@@ -23,6 +23,12 @@ function Login() {
     const [isLoading, setIsLoading] = useState(false);
 
     // Xóa hook useGoogleLogin cũ ở đây vì ta sẽ tích hợp thẳng vào Component phía dưới
+      const redirectAfterLogin = (role) => {
+        window.dispatchEvent(new Event('authChange'));
+        const isAdmin = (role || '').toLowerCase() === 'admin';
+        navigate(isAdmin ? '/dashboard/admin' : '/dashboard');
+    };
+    // 
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -49,7 +55,11 @@ function Login() {
             
             setTimeout(() => {
                 window.dispatchEvent(new Event('authChange'));
-                navigate('/');
+                if ((role || '').toLowerCase() === 'admin') {
+                    navigate('/dashboard/admin');
+                } else {
+                    navigate('/dashboard');
+                }
             }, 800);
 
         } catch (error) {
@@ -189,7 +199,11 @@ function Login() {
                                                 setMessage({ type: 'success', content: 'Đăng nhập bằng Google thành công!' });
                                                 setTimeout(() => {
                                                     window.dispatchEvent(new Event('authChange'));
-                                                    navigate('/');
+                                                    if ((role || '').toLowerCase() === 'admin') {
+                                                        navigate('/dashboard/admin');
+                                                    } else {
+                                                        navigate('/dashboard');
+                                                    }
                                                 }, 800);
 
                                             } catch (error) {

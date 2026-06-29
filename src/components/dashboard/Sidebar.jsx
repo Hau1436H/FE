@@ -10,22 +10,93 @@ import {
 import { PROFILE_DATA } from '../../data/profileData';
 import axiosClient from '../../api/axiosClient'; 
 
+
+function decodeToken(token) {
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    const jsonPayload = decodeURIComponent(
+      atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.warn('Không thể giải mã token:', e);
+    return null;
+  }
+}
+
+
+
+
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState({});
 
   useEffect(() => {
+    // async function fetchUser() {
+    //   try {
+    //     const response = await axiosClient.get('/api/Profile/me');
+    //     const result = response.data;
+    //     if (result.data) {
+    //       setUser(result.data);
+    //     }
+    //   } catch (error) {
+    //     console.error("Lỗi nạp dữ liệu", error);
+    //   }
+        /*} catch (error) {
+        // /api/Profile/me có thể chưa tồn tại (404) ở Backend hiện tại.
+        // Không để lỗi này chặn Sidebar - chỉ dùng dữ liệu cơ bản giải mã từ JWT
+        // để vẫn hiển thị được tên/email tạm thời.
+        console.warn('Không tải được /api/Profile/me, dùng dữ liệu cơ bản từ token:', error?.message);
+ 
+        const token = localStorage.getItem('token');
+        const payload = decodeToken(token);
+        if (payload) {
+          setUser({
+            fullName: payload.fullName || payload.name || payload.unique_name || '',
+            email: payload.email || payload.sub || '',
+            avatar: null,
+          });
+        }
+      }*/
+
     async function fetchUser() {
+      // Luôn lấy role/thông tin cơ bản từ token trước - không phụ thuộc API
+      const token = localStorage.getItem('token');
+      const payload = decodeToken(token);
+      const tokenRole = payload?.role || payload?.Role || localStorage.getItem('role') || '';
+      const tokenFallback = {
+        fullName: payload?.fullName || payload?.name || payload?.unique_name || '',
+        email: payload?.email || payload?.sub || '',
+        avatar: null,
+        role: tokenRole,
+      };
+ 
       try {
         const response = await axiosClient.get('/api/Profile/me');
         const result = response.data;
         if (result.data) {
-          setUser(result.data);
+          // Ghép role từ token vào nếu API không trả field role
+          setUser({ ...result.data, role: result.data.role || tokenRole });
+        } else {
+          setUser(tokenFallback);
         }
       } catch (error) {
-        console.error("Lỗi nạp dữ liệu", error);
+        // /api/Profile/me có thể chưa tồn tại (404) ở Backend hiện tại.
+        // Không để lỗi này chặn Sidebar - dùng dữ liệu cơ bản giải mã từ JWT
+        // để vẫn hiển thị được tên/email/role tạm thời.
+        console.warn('Không tải được /api/Profile/me, dùng dữ liệu cơ bản từ token:', error?.message);
+        setUser(tokenFallback);
       }
+
+
     }
     fetchUser();
   }, []);
