@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import * as signalR from "@microsoft/signalr"; // ĐÃ THÊM: Import SignalR để real-time hóa tiến trình Roadmap
 import axiosClient from '../../api/axiosClient';
 
 // ===== Token màu lấy đúng từ mockup HTML =====
@@ -10,7 +9,6 @@ const COLORS = {
   borderSoft: '#1A1A1A',
   textPrimary: '#ECECEC',
   textSecondary: '#8C8C8C',
-  textTertiary: '#5C5C5C',
   accentCyan: '#34D399',
   accentCyanDim: 'rgba(52,211,153,0.12)',
   accentAmber: '#F5A623',
@@ -20,15 +18,10 @@ const COLORS = {
 function StudyNext({ studentId }) {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
-  
-  // ĐÃ THÊM: State lưu trữ AI Summary và Target Role Name
-  const [aiSummary, setAiSummary] = useState("");
-  const [roleName, setRoleName] = useState("");
-  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ĐÃ THÊM: State lưu tiến trình Roadmap (đồng bộ với Learning.jsx)
+  // Tiến trình Roadmap tổng (X/Y kỹ năng = Z%), đồng bộ với Learning.jsx
   const [roadmapProgress, setRoadmapProgress] = useState({
     completed: 0,
     total: 0,
@@ -36,34 +29,29 @@ function StudyNext({ studentId }) {
     loading: true,
   });
 
-  // ĐÃ THÊM: refreshKey để trigger refetch khi SignalR báo có thay đổi target role
-  const [refreshKey, setRefreshKey] = useState(0);
+  // Set chứa tên các kỹ năng đã hoàn thành, dùng để hiện trạng thái cho từng item Gap
+  const [completedSkillNames, setCompletedSkillNames] = useState(new Set());
 
   useEffect(() => {
     const fetchGapData = async () => {
-      // SỬA LỖI XOAY VÒNG: Phải tắt loading nếu không có ID
       if (!studentId) {
-        setLoading(false); 
+        setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
         setError(null);
-        
+
         const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/generate`);
-        
+
         const resultObject = response.data?.data || response.data;
         const rawData = resultObject.gapItems || resultObject.GapItems || [];
-        
-        setAiSummary(resultObject.latentTalentSummary || resultObject.LatentTalentSummary || "");
-        setRoleName(resultObject.targetRoleName || resultObject.TargetRoleName || "Chưa xác định");
-        
+
         const formattedData = rawData.map(item => ({
           subject: item.nodeName || item.skillName || item.subject || 'Unknown Skill',
           current: item.currentScore || item.current || 0,
           required: item.targetScore || item.required || item.requiredScore || 0,
-          fullMark: 100
         }));
 
         setData(formattedData);
@@ -71,15 +59,15 @@ function StudyNext({ studentId }) {
         console.error("Lỗi lấy dữ liệu Skill Gap:", err);
         setError("Không thể tải báo cáo phân tích. Vui lòng kiểm tra lại kết nối hoặc Backend.");
       } finally {
-        setLoading(false); 
+        setLoading(false);
       }
     };
 
     fetchGapData();
-  }, [studentId, refreshKey]);
+  }, [studentId]);
 
-  // ĐÃ THÊM: Gọi cùng API roadmap mà Learning.jsx dùng, để tính % hoàn thành tổng.
-  // Logic format giống hệt Learning.jsx (isCompleted/isLocked -> status) để 2 trang luôn khớp nhau.
+  // Gọi cùng API roadmap mà NodeDrawer.jsx/Learning.jsx dùng, chỉ 1 lần khi mount.
+  // Dùng kết quả này để vừa tính % tổng, vừa xác định từng skill đã hoàn thành hay chưa.
   useEffect(() => {
     const fetchRoadmapProgress = async () => {
       try {
@@ -88,10 +76,12 @@ function StudyNext({ studentId }) {
         if (response.data && response.data.data) {
           const nodes = response.data.data;
           const total = nodes.length;
-          const completed = nodes.filter(n => n.isCompleted).length;
+          const completedNodes = nodes.filter(n => n.isCompleted);
+          const completed = completedNodes.length;
           const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
           setRoadmapProgress({ completed, total, percent, loading: false });
+          setCompletedSkillNames(new Set(completedNodes.map(n => n.nodeName)));
         } else {
           setRoadmapProgress({ completed: 0, total: 0, percent: 0, loading: false });
         }
@@ -102,87 +92,7 @@ function StudyNext({ studentId }) {
     };
 
     fetchRoadmapProgress();
-  }, [studentId, refreshKey]);
-
-  // ĐÃ THÊM: KẾT NỐI SIGNALR ĐỂ LẮNG NGHE SỰ KIỆN TỪ BACKEND (port từ Learning.jsx)
-  // Khi backend báo có thay đổi (hoàn thành node, đổi target role...), tự động
-  // tăng refreshKey để 2 useEffect phía trên chạy lại — tiến trình tự nhảy % real-time.
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    // Giải mã JWT Token an toàn để lấy UserId (sub), hỗ trợ cả Base64Url
-    let userId = "";
-    try {
-      const base64Url = token.split('.')[1];
-      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-
-      while (base64.length % 4) {
-        base64 += '=';
-      }
-
-      const jsonPayload = decodeURIComponent(
-        atob(base64).split('').map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join('')
-      );
-
-      const payload = JSON.parse(jsonPayload);
-      userId = payload.sub || payload.nameid;
-    } catch (e) {
-      console.error("Lỗi parse token an toàn:", e);
-    }
-
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7196/hubs/roadmap", {
-        accessTokenFactory: () => token
-      })
-      .withAutomaticReconnect()
-      .build();
-
-    // Biến cờ để ngăn lỗi AbortError của React StrictMode
-    let isMounted = true;
-
-    connection.start()
-      .then(() => {
-        if (isMounted) {
-          console.log("StudyNext: Đã kết nối Real-time Roadmap Hub!");
-          if (userId) {
-            connection.invoke("SubscribeToRoadmapUpdates", userId)
-              .catch(err => console.error("Lỗi khi tham gia Group Roadmap:", err));
-          }
-        }
-      })
-      .catch(err => {
-        if (isMounted) console.error("Lỗi kết nối SignalR: ", err);
-      });
-
-    // Lắng nghe sự kiện TargetRoleChanged - cùng sự kiện mà Learning.jsx lắng nghe
-    connection.on("TargetRoleChanged", (data) => {
-      console.log("StudyNext: Tín hiệu Realtime nhận được:", data.message);
-      setRefreshKey(prev => prev + 1);
-    });
-
-    // Lắng nghe sự kiện hoàn thành node (nếu backend có bắn riêng sự kiện này)
-    connection.on("NodeCompleted", (data) => {
-      console.log("StudyNext: Node vừa hoàn thành:", data?.message);
-      setRefreshKey(prev => prev + 1);
-    });
-
-    // Cleanup khi component bị unmount
-    return () => {
-      isMounted = false;
-      if (connection.state === signalR.HubConnectionState.Connected) {
-        if (userId) {
-          connection.invoke("UnsubscribeFromRoadmapUpdates", userId)
-            .then(() => connection.stop())
-            .catch(() => connection.stop());
-        } else {
-          connection.stop();
-        }
-      }
-    };
-  }, []);
+  }, [studentId]);
 
   const gaps = data
     .filter(item => item.current < item.required)
@@ -218,7 +128,7 @@ function StudyNext({ studentId }) {
   return (
     <div className="d-flex flex-column gap-4">
 
-      {/* ĐÃ THÊM: KHỐI TIẾN TRÌNH ROADMAP TỔNG - đồng bộ với Learning.jsx */}
+      {/* KHỐI TIẾN TRÌNH ROADMAP TỔNG - đồng bộ với Learning.jsx */}
       {!roadmapProgress.loading && roadmapProgress.total > 0 && (
         <div
           style={{
@@ -288,6 +198,8 @@ function StudyNext({ studentId }) {
                 priorityStyle = { background: 'rgba(138,146,163,0.15)', color: COLORS.textSecondary };
               }
 
+              const isCompleted = completedSkillNames.has(item.subject);
+
               return (
                 <div
                   key={index}
@@ -312,30 +224,18 @@ function StudyNext({ studentId }) {
                     </span>
                   </div>
 
-                  <div className="d-flex justify-content-between mb-2" style={{ fontSize: '11.5px', color: COLORS.textSecondary }}>
-                    <span>Hiện tại: <strong style={{ color: COLORS.textPrimary, fontWeight: 600 }}>{item.current}%</strong></span>
-                    <span>Mục tiêu: <strong style={{ color: COLORS.accentAmber, fontWeight: 600 }}>{item.required}%</strong></span>
-                  </div>
-
-                  {/* Dual-track: 1 thanh duy nhất + vạch đánh dấu mục tiêu, giống mockup */}
-                  <div style={{ position: 'relative', height: '6px', background: COLORS.borderSoft, borderRadius: '4px', marginBottom: '12px' }}>
-                    <div
-                      style={{
-                        position: 'absolute', left: 0, top: 0, height: '100%',
-                        width: `${item.current}%`,
-                        background: COLORS.accentCyan,
-                        borderRadius: '4px',
-                      }}
-                    ></div>
-                    <div
-                      style={{
-                        position: 'absolute', top: '-3px',
-                        left: `${item.required}%`,
-                        width: '2px', height: '12px',
-                        background: COLORS.accentAmber,
-                        borderRadius: '1px',
-                      }}
-                    ></div>
+                  {/* ĐÃ SỬA: thay % Hiện tại/Mục tiêu bằng trạng thái hoàn thành kỹ năng,
+                      lấy từ roadmap API (cùng nguồn isCompleted mà NodeDrawer/Learning dùng) */}
+                  <div className="d-flex align-items-center mb-3" style={{ fontSize: '11.5px' }}>
+                    {isCompleted ? (
+                      <span className="d-flex align-items-center" style={{ color: COLORS.accentCyan, fontWeight: 600, gap: '6px' }}>
+                        <i className="bi bi-check-circle-fill"></i> Đã hoàn thành
+                      </span>
+                    ) : (
+                      <span className="d-flex align-items-center" style={{ color: COLORS.textSecondary, fontWeight: 600, gap: '6px' }}>
+                        <i className="bi bi-circle"></i> Chưa hoàn thành
+                      </span>
+                    )}
                   </div>
 
                   <div
