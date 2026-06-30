@@ -37,7 +37,8 @@ function Dashboard() {
     }
   };
   return (
-    <div className="d-flex" style={{ backgroundColor: '#020205', minHeight: '100vh', fontFamily: 'system-ui' }}>
+    // Nền đổi từ #020205 (đen ánh tím) sang đen thuần để đồng bộ với Sidebar gốc
+    <div className="d-flex" style={{ backgroundColor: '#000000', minHeight: '100vh', fontFamily: 'system-ui' }}>
       {/* Cột cố định Menu trái */}
       <Sidebar />
 

@@ -1,22 +1,23 @@
 // src/components/dashboard/myJob/MarketTrendChart.jsx
 import { useState, useEffect, useMemo } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
-} from 'recharts';
 import axiosClient from '../../api/axiosClient';
 
-// FIX: Chuyển CustomTooltip ra ngoài để không bị tạo lại mỗi lần render
-const CustomTooltip = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="p-2 rounded" style={{ backgroundColor: '#131520', border: '1px solid #2b2f3a', color: '#fff' }}>
-        <p className="mb-0 fw-bold">{payload[0].payload.name}</p>
-        <p className="mb-0 text-info small">Độ HOT (Market Demand): {payload[0].value}%</p>
-      </div>
-    );
-  }
-  return null;
+// ===== Token màu lấy đúng từ mockup HTML =====
+const COLORS = {
+  bgCard: '#131313',
+  border: '#232323',
+  borderSoft: '#1A1A1A',
+  textPrimary: '#ECECEC',
+  textSecondary: '#8C8C8C',
+  textTertiary: '#5C5C5C',
 };
+
+// Bảng màu mỗi cột, đồng bộ tông nền đen + xanh lá chủ đạo (giữ đúng dải màu
+// trong mockup .bars-list, bỏ đỏ ra khỏi palette vì không hợp ngữ nghĩa "độ HOT")
+const BAR_COLORS = [
+  '#34D399', '#34D399', '#F5C453', '#F5A623', '#F58A4D',
+  '#A78BFA', '#F472B6', '#2DD4BF', '#60A5FA', '#8B5CF6',
+];
 
 function MarketTrendChart() {
   const [rawData, setRawData] = useState([]);
@@ -40,7 +41,7 @@ function MarketTrendChart() {
     fetchTrends();
   }, []);
 
-  // Xử lý dữ liệu cho Bar Chart (Lấy ngày mới nhất và sắp xếp theo % Demand)
+  // Xử lý dữ liệu cho thanh bar (Lấy ngày mới nhất và sắp xếp theo % Demand)
   const chartData = useMemo(() => {
     if (!Array.isArray(rawData) || rawData.length === 0) return [];
 
@@ -67,56 +68,71 @@ function MarketTrendChart() {
       .slice(0, 10);
   }, [rawData]);
 
-  // Bảng màu cho các cột
-  const colors = ['#17a2b8', '#28a745', '#ffc107', '#dc3545', '#fd7e14', '#6f42c1', '#e83e8c', '#20c997', '#007bff', '#6610f2'];
-
   if (loading) {
-    return <div className="text-center py-5 text-success"><div className="spinner-border"></div></div>;
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border" style={{ color: '#34D399' }}></div>
+      </div>
+    );
   }
 
   if (chartData.length === 0) {
-    return <div className="text-center py-5 text-white-50">Chưa có đủ dữ liệu để vẽ biểu đồ. Hãy chạy tính năng Lấy dữ liệu Market mới.</div>;
+    return (
+      <div className="text-center py-5" style={{ color: COLORS.textSecondary }}>
+        Chưa có đủ dữ liệu để vẽ biểu đồ. Hãy chạy tính năng Lấy dữ liệu Market mới.
+      </div>
+    );
   }
 
   return (
-    <div className="g-black bg-opacity-25 rounded-4 p-3 border border-secondary border-opacity-25 d-flex flex-column">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h5 className="text-white fw-bold mb-1"><i className=""></i>Xu hướng trị trường hiện tại</h5>
-        </div>
+    <div
+      style={{
+        backgroundColor: COLORS.bgCard,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: '14px',
+        padding: '24px',
+      }}
+    >
+      <div style={{ fontSize: '16px', fontWeight: 700, color: COLORS.textPrimary, marginBottom: '18px' }}>
+        Xu hướng thị trường hiện tại
       </div>
 
-      <div style={{ width: '100%', height: 400, minHeight: '400px' }}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-          <BarChart 
-            data={chartData} 
-            layout="vertical" // Chuyển thành cột ngang để tên kỹ năng dài không bị đè lên nhau
-            margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
+      <div className="d-flex flex-column" style={{ gap: '14px' }}>
+        {chartData.map((d, index) => (
+          <div
+            key={d.name}
+            className="d-grid align-items-center"
+            style={{ gridTemplateColumns: '130px 1fr 42px', gap: '12px', display: 'grid' }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#2b2f3a" horizontal={true} vertical={false} />
-            <XAxis 
-              type="number" 
-              stroke="#a0aec0" 
-              tick={{ fill: '#a0aec0', fontSize: 12 }} 
-              domain={[0, 100]} 
-              tickFormatter={(val) => `${val}%`}
-            />
-            <YAxis 
-              type="category" 
-              dataKey="name" 
-              stroke="#a0aec0" 
-              tick={{ fill: '#a0aec0', fontSize: 12, fontWeight: 'bold' }} 
-              width={100}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
-            
-            <Bar dataKey="demand" radius={[0, 4, 4, 0]} barSize={25}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+            <div
+              style={{
+                fontSize: '12.5px',
+                color: COLORS.textSecondary,
+                fontWeight: 500,
+                textAlign: 'right',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+              title={d.name}
+            >
+              {d.name}
+            </div>
+            <div style={{ height: '9px', background: COLORS.borderSoft, borderRadius: '5px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  height: '100%',
+                  width: `${d.demand}%`,
+                  background: BAR_COLORS[index % BAR_COLORS.length],
+                  borderRadius: '5px',
+                }}
+              ></div>
+            </div>
+            <div style={{ fontFamily: "'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace", fontSize: '11.5px', color: COLORS.textTertiary }}>
+              {d.demand}%
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
