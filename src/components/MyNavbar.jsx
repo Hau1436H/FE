@@ -27,7 +27,17 @@ function MyNavbar() {
     try {
       // 1. Lấy thông tin user
       const response = await axiosClient.get('/api/Profile/me');
-      setUser(response.data.data);
+      const profileData = response.data.data;
+      
+      // Gộp chung thông tin lại để FE sử dụng
+      if (profileData) {
+          setUser({
+              ...profileData.user,
+              ...profileData.details
+          });
+      } else {
+          setUser(null);
+      }
 
       // 2. Lấy studentId từ token
       let studentId = null;
@@ -35,12 +45,10 @@ function MyNavbar() {
         const base64Url = token.split('.')[1];
         let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         
-        // FIX LỖI CRASH ATOB: Tự động bù thêm dấu '=' cho đủ độ dài chuỗi Base64
         while (base64.length % 4) {
             base64 += '=';
         }
         
-        // Giải mã an toàn hỗ trợ cả ký tự Unicode (tiếng Việt)
         const jsonPayload = decodeURIComponent(
           atob(base64).split('').map(function(c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -48,18 +56,18 @@ function MyNavbar() {
         );
 
         const payload = JSON.parse(jsonPayload);
-        studentId = payload.studentId || payload.StudentId || payload.sub;
+        // Đã xóa payload.sub để tránh nhầm lẫn ID
+        studentId = payload.studentId || payload.StudentId;
       } catch (err) {
-        console.warn("Không thể giải mã token để lấy StudentId", err);
-        // Nếu giải mã thất bại mới ép đăng xuất
+        console.warn("Không thể giải mã token", err);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
         setPortfolioSlug(null);
-        return; // Dừng lại không gọi API tiếp
+        return; 
       }
 
-      // 3. Lấy shareableUrl
+      // 3. Lấy shareableUrl (chỉ chạy nếu thực sự là học viên)
       if (studentId) {
         try {
           const portRes = await axiosClient.get(`/api/Portfolios/student/${studentId}`);
@@ -90,7 +98,6 @@ function MyNavbar() {
       setIsScrolled(window.scrollY > 50);
     };
 
-    // Bọc việc gọi API khởi tạo vào một hàm async cục bộ để tránh lỗi set-state-in-effect
     const initAuth = async () => {
         if(isMounted) {
             await checkAuth();
@@ -100,13 +107,11 @@ function MyNavbar() {
     initAuth();
 
     window.addEventListener('scroll', handleScroll);
-    
-    // Gán trực tiếp reference của hàm useCallback vào event listener
     window.addEventListener('authChange', checkAuth);
     window.addEventListener('storage', checkAuth);
 
     return () => {
-      isMounted = false; // Cleanup
+      isMounted = false;
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('authChange', checkAuth);
       window.removeEventListener('storage', checkAuth);
@@ -116,6 +121,7 @@ function MyNavbar() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('role');
 
     setUser(null);
     setPortfolioSlug(null);
@@ -226,7 +232,7 @@ function MyNavbar() {
                       <div className="fw-bold text-white">{user.fullName}</div>
                       <small className="text-white-50">{user.email}</small>
                     </Dropdown.Header>
-                    <Dropdown.Item as={Link} to="/dashboard" className="py-2">Bảng điều khiển</Dropdown.Item>
+                    <Dropdown.Item as={Link} to={user.roleName === 'Admin' ? "/dashboard/admin" : "/dashboard"} className="py-2">Bảng điều khiển</Dropdown.Item>
                     <Dropdown.Item as={Link} to="/dashboard/profile" className="py-2">Hồ sơ & E-Portfolio</Dropdown.Item>
                     <Dropdown.Item as={Link} to="/skill-assessment" className="py-2">Làm bài test</Dropdown.Item>
                     <Dropdown.Divider className="border-secondary" />

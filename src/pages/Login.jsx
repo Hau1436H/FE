@@ -6,9 +6,21 @@ import Button from 'react-bootstrap/Button';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Logo from '../components/Logo';
-
-// === 1. IMPORT COMPONENT GOOGLE CHUẨN ĐỂ LẤY id_token ===
 import { GoogleLogin } from '@react-oauth/google';
+
+// Hàm giải mã JWT Token
+const decodeToken = (token) => {
+    try {
+        const base64Url = token.split('.')[1];
+        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) { base64 += '='; }
+        return JSON.parse(decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')));
+    } catch (e) {
+        return null;
+    }
+};
 
 function Login() {
     const leftBgImage = 'https://i.pinimg.com/736x/2a/2a/33/2a2a337f02b6c63548fb8e03b24a796a.jpg';
@@ -22,14 +34,6 @@ function Login() {
     const [message, setMessage] = useState({ type: '', content: '' });
     const [isLoading, setIsLoading] = useState(false);
 
-    // Xóa hook useGoogleLogin cũ ở đây vì ta sẽ tích hợp thẳng vào Component phía dưới
-      const redirectAfterLogin = (role) => {
-        window.dispatchEvent(new Event('authChange'));
-        const isAdmin = (role || '').toLowerCase() === 'admin';
-        navigate(isAdmin ? '/dashboard/admin' : '/dashboard');
-    };
-    // 
-
     const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -42,26 +46,26 @@ function Login() {
             });
             
             const token = response.data.token || response.data.Token;
-            const user = response.data.user || response.data.User;
-            const role = response.data.role || response.data.Role;
             
-            console.log("Dữ liệu User từ Backend:", user);
+            if (token) {
+                localStorage.setItem('token', token);
+                const payload = decodeToken(token);
+                
+                // Lấy Role từ token
+                const roleName = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'User';
+                localStorage.setItem('role', roleName);
 
-            if (token) localStorage.setItem('token', token);
-            if (user) localStorage.setItem('user', JSON.stringify(user));
-            if (role) localStorage.setItem('role', role);
-
-            setMessage({ type: 'success', content: 'Đăng nhập thành công! Đang chuyển hướng...' });
-            
-            setTimeout(() => {
-                window.dispatchEvent(new Event('authChange'));
-                if ((role || '').toLowerCase() === 'admin') {
-                    navigate('/dashboard/admin');
-                } else {
-                    navigate('/dashboard');
-                }
-            }, 800);
-
+                setMessage({ type: 'success', content: 'Đăng nhập thành công! Đang chuyển hướng...' });
+                
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('authChange'));
+                    if (roleName.toLowerCase() === 'admin') {
+                        navigate('/dashboard/admin');
+                    } else {
+                        navigate('/dashboard');
+                    }
+                }, 800);
+            }
         } catch (error) {
             const errRes = error.response;
             const serverMessage = errRes?.data?.message || '';
@@ -172,7 +176,6 @@ function Login() {
 
                         {step === 1 ? (
                             <>
-                                {/* === 2. DÙNG COMPONENT GOOGLELOGIN CHÍNH CHỦ Ở ĐÂY === */}
                                 <div className="mb-4 d-flex justify-content-center" style={{ minHeight: '40px' }}>
                                     <GoogleLogin
                                         theme="outline"
@@ -184,28 +187,29 @@ function Login() {
                                             setIsLoading(true);
                                             setMessage({ type: '', content: '' });
                                             try {
-                                                // ĐÂY LÀ CHÌA KHÓA: credentialResponse.credential chính là id_token xịn
                                                 const googleIdToken = credentialResponse.credential;
-
                                                 const response = await axiosClient.post('/api/Auth/google-login', {
                                                     idToken: googleIdToken
                                                 });
 
-                                                const { token, user, role } = response.data;
-                                                if (token) localStorage.setItem('token', token);
-                                                if (user) localStorage.setItem('user', JSON.stringify(user));
-                                                if (role) localStorage.setItem('role', role);
+                                                const token = response.data.token || response.data.Token;
+                                                
+                                                if (token) {
+                                                    localStorage.setItem('token', token);
+                                                    const payload = decodeToken(token);
+                                                    const roleName = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'User';
+                                                    localStorage.setItem('role', roleName);
 
-                                                setMessage({ type: 'success', content: 'Đăng nhập bằng Google thành công!' });
-                                                setTimeout(() => {
-                                                    window.dispatchEvent(new Event('authChange'));
-                                                    if ((role || '').toLowerCase() === 'admin') {
-                                                        navigate('/dashboard/admin');
-                                                    } else {
-                                                        navigate('/dashboard');
-                                                    }
-                                                }, 800);
-
+                                                    setMessage({ type: 'success', content: 'Đăng nhập bằng Google thành công!' });
+                                                    setTimeout(() => {
+                                                        window.dispatchEvent(new Event('authChange'));
+                                                        if (roleName.toLowerCase() === 'admin') {
+                                                            navigate('/dashboard/admin');
+                                                        } else {
+                                                            navigate('/dashboard');
+                                                        }
+                                                    }, 800);
+                                                }
                                             } catch (error) {
                                                 setMessage({ 
                                                     type: 'error', 
