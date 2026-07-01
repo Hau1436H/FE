@@ -88,10 +88,18 @@ function NodeDrawer({ show, handleClose, selectedNode, onUpdate }) {
       `}</style>
 
       <Offcanvas.Header closeButton closeVariant="white" className="border-bottom border-secondary border-opacity-25 pb-3">
-        <Offcanvas.Title className="fw-bold fs-4">
-          <span className="text-warning me-2">#</span>
-          {selectedNode?.title || selectedNode?.nodeName || 'Chi tiết Kỹ năng'}
-        </Offcanvas.Title>
+        // Sửa nhẹ ở tiêu đề Offcanvas.Title trong NodeDrawer.jsx để hiển thị điểm:
+<Offcanvas.Title className="fw-bold fs-4">
+  <span className="text-warning me-2">#</span>
+  {selectedNode?.nodeName || selectedNode?.title || 'Chi tiết Kỹ năng'}
+  
+  {/* BỔ SUNG: Hiển thị điểm trend thực tế ngay trên Drawer */}
+  {selectedNode?.isTrending && (
+    <span className="badge bg-danger ms-2" style={{ fontSize: '11px', verticalAlign: 'middle' }}>
+      🔥 Market Pulse: {selectedNode.currentTrendScore}/5
+    </span>
+  )}
+</Offcanvas.Title>
       </Offcanvas.Header>
       
       <Offcanvas.Body className="d-flex flex-column p-4">

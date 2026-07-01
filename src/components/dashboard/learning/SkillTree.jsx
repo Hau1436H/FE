@@ -26,18 +26,23 @@ function SkillTree({ skillNodes, onNodeClick }) {
     // Tọa độ giả lập: Giả sử cứ mỗi Node cách nhau 150px theo chiều dọc
     // Nếu đề tài có "nhánh" rẽ ngang, bạn có thể chỉnh tọa độ X
     skillNodes.forEach((node, index) => {
-      // 1. TẠO NODE
-      nodes.push({
-        id: node.id.toString(),
-        type: 'customSkill',
-        position: { x: 250, y: index * 150 }, // Căn giữa X, đẩy Y xuống dần
-        data: {
-          label: node.title,
-          description: node.description,
-          status: node.status,
-          rawNode: node // Lưu lại dữ liệu gốc để khi click gọi Drawer
-        },
-      });
+  // 1. TẠO NODE
+  nodes.push({
+    id: node.skillNodeId ? node.skillNodeId.toString() : node.id.toString(), // Bảo vệ tránh lệch tên property id từ API
+    type: 'customSkill',
+    position: { x: 250, y: index * 150 },
+    data: {
+      label: node.nodeName || node.title,
+      description: node.description,
+      status: node.isCompleted ? 'completed' : node.isLocked ? 'locked' : 'learning', // Chuẩn hóa trạng thái từ cờ bool của API mới
+      
+      // BỔ SUNG 2 DÒNG NÀY ĐỂ BẮN XUỐNG CUSTOM NODE
+      isTrending: node.isTrending, 
+      currentTrendScore: node.currentTrendScore,
+      
+      rawNode: node 
+    },
+  });
 
       // 2. TẠO EDGE (ĐƯỜNG NỐI)
       // Nếu Node này có ParentNodeId (Môn tiên quyết), vẽ đường nối từ Parent -> Node này

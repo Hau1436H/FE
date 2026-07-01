@@ -65,7 +65,7 @@ function LearningPath({ studentId }) {
         setLoading(true);
         setError(null);
         
-        const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/generate`);
+        const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/skill-gap`);
         
         const resultObject = response.data?.data || response.data;
         const rawData = resultObject.gapItems || resultObject.GapItems || [];
