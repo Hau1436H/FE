@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import axiosClient from '../../api/axiosClient';
+import { HubConnectionBuilder } from '@microsoft/signalr';
 
 // ===== Token màu lấy đúng từ mockup HTML =====
 const COLORS = {
@@ -21,6 +22,9 @@ function StudyNext({ studentId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Biến trigger giúp kích hoạt fetch lại dữ liệu ngầm khi SignalR báo có cập nhật
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   // Tiến trình Roadmap tổng (X/Y kỹ năng = Z%), đồng bộ với Learning.jsx
   const [roadmapProgress, setRoadmapProgress] = useState({
     completed: 0,
@@ -32,6 +36,7 @@ function StudyNext({ studentId }) {
   // Set chứa tên các kỹ năng đã hoàn thành, dùng để hiện trạng thái cho từng item Gap
   const [completedSkillNames, setCompletedSkillNames] = useState(new Set());
 
+  // 1. Fetch dữ liệu Skill Gap (Các kỹ năng cần bổ sung)
   useEffect(() => {
     const fetchGapData = async () => {
       if (!studentId) {
@@ -64,12 +69,13 @@ function StudyNext({ studentId }) {
     };
 
     fetchGapData();
-  }, [studentId]);
+  }, [studentId, refreshTrigger]);
 
-  // Gọi cùng API roadmap mà NodeDrawer.jsx/Learning.jsx dùng, chỉ 1 lần khi mount.
-  // Dùng kết quả này để vừa tính % tổng, vừa xác định từng skill đã hoàn thành hay chưa.
+  // 2. Fetch tiến trình lộ trình (Roadmap Progress) ban đầu
   useEffect(() => {
     const fetchRoadmapProgress = async () => {
+      if (!studentId) return;
+
       try {
         const response = await axiosClient.get('/api/learning-hub/my-roadmap');
 
@@ -86,12 +92,57 @@ function StudyNext({ studentId }) {
           setRoadmapProgress({ completed: 0, total: 0, percent: 0, loading: false });
         }
       } catch (err) {
-        console.error("Lỗi lấy tiến trình Roadmap:", err);
+        console.error("Lỗi lấy tiến trình Roadmap ban đầu:", err);
         setRoadmapProgress({ completed: 0, total: 0, percent: 0, loading: false });
       }
     };
 
     fetchRoadmapProgress();
+  }, [studentId, refreshTrigger]);
+
+  // 3. Cấu hình kết nối SignalR Realtime lắng nghe từ Backend
+  useEffect(() => {
+    if (!studentId) return;
+
+    // Lấy token chuẩn từ hệ thống để tránh lỗi 401
+    const token = localStorage.getItem('token'); 
+
+    const connection = new HubConnectionBuilder()
+      .withUrl("https://localhost:7196/hubs/roadmap", {
+        accessTokenFactory: () => token 
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    const startConnection = async () => {
+      try {
+        await connection.start();
+        console.log("SignalR Connected thành công tại StudyNext!");
+        
+        // Đăng ký vào group theo mã sinh viên (Đã đồng bộ với backend)
+        await connection.invoke("SubscribeToRoadmapUpdates", studentId.toString());
+
+        // Lắng nghe sự kiện hoàn thành node từ Backend
+        connection.on("ReceiveRoadmapUpdate", (data) => {
+          console.log("Có cập nhật Roadmap realtime từ Backend:", data);
+          
+          // Kích hoạt cò súng để tự động gọi lại các API lấy data mới
+          setRefreshTrigger(prev => prev + 1);
+        });
+      } catch (err) {
+        console.error("Lỗi kết nối SignalR:", err);
+      }
+    };
+
+    startConnection();
+
+    // Cleanup khi component unmount
+    return () => {
+      if (connection.state === "Connected") {
+        connection.invoke("UnsubscribeFromRoadmapUpdates", studentId.toString())
+          .then(() => connection.stop());
+      }
+    };
   }, [studentId]);
 
   const gaps = data
@@ -128,7 +179,7 @@ function StudyNext({ studentId }) {
   return (
     <div className="d-flex flex-column gap-4">
 
-      {/* KHỐI TIẾN TRÌNH ROADMAP TỔNG - đồng bộ với Learning.jsx */}
+      {/* KHỐI TIẾN TRÌNH ROADMAP TỔNG - Đồng bộ tự động */}
       {!roadmapProgress.loading && roadmapProgress.total > 0 && (
         <div
           style={{
@@ -224,8 +275,6 @@ function StudyNext({ studentId }) {
                     </span>
                   </div>
 
-                  {/* ĐÃ SỬA: thay % Hiện tại/Mục tiêu bằng trạng thái hoàn thành kỹ năng,
-                      lấy từ roadmap API (cùng nguồn isCompleted mà NodeDrawer/Learning dùng) */}
                   <div className="d-flex align-items-center mb-3" style={{ fontSize: '11.5px' }}>
                     {isCompleted ? (
                       <span className="d-flex align-items-center" style={{ color: COLORS.accentCyan, fontWeight: 600, gap: '6px' }}>

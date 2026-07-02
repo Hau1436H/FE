@@ -1,32 +1,36 @@
 // src/components/dashboard/learning/CustomSkillNode.jsx
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { FaLock, FaPlay, FaCheck, FaFire } from 'react-icons/fa'; // BỔ SUNG: FaFire
+import { FaLock, FaPlay, FaCheck, FaFire } from 'react-icons/fa';
 
 function CustomSkillNode({ data }) {
   const isCompleted = data.status === 'completed';
   const isLearning = data.status === 'learning';
   const isLocked = data.status === 'locked';
-  const isTrending = data.isTrending; // BỔ SUNG: Nhận cờ Trending từ API
+  const isTrending = data.isTrending;
 
-  // Định nghĩa hệ màu chủ đạo (Accent Color)
-  const accentColor = isCompleted ? '#10b981' : isLearning ? '#f59e0b' : '#4b5563';
+  // DESIGN MỚI: Đổi màu Learning sang Xanh dương (Tech Blue) để cây không bị vàng.
+  const accentColor = isCompleted ? '#10b981' : isLearning ? '#3b82f6' : '#4b5563';
   
-  // Nền Gradient tạo chiều sâu
+  // Màu viền và icon: Ưu tiên màu Lửa nếu là Hot Trend, ngược lại dùng màu chủ đạo
+  const activeColor = (isTrending && !isLocked) ? '#ef4444' : accentColor;
+  
+  // Nền Gradient tạo chiều sâu (Darker theme)
   const bgGradient = isLocked 
     ? 'linear-gradient(145deg, #11131e 0%, #0a0b10 100%)' 
-    : 'linear-gradient(145deg, #1c1f2e 0%, #11131e 100%)';
+    : 'linear-gradient(145deg, #1a1d2d 0%, #11131e 100%)';
   
-  // Hiệu ứng phát sáng (Glow) nâng cao khi có Trend
-  let glowEffect = '0 4px 6px rgba(0, 0, 0, 0.3)';
-  if (isLearning) {
-    glowEffect = '0 0 20px rgba(245, 158, 11, 0.25), inset 0 0 8px rgba(245, 158, 11, 0.1)';
-  } else if (isCompleted) {
-    glowEffect = '0 0 15px rgba(16, 185, 129, 0.15)';
-  }
-  // BỔ SUNG: Nếu có Trend thì cộng hưởng thêm ánh sáng đỏ rực 🔥
+  // Hiệu ứng phát sáng (Glow) tinh tế hơn
+  let glowEffect = '0 4px 10px rgba(0,0,0,0.4)';
   if (isTrending && !isLocked) {
-    glowEffect += ', 0 0 25px rgba(239, 68, 68, 0.3)';
+    // Trending: Tỏa sáng rực lửa
+    glowEffect = '0 0 20px rgba(239, 68, 68, 0.4), inset 0 0 10px rgba(239, 68, 68, 0.15)';
+  } else if (isLearning) {
+    // Learning: Sáng nhẹ màu xanh blue dịu mắt
+    glowEffect = '0 0 15px rgba(59, 130, 246, 0.2)';
+  } else if (isCompleted) {
+    // Completed: Sáng nhẹ màu xanh lá
+    glowEffect = '0 0 15px rgba(16, 185, 129, 0.15)';
   }
 
   return (
@@ -36,12 +40,12 @@ function CustomSkillNode({ data }) {
         width: '320px', 
         minHeight: '90px', 
         background: bgGradient,
-        // BỔ SUNG: Nếu có Trend thì viền đổi nhẹ sang sắc cam/đỏ hồng của lửa
-        border: `1.5px solid ${isLocked ? '#2d3142' : isTrending ? '#ef4444' : accentColor}`,
+        border: `1.5px solid ${isLocked ? '#2d3142' : activeColor}`,
         boxShadow: glowEffect,
-        opacity: isLocked ? 0.65 : 1,
+        opacity: isLocked ? 0.6 : 1,
         padding: '16px 20px',
-        position: 'relative'
+        position: 'relative',
+        transition: 'all 0.3s ease'
       }}
     >
       {/* NÚM KẾT NỐI ĐẦU VÀO (Top) */}
@@ -50,28 +54,26 @@ function CustomSkillNode({ data }) {
         position={Position.Top} 
         style={{ 
           background: '#0f111a', 
-          border: `2px solid ${isTrending ? '#ef4444' : accentColor}`, 
-          width: '14px', 
-          height: '14px',
-          top: '-7px',
+          border: `2px solid ${activeColor}`, 
+          width: '12px', 
+          height: '12px',
+          top: '-6px',
           zIndex: 10
         }} 
       />
 
-      {/* ========================================== */}
-      {/* BỔ SUNG: BADGE NGỌN LỬA HOT TREND 🔥 */}
-      {/* ========================================== */}
+      {/* BADGE NGỌN LỬA HOT TREND */}
       {isTrending && !isLocked && (
         <div 
           className="position-absolute d-flex align-items-center rounded-pill px-2 py-1"
           style={{
             top: '-12px',
             right: '15px',
-            background: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
+            background: 'linear-gradient(135deg, #ef4444 0%, #f97316 100%)',
             fontSize: '10px',
             fontWeight: 'bold',
             color: '#fff',
-            boxShadow: '0 2px 10px rgba(239, 68, 68, 0.4)',
+            boxShadow: '0 4px 10px rgba(239, 68, 68, 0.5)',
             zIndex: 11,
             letterSpacing: '0.5px'
           }}
@@ -86,12 +88,14 @@ function CustomSkillNode({ data }) {
       <div 
         className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
         style={{ 
-          width: '48px', 
-          height: '48px', 
-          backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.15)' : isLearning ? 'rgba(245, 158, 11, 0.15)' : 'rgba(75, 85, 99, 0.15)',
-          border: `1px solid ${isTrending ? '#ef4444' : accentColor}`,
-          color: isTrending ? '#ef4444' : accentColor,
-          fontSize: '18px'
+          width: '46px', 
+          height: '46px', 
+          backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.1)' 
+                         : isLearning ? 'rgba(59, 130, 246, 0.1)' 
+                         : 'rgba(75, 85, 99, 0.15)',
+          border: `1px solid ${activeColor}`,
+          color: activeColor,
+          fontSize: '16px'
         }}
       >
         {isCompleted ? <FaCheck /> : isLearning ? <FaPlay style={{ marginLeft: '3px' }} /> : <FaLock />}
@@ -103,17 +107,18 @@ function CustomSkillNode({ data }) {
           className="fw-bold mb-1" 
           style={{ 
             fontSize: '15px', 
-            color: isLocked ? '#9ca3af' : '#fff', 
-            letterSpacing: '0.5px' 
+            color: isLocked ? '#9ca3af' : '#f8fafc', 
+            letterSpacing: '0.3px' 
           }}
         >
           {data.label}
         </h6>
         <p 
-          className="small m-0 text-white-50" 
+          className="small m-0" 
           style={{ 
             fontSize: '12px', 
-            lineHeight: '1.5',
+            color: '#94a3b8',
+            lineHeight: '1.4',
             display: '-webkit-box', 
             WebkitLineClamp: 2, 
             WebkitBoxOrient: 'vertical', 
@@ -130,10 +135,10 @@ function CustomSkillNode({ data }) {
         position={Position.Bottom} 
         style={{ 
           background: '#0f111a', 
-          border: `2px solid ${isTrending ? '#ef4444' : accentColor}`, 
-          width: '14px', 
-          height: '14px',
-          bottom: '-7px',
+          border: `2px solid ${activeColor}`, 
+          width: '12px', 
+          height: '12px',
+          bottom: '-6px',
           zIndex: 10
         }} 
       />
