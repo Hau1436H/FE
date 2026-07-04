@@ -68,7 +68,9 @@ function AssessmentTest({ roleId, onComplete }) {
         <div className="progress-bar bg-success" style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}></div>
       </div>
 
-      <h5 className="mb-4 lh-base">{currentQuestion.question}</h5>
+      <h5 className="mb-4 lh-base" style={{ whiteSpace: 'pre-wrap' }}>
+  {currentQuestion.question}
+</h5>
 
       <div className="d-flex flex-column gap-3 mb-4">
         {currentQuestion.options.map((opt) => {

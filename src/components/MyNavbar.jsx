@@ -84,10 +84,17 @@ function MyNavbar() {
 
     } catch (error) {
       console.error('Lỗi xác thực:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-      setPortfolioSlug(null);
+      
+      // CHỈ xóa token nếu Backend trả về 401 (Unauthorized)
+      if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+          setPortfolioSlug(null);
+          // Có thể gọi alert/toast thông báo hết hạn ở đây
+      } 
+      // Nếu là mã lỗi khác hoặc lỗi Network (error.response bị undefined), 
+      // ta không làm gì cả, tránh bắt user đăng nhập lại vô cớ.
     }
   }, []);
   

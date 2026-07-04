@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import axiosClient from '../../api/axiosClient';
 
@@ -10,14 +10,8 @@ function CodeAssessment({ roleId, onComplete }) {
   const [output, setOutput] = useState('');
   const [exerciseData, setExerciseData] = useState(null);
   const [code, setCode] = useState('');
-
-  // SỬ DỤNG USEMEMO ĐỂ XÁC ĐỊNH NGÔN NGỮ DỰA VÀO ROLE ID
-  // Giả sử Role Frontend có ID là 2 hoặc 3 (theo DB của bạn)
-  const currentLanguage = useMemo(() => {
-    if (roleId === 2 || roleId === 3) return 'javascript';
-    if (roleId === 6) return 'python'; // Ví dụ Data Engineer
-    return 'csharp'; // Mặc định Backend .NET
-  }, [roleId]);
+  // Khai báo state cho ngôn ngữ
+  const [currentLanguage, setCurrentLanguage] = useState('csharp');
 
   useEffect(() => {
     const fetchOrGenerateExercise = async () => {
@@ -28,7 +22,21 @@ function CodeAssessment({ roleId, onComplete }) {
         
         if (exercise) {
           setExerciseData(exercise);
-          setCode(exercise.DefaultCodeTemplate || exercise.defaultCodeTemplate || '// Viết code...');
+          
+          const template = exercise.DefaultCodeTemplate || exercise.defaultCodeTemplate || '// Viết code...';
+          setCode(template);
+
+          // TỰ ĐỘNG NHẬN DIỆN NGÔN NGỮ TỪ TEMPLATE CODE
+          const templateLower = template.toLowerCase();
+          if (templateLower.includes('def solve') || templateLower.includes('def ')) {
+            setCurrentLanguage('python');
+          } else if (templateLower.includes('function ') || templateLower.includes('console.log')) {
+            setCurrentLanguage('javascript');
+          } else if (templateLower.includes('import java.')) {
+            setCurrentLanguage('java');
+          } else {
+            setCurrentLanguage('csharp'); // Mặc định là C#
+          }
         }
       } catch (error) {
         setOutput("Không thể tải đề bài. Vui lòng kiểm tra lại kết nối.");
@@ -45,7 +53,7 @@ function CodeAssessment({ roleId, onComplete }) {
     setOutput('Đang biên dịch code...\n');
     try {
       const payload = { 
-        language: currentLanguage, // ✅ ĐÃ SỬA THÀNH NGÔN NGỮ ĐỘNG
+        language: currentLanguage, 
         sourceCode: code, 
         stdin: exerciseData?.TestStdin || exerciseData?.testStdin || "",
         expectedOutput: exerciseData?.ExpectedOutput || exerciseData?.expectedOutput || ""
@@ -63,7 +71,7 @@ function CodeAssessment({ roleId, onComplete }) {
     setIsSubmitting(true);
     try {
       await onComplete({
-        language: currentLanguage, // ✅ ĐÃ SỬA THÀNH NGÔN NGỮ ĐỘNG
+        language: currentLanguage,
         sourceCode: code,
         problemDescription: exerciseData?.ProblemDescription || exerciseData?.problemDescription || "Yêu cầu bài toán",
         stdin: exerciseData?.TestStdin || exerciseData?.testStdin || "",
@@ -94,7 +102,7 @@ function CodeAssessment({ roleId, onComplete }) {
           <div style={{ height: '400px' }}>
             <Editor 
               height="100%" 
-              defaultLanguage={currentLanguage} // ✅ ĐỔI HIGHLIGHT MÀU CODE CỦA EDITOR LUÔN
+              language={currentLanguage} 
               theme="vs-dark" 
               value={code} 
               onChange={(val) => setCode(val)} 

@@ -1,4 +1,3 @@
-// src/components/dashboard/learning/NodeDrawer.jsx
 import React, { useState, useEffect } from 'react';
 import { Offcanvas, Button, Spinner } from 'react-bootstrap';
 import { FaBookOpen, FaVideo, FaCheckCircle, FaExternalLinkAlt } from 'react-icons/fa';
@@ -9,6 +8,11 @@ function NodeDrawer({ show, handleClose, selectedNode, onUpdate }) {
   const [loading, setLoading] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
+  // ĐỔ BÊ TÔNG: Đọc dữ liệu phòng hờ API trả PascalCase hoặc camelCase
+  const isNodeCompleted = selectedNode?.IsCompleted === true || selectedNode?.isCompleted === true;
+  const isTrending = selectedNode?.IsTrending === true || selectedNode?.isTrending === true;
+  const currentTrendScore = selectedNode?.CurrentTrendScore ?? selectedNode?.currentTrendScore ?? 0;
+
   // FETCH TÀI LIỆU CỦA NODE TỪ BACKEND
   useEffect(() => {
     if (selectedNode) {
@@ -16,7 +20,9 @@ function NodeDrawer({ show, handleClose, selectedNode, onUpdate }) {
         setLoading(true);
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`https://localhost:7196/api/learning-hub/nodes/${selectedNode.id}/resources`, {
+          // Ưu tiên lấy rawId để tránh lỗi undefined
+          const targetId = selectedNode?.id || selectedNode?.SkillNodeId || selectedNode?.skillNodeId;
+          const response = await fetch(`https://localhost:7196/api/learning-hub/nodes/${targetId}/resources`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const result = await response.json();
@@ -35,8 +41,9 @@ function NodeDrawer({ show, handleClose, selectedNode, onUpdate }) {
   const handleMarkCompleted = async () => {
     setIsCompleting(true);
     try {
+      const targetId = selectedNode?.id || selectedNode?.SkillNodeId || selectedNode?.skillNodeId;
       const response = await axiosClient.post('/api/roadmap/complete-node', {
-        nodeId: selectedNode.id
+        nodeId: targetId
       });
       alert(response.data?.message || "Đã xác nhận hoàn thành kỹ năng!");
       
@@ -88,25 +95,23 @@ function NodeDrawer({ show, handleClose, selectedNode, onUpdate }) {
       `}</style>
 
       <Offcanvas.Header closeButton closeVariant="white" className="border-bottom border-secondary border-opacity-25 pb-3">
-        // Sửa nhẹ ở tiêu đề Offcanvas.Title trong NodeDrawer.jsx để hiển thị điểm:
-<Offcanvas.Title className="fw-bold fs-4">
-  <span className="text-warning me-2">#</span>
-  {selectedNode?.nodeName || selectedNode?.title || 'Chi tiết Kỹ năng'}
-  
-  {/* BỔ SUNG: Hiển thị điểm trend thực tế ngay trên Drawer */}
-  {selectedNode?.isTrending && (
-    <span className="badge bg-danger ms-2" style={{ fontSize: '11px', verticalAlign: 'middle' }}>
-      🔥 Market Pulse: {selectedNode.currentTrendScore}/5
-    </span>
-  )}
-</Offcanvas.Title>
+        <Offcanvas.Title className="fw-bold fs-4">
+          <span className="text-warning me-2">#</span>
+          {selectedNode?.nodeName || selectedNode?.NodeName || selectedNode?.title || 'Chi tiết Kỹ năng'}
+          
+          {isTrending && (
+            <span className="badge bg-danger ms-2" style={{ fontSize: '11px', verticalAlign: 'middle' }}>
+              🔥 Market Pulse: {currentTrendScore}/5
+            </span>
+          )}
+        </Offcanvas.Title>
       </Offcanvas.Header>
       
       <Offcanvas.Body className="d-flex flex-column p-4">
         <div className="mb-4">
           <h6 className="text-white-50 text-uppercase fw-bold mb-2" style={{ fontSize: '0.8rem', letterSpacing: '1px'}}>MỤC TIÊU BÀI HỌC</h6>
           <p className="text-white bg-dark bg-opacity-50 p-3 rounded-3 border border-secondary border-opacity-25" style={{ fontSize: '0.95rem', lineHeight: '1.6'}}>
-            {selectedNode?.description || 'Hoàn thành các tài liệu dưới đây để nắm vững kỹ năng này.'}
+            {selectedNode?.description || selectedNode?.Description || 'Hoàn thành các tài liệu dưới đây để nắm vững kỹ năng này.'}
           </p>
         </div>
 
@@ -153,14 +158,16 @@ function NodeDrawer({ show, handleClose, selectedNode, onUpdate }) {
           <Button 
             className="btn-glow w-100 fw-bold py-3 rounded-pill text-white d-flex justify-content-center align-items-center" 
             onClick={handleMarkCompleted} 
-            disabled={isCompleting}
+            disabled={isCompleting || isNodeCompleted} 
           >
             {isCompleting ? (
               <Spinner animation="border" size="sm" className="me-2" />
+            ) : isNodeCompleted ? ( 
+              <FaCheckCircle className="me-2 fs-5 text-success" />
             ) : (
               <FaCheckCircle className="me-2 fs-5" />
             )}
-            {isCompleting ? 'Đang cập nhật...' : 'Xác nhận Đã Nắm Vững'}
+            {isCompleting ? 'Đang cập nhật...' : isNodeCompleted ? 'Đã Nắm Vững' : 'Xác nhận Đã Nắm Vững'}
           </Button>
         </div>
       </Offcanvas.Body>

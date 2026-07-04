@@ -9,17 +9,16 @@ import axiosClient from '../../../api/axiosClient';
 function SkillGapReport({ studentId }) {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
-  
-  // ĐÃ THÊM: State lưu trữ AI Summary và Target Role Name
   const [aiSummary, setAiSummary] = useState("");
   const [roleName, setRoleName] = useState("");
-  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // ĐÃ THÊM: State cho thanh tìm kiếm kỹ năng
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchGapData = async () => {
-      // SỬA LỖI XOAY VÒNG: Phải tắt loading nếu không có ID
       if (!studentId) {
         setLoading(false); 
         return;
@@ -30,19 +29,23 @@ function SkillGapReport({ studentId }) {
         setError(null);
         
         const response = await axiosClient.get(`/api/SkillGapReports/${studentId}/skill-gap`);
-        
         const resultObject = response.data?.data || response.data;
         const rawData = resultObject.gapItems || resultObject.GapItems || [];
         
         setAiSummary(resultObject.latentTalentSummary || resultObject.LatentTalentSummary || "");
         setRoleName(resultObject.targetRoleName || resultObject.TargetRoleName || "Chưa xác định");
         
-        const formattedData = rawData.map(item => ({
-          subject: item.nodeName || item.skillName || item.subject || 'Unknown Skill',
-          current: item.currentScore || item.current || 0,
-          required: item.targetScore || item.required || item.requiredScore || 0,
-          fullMark: 100
-        }));
+        const formattedData = rawData.map(item => {
+          const current = item.currentScore || item.current || 0;
+          const required = item.targetScore || item.required || item.requiredScore || 0;
+          return {
+            subject: item.nodeName || item.skillName || item.subject || 'Unknown Skill',
+            current: current,
+            required: required,
+            gap: Math.max(0, required - current), 
+            fullMark: 100
+          };
+        });
 
         setData(formattedData);
       } catch (err) {
@@ -56,9 +59,17 @@ function SkillGapReport({ studentId }) {
     fetchGapData();
   }, [studentId]);
 
-  const gaps = data
-    .filter(item => item.current < item.required)
-    .sort((a, b) => (b.required - b.current) - (a.required - a.current));
+  // Lọc danh sách kỹ năng hổng kết hợp với từ khóa tìm kiếm
+  const filteredGaps = data
+    .filter(item => item.gap > 0)
+    .filter(item => item.subject.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => b.gap - a.gap);
+
+  // TỐI ƯU HÓA BIỂU ĐỒ RADAR CHO 50 NODES: Chỉ vẽ đúng Top 8 kỹ năng hổng nặng nhất
+  const chartData = data
+    .filter(item => item.gap > 0)
+    .sort((a, b) => b.gap - a.gap)
+    .slice(0, 8);
 
   if (loading) {
     return (
@@ -72,8 +83,7 @@ function SkillGapReport({ studentId }) {
   if (error) {
     return (
       <div className="alert alert-danger bg-danger bg-opacity-10 border-danger text-danger text-center py-4">
-        <i className="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>
-        {error}
+        <i className="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>{error}
       </div>
     );
   }
@@ -82,16 +92,15 @@ function SkillGapReport({ studentId }) {
     return (
       <div className="alert alert-warning bg-warning bg-opacity-10 border-warning text-warning text-center py-4">
         <i className="bi bi-info-circle fs-2 d-block mb-2"></i>
-        Chưa có đủ dữ liệu để phân tích. Hãy đảm bảo bạn đã chọn "Mục tiêu nghề nghiệp" trong phần Hồ sơ nhé.
+        Chưa có đủ dữ liệu để phân tích.
       </div>
     );
   }
 
   return (
     <div className="d-flex flex-column gap-4">
-      
-      {/* ĐÃ THÊM: KHỐI HIỂN THỊ AI SUMMARY TRÊN CÙNG */}
-      <div className="p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25">
+      {/* KHỐI HIỂN THỊ AI SUMMARY */}
+      <div className="p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm">
         <h6 className="text-success fw-bold mb-2">
           <i className="bi bi-robot me-2"></i>AI Profile Summary & Lời khuyên
         </h6>
@@ -100,83 +109,136 @@ function SkillGapReport({ studentId }) {
         </p>
       </div>
 
-      <div className="row">
-        {/* CỘT TRÁI: BIỂU ĐỒ RADAR */}
+      <div className="row match-height">
+        {/* CỘT TRÁI: BIỂU ĐỒ RADAR (CHỈ TOP 8) */}
         <div className="col-12 col-lg-7 mb-4 mb-lg-0">
-          <div className="bg-black bg-opacity-25 rounded-4 p-3 border border-secondary border-opacity-25 h-100 d-flex flex-column">
-            <h6 className="text-white-50 text-center mb-3">Tương quan năng lực so với: <span className="text-white">{roleName}</span></h6>
-            <div style={{ width: '100%', height: '350px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-                  <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1a1d24', border: '1px solid #333', borderRadius: '8px', color: '#fff' }}
-                    itemStyle={{ color: '#fff' }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }} />
-                  
-                  <Radar name="Yêu cầu thị trường" dataKey="required" stroke="#dc3545" fill="#dc3545" fillOpacity={0.2} />
-                  <Radar name="Năng lực của bạn" dataKey="current" stroke="#17a2b8" fill="#17a2b8" fillOpacity={0.5} />
-                </RadarChart>
-              </ResponsiveContainer>
+          <div className="bg-dark bg-opacity-50 rounded-4 p-4 border border-secondary border-opacity-25 h-100 d-flex flex-column justify-content-between">
+            <div>
+              <h6 className="text-white text-center mb-1">
+                Tương quan Top 8 Kỹ Năng Ưu Tiên
+              </h6>
+              <p className="text-center small text-muted mb-3">
+                Vị trí mục tiêu: <span className="text-info fw-semibold">{roleName}</span>
+              </p>
             </div>
+            
+            <div style={{ width: '100%', height: '360px' }} className="my-auto">
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="65%" data={chartData}>
+                    <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                    <PolarAngleAxis 
+                      dataKey="subject" 
+                      tick={({ x, y, payload, textAnchor }) => (
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor={textAnchor}
+                          fill="rgba(255,255,255,0.65)"
+                          fontSize={11}
+                          fontWeight={500}
+                        >
+                          {payload.value.length > 15 ? `${payload.value.substring(0, 13)}...` : payload.value}
+                        </text>
+                      )}
+                    />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#14161d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '15px' }} />
+                    <Radar name="Yêu cầu thị trường" dataKey="required" stroke="#ea5455" fill="#ea5455" fillOpacity={0.15} />
+                    <Radar name="Năng lực của bạn" dataKey="current" stroke="#00cfe8" fill="#00cfe8" fillOpacity={0.45} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="d-flex align-items-center justify-content-center h-100">
+                  <span className="text-muted small">Không có dữ liệu phân tích</span>
+                </div>
+              )}
+            </div>
+            <p className="text-center text-muted small mb-0 mt-2">
+              * Biểu đồ tự động trích xuất các kỹ năng có mức độ thiếu hụt lớn nhất.
+            </p>
           </div>
         </div>
 
-        {/* CỘT PHẢI: DANH SÁCH KHUYẾN NGHỊ */}
+        {/* CỘT PHẢI: DANH SÁCH TẤT CẢ KHUYẾN NGHỊ (CÓ TÌM KIẾM) */}
         <div className="col-12 col-lg-5">
-          <div className="bg-black bg-opacity-25 rounded-4 p-4 border border-secondary border-opacity-25 h-100">
-            <h6 className="text-warning fw-bold mb-3">
-              <i className="bi bi-exclamation-triangle-fill me-2"></i>Các kỹ năng cần bổ sung (Gap)
-            </h6>
+          <div className="bg-dark bg-opacity-50 rounded-4 p-4 border border-secondary border-opacity-25 h-100 d-flex flex-column">
             
-            {gaps.length > 0 ? (
-              <div className="d-flex flex-column gap-3 overflow-auto" style={{ maxHeight: '350px' }}>
-                {gaps.map((item, index) => {
-                  const gapSize = item.required - item.current;
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h6 className="text-warning fw-bold mb-0">
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                Danh sách cần bổ sung ({data.filter(i => i.gap > 0).length})
+              </h6>
+            </div>
+
+            {/* THANH TÌM KIẾM */}
+            <div className="input-group input-group-sm mb-3">
+              <span className="input-group-text bg-black bg-opacity-25 border-secondary border-opacity-25 text-white-50">
+                <i className="bi bi-search"></i>
+              </span>
+              <input 
+                type="text" 
+                className="form-control bg-black bg-opacity-25 border-secondary border-opacity-25 text-white shadow-none" 
+                placeholder="Tìm kỹ năng cụ thể..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* DANH SÁCH CUỘN */}
+            <div className="d-flex flex-column gap-3 overflow-auto pe-1 custom-scrollbar" style={{ maxHeight: '330px', flex: 1 }}>
+              {filteredGaps.length > 0 ? (
+                filteredGaps.map((item, index) => {
                   let priority = "Thấp";
-                  let badgeColor = "bg-secondary";
+                  let badgeColor = "bg-secondary text-white";
                   
-                  if (gapSize >= 40) { priority = "Cao"; badgeColor = "bg-danger"; }
-                  else if (gapSize >= 20) { priority = "Trung bình"; badgeColor = "bg-warning text-dark"; }
+                  if (item.gap >= 40) { priority = "Cao"; badgeColor = "bg-danger"; }
+                  else if (item.gap >= 20) { priority = "Trung bình"; badgeColor = "bg-warning text-dark"; }
 
                   return (
-                    <div key={index} className="p-3 border border-secondary border-opacity-25 rounded bg-dark bg-opacity-50">
+                    <div key={index} className="p-3 border border-secondary border-opacity-15 rounded-3 bg-black bg-opacity-20 transition-all">
                       <div className="d-flex justify-content-between align-items-center mb-2">
-                        <span className="fw-bold text-white">{item.subject}</span>
-                        <span className={`badge ${badgeColor}`}>Ưu tiên: {priority}</span>
+                        <span className="fw-bold text-white small text-truncate pe-2" title={item.subject}>
+                          {item.subject}
+                        </span>
+                        <span className={`badge rounded-pill ${badgeColor}`} style={{ fontSize: '10px', minWidth: '65px' }}>
+                          Ưu tiên: {priority}
+                        </span>
                       </div>
-                      <div className="d-flex justify-content-between text-white-50 small mb-2">
-                        <span>Hiện tại: <strong className="text-info">{item.current}%</strong></span>
-                        <span>Mục tiêu: <strong className="text-danger">{item.required}%</strong></span>
-                      </div>
-                      <div className="progress" style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                      
+                      <div className="progress rounded-pill mb-2" style={{ height: '5px', backgroundColor: 'rgba(255,255,255,0.08)' }}>
                         <div className="progress-bar bg-info" role="progressbar" style={{ width: `${item.current}%` }}></div>
-                        <div className="progress-bar bg-danger progress-bar-striped progress-bar-animated opacity-50" role="progressbar" style={{ width: `${gapSize}%` }}></div>
+                        <div className="progress-bar bg-danger progress-bar-striped progress-bar-animated opacity-40" role="progressbar" style={{ width: `${item.gap}%` }}></div>
                       </div>
-
-                      <div className="d-flex justify-content-between align-items-center pt-3 mt-3 border-top border-secondary border-opacity-25">
-                        <span className="text-white-50 small" style={{ fontSize: '12px' }}>Hệ thống đã chuẩn bị bài học</span>
+                      
+                      <div className="d-flex justify-content-between align-items-center pt-2 mt-2 border-top border-secondary border-opacity-10">
+                        <span className="text-muted" style={{ fontSize: '11px' }}>
+                          Hiện tại: <strong className="text-info">{item.current}%</strong> 
+                          <span className="mx-1">/</span> 
+                          Mục tiêu: <strong className="text-danger">{item.required}%</strong>
+                        </span>
                         <button 
-                          className="btn btn-sm btn-outline-info rounded-pill px-3 transition-all"
-                          style={{ fontSize: '12px' }}
+                          className="btn btn-sm btn-outline-info rounded-pill px-3 py-1"
+                          style={{ fontSize: '11px', fontWeight: '500' }}
                           onClick={() => navigate(`/dashboard/learning?skill=${encodeURIComponent(item.subject)}`)}
                         >
-                          <i className="bi bi-play-circle me-1"></i>Học ngay
+                          Học ngay <i className="bi bi-arrow-right ms-1"></i>
                         </button>
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            ) : (
-              <div className="alert alert-success bg-opacity-10 border-success text-success text-center py-4 h-100 d-flex flex-column justify-content-center">
-                <i className="bi bi-check-circle-fill fs-1 d-block mb-2"></i>
-                Tuyệt vời! Kỹ năng của bạn đã đáp ứng đầy đủ yêu cầu của vị trí mục tiêu. Hãy tự tin ứng tuyển nhé!
-              </div>
-            )}
+                })
+              ) : (
+                <div className="text-center text-muted my-auto pt-4 pb-4">
+                  <i className="bi bi-search fs-3 d-block mb-2 opacity-50"></i>
+                  {searchTerm ? "Không tìm thấy kỹ năng phù hợp." : "Tất cả kỹ năng đã đạt chuẩn."}
+                </div>
+              )}
+            </div>
+            
           </div>
         </div>
       </div>
