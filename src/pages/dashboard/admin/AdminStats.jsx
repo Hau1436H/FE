@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
-import Sidebar from '../../components/dashboard/Sidebar';
-import DashboardHeader from '../../components/dashboard/DashboardHeader';
+import Sidebar from '../../../components/dashboard/Sidebar';
+import DashboardHeader from '../../../components/dashboard/DashboardHeader';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import {
   ADMIN_METRICS,
   REVENUE_TREND,
   ACTIVITY_FEED,
   QUICK_RESULTS
-} from '../../data/adminStatsData';
+} from '../../../data/adminStatsData';
 import {
   FaUserPlus,
   FaChalkboardTeacher,

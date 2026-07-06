@@ -1,11 +1,11 @@
 // src/pages/dashboard/AdminManagement.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../../components/dashboard/Sidebar';
-import DashboardHeader from '../../components/dashboard/DashboardHeader';
+import Sidebar from '../../../components/dashboard/Sidebar';
+import DashboardHeader from '../../../components/dashboard/DashboardHeader';
 import { Button, Table, Form, Tab, Nav, Badge, Spinner, Modal, Toast, ToastContainer } from 'react-bootstrap';
 import { FaPlus, FaTrash, FaEdit, FaBook, FaUsers, FaEye, FaExclamationTriangle } from 'react-icons/fa';
-import { fetchCourses, deleteCourse, fetchStudentsForAdmin } from '../../api/adminApi';
+import { fetchCourses, deleteCourse, fetchStudentsForAdmin } from '../../../api/adminApi';
 
 function AdminManagement() {
   const navigate = useNavigate();

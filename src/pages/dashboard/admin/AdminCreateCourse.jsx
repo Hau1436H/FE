@@ -1,13 +1,13 @@
 import React, { useRef, useState } from 'react';
-import Sidebar from '../../components/dashboard/Sidebar';
-import DashboardHeader from '../../components/dashboard/DashboardHeader';
-import axiosClient from '../../api/axiosClient';
+import Sidebar from '../../../components/dashboard/Sidebar';
+import DashboardHeader from '../../../components/dashboard/DashboardHeader';
+import axiosClient from '../../../api/axiosClient';
 import {
   COURSE_FORM_DEFAULTS,
   COURSE_CATEGORIES,
   COURSE_LEVELS,
   COURSE_TYPES,
-} from '../../data/adminCreateCourseData';
+} from '../../../data/adminCreateCourseData';
 
 const INITIAL_FORM = COURSE_FORM_DEFAULTS;
 

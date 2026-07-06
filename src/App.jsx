@@ -16,11 +16,11 @@ import SkillAssessment from './pages/SkillAssessment';
 import AssessmentHistory from './pages/dashboard/AssessmentHistory';
 import PublicPortfolio from './pages/PublicPortfolio';
 import VirtualMentor from './pages/dashboard/VirtualMentor'; 
-import AdminStats from './pages/dashboard/AdminStats';
-import AdminCreateCourse from './pages/dashboard/AdminCreateCourse';
+import AdminStats from './pages/dashboard/admin/AdminStats';
+import AdminCreateCourse from './pages/dashboard/admin/AdminCreateCourse';
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminManagement from './pages/dashboard/AdminManagement';
+import AdminManagement from './pages/dashboard/admin/AdminManagement';
 import AdminRoute from './components/AdminRoute';
 
 function App() {

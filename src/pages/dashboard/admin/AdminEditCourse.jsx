@@ -1,14 +1,14 @@
 // src/pages/dashboard/AdminEditCourse.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Sidebar from '../../components/dashboard/Sidebar';
-import DashboardHeader from '../../components/dashboard/DashboardHeader';
-import { fetchCourseById, updateCourse } from '../../api/adminApi';
+import Sidebar from '../../../components/dashboard/Sidebar';
+import DashboardHeader from '../../../components/dashboard/DashboardHeader';
+import { fetchCourseById, updateCourse } from '../../../api/adminApi';
 import {
   COURSE_CATEGORIES,
   COURSE_LEVELS,
   COURSE_TYPES,
-} from '../../data/adminCreateCourseData';
+} from '../../../data/adminCreateCourseData';
 
 const EMPTY_FORM = {
   title: '',
