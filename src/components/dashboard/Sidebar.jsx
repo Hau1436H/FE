@@ -84,7 +84,7 @@ function Sidebar() {
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
     { icon: <FaBriefcase />, text: "Career & Jobs", path: "/dashboard/jobs" },
     { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" },
-    { icon: <FaBell />, text: "Thông báo", path: "/dashboard/notifications" },
+    { icon: <FaBell />, text: "AI Insight Center", path: "/dashboard/insights" },
     { icon: <FaHistory />, text: "Lịch sử đánh giá", path: historyPath },
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
   ];

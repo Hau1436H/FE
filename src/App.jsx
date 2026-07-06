@@ -10,20 +10,19 @@ import Learning from "./pages/dashboard/Learning";
 import Practice from "./pages/dashboard/Practice";
 import Jobs from "./pages/dashboard/Jobs";
 import Profile from "./pages/dashboard/Profile";
-import Notifications from "./pages/dashboard/Notifications";
+import AiInsightCenter from "./pages/dashboard/AiInsightCenter"; // ĐÃ CẬP NHẬT: Import trang AI Insights mới thay cho Notifications
 import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
 import AssessmentHistory from './pages/dashboard/AssessmentHistory';
 import PublicPortfolio from './pages/PublicPortfolio';
-import VirtualMentor from './pages/dashboard/VirtualMentor'; // <-- IMPORT FILE MỚI VÀO ĐÂY
+import VirtualMentor from './pages/dashboard/VirtualMentor'; 
 import AdminStats from './pages/dashboard/AdminStats';
 import AdminCreateCourse from './pages/dashboard/AdminCreateCourse';
-//import AdminManagement from './pages/dashboard/AdminManagement';  
 import { AppSettingsProvider } from './components/dashboard/setting/AppSettingsContext';
-// import { GoogleOAuthProvider } from '@react-oauth/google'; // (Uncomment nếu dùng Google Auth)
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminManagement from './pages/dashboard/AdminManagement';
 import AdminRoute from './components/AdminRoute';
+
 function App() {
   const location = useLocation();
 
@@ -52,14 +51,17 @@ function App() {
             <Route path="/dashboard/practice" element={<Practice />}/>
             <Route path="/dashboard/jobs" element={<Jobs />}/>
             <Route path="/dashboard/profile" element={<Profile />}/>
-            <Route path="/dashboard/notifications" element={<Notifications />}/>
+            
+            {/* ĐÃ CẬP NHẬT: Tuyến đường nghiệp vụ đổi từ /notifications sang /insights khớp với Component mới */}
+            <Route path="/dashboard/insights" element={<AiInsightCenter />}/>
+            
             <Route path="/dashboard/setting" element={<Setting />}/>
             <Route path="/skill-assessment" element={<SkillAssessment />} />
             
             {/* Route Lịch sử đánh giá với ID động */}
             <Route path="/dashboard/assessment-history/:studentId" element={<AssessmentHistory />} />
 
-            {/* THÊM ROUTE VIRTUAL MENTOR VÀO ĐÂY */}
+            {/* Route Virtual Mentor */}
             <Route path="/dashboard/virtual-mentor" element={<VirtualMentor />} />
 
             {/* Các route dành riêng cho Admin */}
