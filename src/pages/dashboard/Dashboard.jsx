@@ -6,7 +6,6 @@ import Sidebar from '../../components/dashboard/Sidebar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import axiosClient from '../../api/axiosClient';
 
-// Import các Component con vừa tạo
 import CareerSnapshot from '../../components/dashboard/overview/CareerSnapshot';
 import NextAction from '../../components/dashboard/overview/NextAction';
 import TopSkillGaps from '../../components/dashboard/overview/TopSkillGaps';
@@ -39,7 +38,7 @@ function Dashboard() {
 
   const studentId = getStudentId();
 
-  // Fetch dữ liệu song song
+  // Fetch dữ liệu song song từ API thực tế
   useEffect(() => {
     if (!studentId) return;
     const fetchAllData = async () => {
@@ -53,13 +52,18 @@ function Dashboard() {
 
         const overview = overviewRes.data?.data || overviewRes.data;
         
+        // Xử lý dữ liệu Skill Gaps nâng cao
         const gapsRaw = gapRes.data?.data?.gapItems || gapRes.data?.gapItems || [];
         const topGaps = gapsRaw
           .filter(item => (item.currentScore || item.current || 0) < (item.targetScore || item.required || 0))
           .sort((a, b) => ((b.targetScore || b.required || 0) - (b.currentScore || b.current || 0)) - ((a.targetScore || a.required || 0) - (a.currentScore || a.current || 0)))
           .slice(0, 3)
-          .map(item => ({ subject: item.nodeName || item.skillName || item.subject, gapSize: (item.targetScore || item.required || 0) - (item.currentScore || item.current || 0) }));
+          .map(item => ({ 
+              subject: item.nodeName || item.skillName || item.subject, 
+              gapSize: (item.targetScore || item.required || 0) - (item.currentScore || item.current || 0) 
+          }));
 
+        // Xử lý dữ liệu Market Pulse thực tế
         const rawTrends = marketRes.data?.data || marketRes.data || [];
         const latestDemand = {};
         rawTrends.forEach(g => {
@@ -86,7 +90,7 @@ function Dashboard() {
     fetchAllData();
   }, [studentId, refreshTrigger]);
 
-  // SignalR & Timer
+  // Đồng bộ thời gian thực qua SignalR Hub
   useEffect(() => {
     if (!studentId) return;
     const token = localStorage.getItem('token');
@@ -97,11 +101,12 @@ function Dashboard() {
     connection.start().then(() => {
       connection.invoke("SubscribeToRoadmapUpdates", studentId.toString());
       connection.on("ReceiveRoadmapUpdate", () => setRefreshTrigger(prev => prev + 1));
-    }).catch(e => console.warn("SignalR chưa bật."));
+    }).catch(e => console.warn("SignalR chưa kích hoạt hoặc thiếu cấu hình CORS Hub."));
 
     return () => { if (connection.state === "Connected") connection.stop(); };
   }, [studentId]);
 
+  // Bộ đếm ngược thời gian (Countdown Timer)
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -138,21 +143,20 @@ function Dashboard() {
         ) : (
           <div className="d-flex flex-column gap-4">
             
-            {/* Lắp ráp các Component con */}
+            {/* Header thông tin tiến độ */}
             <CareerSnapshot overview={overview} />
 
             <div className="row g-4">
+              {/* Cột chính (Nhiệm vụ trọng tâm) */}
               <div className="col-xl-8 col-lg-7">
                 <NextAction nextAction={overview.nextAction} timeLeftStr={timeLeftStr} />
               </div>
 
+              {/* Cột phụ (Báo cáo tổng hợp từ AI) */}
               <div className="col-xl-4 col-lg-5 d-flex flex-column gap-4">
                 <TopSkillGaps topGaps={topGaps} />
-                {/* Lắp ráp ở file Dashboard.jsx */}
                 <GithubPortfolio studentId={studentId} />
-                <MarketPulse 
-                topTrends={topTrends} 
-                aiPulseSummary={overview?.marketPulse?.aiPulseSummary} />
+                <MarketPulse topTrends={topTrends} aiPulseSummary={overview?.marketPulse?.aiPulseSummary} />
               </div>
             </div>
 
