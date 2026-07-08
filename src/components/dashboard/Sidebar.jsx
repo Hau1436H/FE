@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from 'react-bootstrap';
 import { 
   FaHome, FaGraduationCap, FaCode, FaBriefcase, 
-  FaBell, FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot, FaChartLine, FaPlusCircle, FaSlidersH
+  FaUser, FaCog, FaSignOutAlt, FaHistory, FaRobot, FaChartLine, FaPlusCircle, FaSlidersH
 } from 'react-icons/fa';
 
 import { PROFILE_DATA } from '../../data/profileData';
@@ -52,9 +52,6 @@ function Sidebar() {
         const response = await axiosClient.get('/api/Profile/me');
         const result = response.data;
         if (result.data) {
-          // Ghép role từ token vào nếu API không trả field role
-          // result.data chứa format mới { user: {...}, details: {...} } nếu đã cập nhật backend/API Client
-          // Phải bóc tách an toàn:
           const fetchedUser = result.data.user || result.data;
           const fetchedDetails = result.data.details || {};
           
@@ -77,14 +74,13 @@ function Sidebar() {
   const studentId = user?.userId || user?.studentId || '';  
   const historyPath = studentId ? `/dashboard/assessment-history/${studentId}` : '#';
 
-  // 1. Nhóm Menu dành cho Học viên
+  // 1. Nhóm Menu dành cho Học viên (Đã xóa AI Insight Center)
   const baseMenuItems = [
     { icon: <FaHome />, text: "Tổng quan", path: "/dashboard" },
     { icon: <FaGraduationCap />, text: "Learning Hub", path: "/dashboard/learning" },
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
     { icon: <FaBriefcase />, text: "Career & Jobs", path: "/dashboard/jobs" },
     { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" },
-    { icon: <FaBell />, text: "AI Insight Center", path: "/dashboard/insights" },
     { icon: <FaHistory />, text: "Lịch sử đánh giá", path: historyPath },
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
   ];
@@ -133,7 +129,6 @@ function Sidebar() {
   return (
     <div className="d-flex flex-column p-3 text-white flex-shrink-0" style={{ width: '260px', backgroundColor: '#06060c', minHeight: '100vh', borderRight: '1px solid #1e1e2f' }}>
       
-      {/* ĐÃ SỬA: Thay đổi to="/" để luôn quay về trang chủ gốc */}
       <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4 mb-4">
         <span style={{
           background: 'linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, #ffffff 70%, #ffffff 100%)',
@@ -167,7 +162,6 @@ function Sidebar() {
           </div>
         </div>
         
-        {/* Đã sửa: Chỉ hiển thị khối mục tiêu giờ học nếu KHÔNG PHẢI là Admin */}
         {!isAdmin && (
           <div className="mt-3">
             <div className="d-flex justify-content-between text-white-50 small mb-1" style={{ fontSize: '11.5px' }}>
@@ -181,7 +175,6 @@ function Sidebar() {
         )}
       </div>
 
-      {/* Đã sửa: KHỐI MENU CHÍNH CHUNG (Chỉ hiển thị nếu KHÔNG PHẢI Admin) */}
       {!isAdmin && (
         <>
           <div className="small text-white mb-2 px-2 uppercase fw-bold" style={{ fontSize: '11px', letterSpacing: '1px' }}>MENU THÀNH VIÊN</div>
@@ -191,7 +184,6 @@ function Sidebar() {
         </>
       )}
 
-      {/* KHỐI MENU QUẢN TRỊ (Chỉ hiển thị nếu là Admin) */}
       {isAdmin && (
         <>
           <div className="small text-white mb-2 px-2 uppercase fw-bold mt-2" style={{ fontSize: '11px', letterSpacing: '1px', color: '#10b981' }}>QUẢN TRỊ VIÊN</div>

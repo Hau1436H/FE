@@ -10,7 +10,6 @@ import Learning from "./pages/dashboard/Learning";
 import Practice from "./pages/dashboard/Practice";
 import Jobs from "./pages/dashboard/Jobs";
 import Profile from "./pages/dashboard/Profile";
-import AiInsightCenter from "./pages/dashboard/AiInsightCenter"; // ĐÃ CẬP NHẬT: Import trang AI Insights mới thay cho Notifications
 import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from './pages/SkillAssessment';
 import AssessmentHistory from './pages/dashboard/AssessmentHistory';
@@ -51,9 +50,6 @@ function App() {
             <Route path="/dashboard/practice" element={<Practice />}/>
             <Route path="/dashboard/jobs" element={<Jobs />}/>
             <Route path="/dashboard/profile" element={<Profile />}/>
-            
-            {/* ĐÃ CẬP NHẬT: Tuyến đường nghiệp vụ đổi từ /notifications sang /insights khớp với Component mới */}
-            <Route path="/dashboard/insights" element={<AiInsightCenter />}/>
             
             <Route path="/dashboard/setting" element={<Setting />}/>
             <Route path="/skill-assessment" element={<SkillAssessment />} />
