@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from "react";
-import {
-  FaExclamationTriangle,
-  FaUsers,
-  FaChartLine,
-  FaRobot,
-} from "react-icons/fa";
+import { HubConnectionBuilder } from "@microsoft/signalr";
+import { FaExclamationTriangle } from "react-icons/fa";
 
-// Import Layout Components (Đảm bảo đường dẫn import đúng với dự án của bạn)
 import Sidebar from "../../components/dashboard/Sidebar";
 import DashboardHeader from "../../components/dashboard/DashboardHeader";
+import axiosClient from "../../api/axiosClient";
 
-// Tái sử dụng bảng màu Dark Theme
+// Import các Component con vừa tạo
+import CareerSnapshot from "../../components/dashboard/overview/CareerSnapshot";
+import NextAction from "../../components/dashboard/overview/NextAction";
+import TopSkillGaps from "../../components/dashboard/overview/TopSkillGaps";
+import GithubPortfolio from "../../components/dashboard/overview/GithubPortfolio";
+import MarketPulse from "../../components/dashboard/overview/MarketPulse";
+
 const COLORS = {
   bgContainer: "#000000",
   accentCyan: "#34D399",
   textSecondary: "#8C8C8C",
-  cardBg: "rgba(255, 255, 255, 0.04)",
-  cardBorder: "rgba(255, 255, 255, 0.08)",
 };
 
 function AdminDashboard() {
@@ -27,23 +27,90 @@ function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [timeLeftStr, setTimeLeftStr] = useState("Đang tính...");
 
+  const getStudentId = () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return null;
+      const base64Url = token.split(".")[1];
+      let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      while (base64.length % 4) {
+        base64 += "=";
+      }
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(""),
+      );
+      const payload = JSON.parse(jsonPayload);
+      return payload.studentId || payload.StudentId || payload.userId;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const studentId = getStudentId();
+
+  // Fetch dữ liệu song song
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // Gọi 3 API Admin song song để tối ưu tốc độ
-        const [analyticsRes, statsRes, activityRes] = await Promise.all([
-          dashboardService.getMarketAnalytics(),
-          dashboardService.getStudentStats(),
-          dashboardService.getStudentActivity(), // Nếu bạn có API này
+        const [overviewRes, gapRes, marketRes] = await Promise.all([
+          axiosClient.get(`/api/v1/Dashboard/${studentId}/overview`),
+          axiosClient.get(`/api/SkillGapReports/${studentId}/skill-gap`),
+          axiosClient.get(`/api/v1/MarketPulse/trends?days=30`),
         ]);
 
-        setStats({
-          market: analyticsRes.data?.data || analyticsRes.data,
-          students: statsRes.data?.data || statsRes.data,
-          activity: activityRes.data?.data || activityRes.data,
+        const overview = overviewRes.data?.data || overviewRes.data;
+
+        const gapsRaw =
+          gapRes.data?.data?.gapItems || gapRes.data?.gapItems || [];
+        const topGaps = gapsRaw
+          .filter(
+            (item) =>
+              (item.currentScore || item.current || 0) <
+              (item.targetScore || item.required || 0),
+          )
+          .sort(
+            (a, b) =>
+              (b.targetScore || b.required || 0) -
+              (b.currentScore || b.current || 0) -
+              ((a.targetScore || a.required || 0) -
+                (a.currentScore || a.current || 0)),
+          )
+          .slice(0, 3)
+          .map((item) => ({
+            subject: item.nodeName || item.skillName || item.subject,
+            gapSize:
+              (item.targetScore || item.required || 0) -
+              (item.currentScore || item.current || 0),
+          }));
+
+        const rawTrends = marketRes.data?.data || marketRes.data || [];
+        const latestDemand = {};
+        rawTrends.forEach((g) => {
+          const name = g.nodeName || g.NodeName;
+          const points = g.dataPoints || g.DataPoints || [];
+          if (points.length > 0) {
+            const sorted = [...points].sort(
+              (a, b) =>
+                new Date(b.analyzedDate || b.AnalyzedDate) -
+                new Date(a.analyzedDate || a.AnalyzedDate),
+            );
+            latestDemand[name] =
+              sorted[0].demandPercent || sorted[0].DemandPercent || 0;
+          }
         });
+        const topTrends = Object.entries(latestDemand)
+          .map(([name, demand]) => ({ name, demand }))
+          .sort((a, b) => b.demand - a.demand)
+          .slice(0, 3);
+
+        setData({ overview, topGaps, topTrends });
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu Admin Dashboard:", err);
         setError(
@@ -53,8 +120,47 @@ function AdminDashboard() {
         setLoading(false);
       }
     };
+    fetchAllData();
+  }, [studentId, refreshTrigger]);
 
-    fetchDashboardData();
+  // SignalR & Timer
+  useEffect(() => {
+    if (!studentId) return;
+    const token = localStorage.getItem("token");
+    const connection = new HubConnectionBuilder()
+      .withUrl("https://localhost:7196/hubs/roadmap", {
+        accessTokenFactory: () => token,
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    connection
+      .start()
+      .then(() => {
+        connection.invoke("SubscribeToRoadmapUpdates", studentId.toString());
+        connection.on("ReceiveRoadmapUpdate", () =>
+          setRefreshTrigger((prev) => prev + 1),
+        );
+      })
+      .catch((e) => console.warn("SignalR chưa bật."));
+
+    return () => {
+      if (connection.state === "Connected") connection.stop();
+    };
+  }, [studentId]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      const diff = endOfDay - now;
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diff / (1000 * 60)) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+      setTimeLeftStr(`${h}h ${m < 10 ? "0" + m : m}m ${s < 10 ? "0" + s : s}s`);
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
@@ -97,104 +203,26 @@ function AdminDashboard() {
             {error}
           </div>
         ) : (
-          <div className="d-flex flex-column gap-4 mt-4">
-            <h4 className="fw-bold mb-2">Tổng quan Hệ thống</h4>
+          <div className="d-flex flex-column gap-4">
+            {/* Lắp ráp các Component con */}
+            <CareerSnapshot overview={overview} />
 
             <div className="row g-4">
-              {/* Card 1: Thống kê Sinh viên */}
-              <div className="col-xl-4 col-md-6">
-                <div
-                  className="p-4 rounded-4 h-100"
-                  style={{
-                    backgroundColor: COLORS.cardBg,
-                    border: `1px solid ${COLORS.cardBorder}`,
-                  }}
-                >
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="m-0 text-white-50 fs-6">
-                      Tổng số Sinh viên
-                    </h5>
-                    <div
-                      className="p-2 rounded-circle"
-                      style={{
-                        backgroundColor: "rgba(52, 211, 153, 0.15)",
-                        color: COLORS.accentCyan,
-                      }}
-                    >
-                      <FaUsers size={20} />
-                    </div>
-                  </div>
-                  <h2 className="fw-bold mb-1">
-                    {stats.students?.totalStudents || 0}
-                  </h2>
-                  <p className="small m-0 text-success">
-                    +12% so với tháng trước
-                  </p>
-                </div>
+              <div className="col-xl-8 col-lg-7">
+                <NextAction
+                  nextAction={overview.nextAction}
+                  timeLeftStr={timeLeftStr}
+                />
               </div>
 
-              {/* Card 2: Phân tích Thị trường AI */}
-              <div className="col-xl-4 col-md-6">
-                <div
-                  className="p-4 rounded-4 h-100"
-                  style={{
-                    backgroundColor: COLORS.cardBg,
-                    border: `1px solid ${COLORS.cardBorder}`,
-                  }}
-                >
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="m-0 text-white-50 fs-6">
-                      Ngành hot nhất (Trending)
-                    </h5>
-                    <div
-                      className="p-2 rounded-circle"
-                      style={{
-                        backgroundColor: "rgba(255, 193, 7, 0.15)",
-                        color: "#FFC107",
-                      }}
-                    >
-                      <FaChartLine size={20} />
-                    </div>
-                  </div>
-                  <h2 className="fw-bold mb-1 fs-3">
-                    {stats.market?.trendingRole || "N/A"}
-                  </h2>
-                  <p className="small m-0 text-white-50">
-                    Dựa trên dữ liệu cào tự động
-                  </p>
-                </div>
-              </div>
-
-              {/* Card 3: Ai Analytics / Activity */}
-              <div className="col-xl-4 col-md-12">
-                <div
-                  className="p-4 rounded-4 h-100"
-                  style={{
-                    backgroundColor: COLORS.cardBg,
-                    border: `1px solid ${COLORS.cardBorder}`,
-                  }}
-                >
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="m-0 text-white-50 fs-6">
-                      Hoạt động trong ngày
-                    </h5>
-                    <div
-                      className="p-2 rounded-circle"
-                      style={{
-                        backgroundColor: "rgba(13, 110, 253, 0.15)",
-                        color: "#0D6EFD",
-                      }}
-                    >
-                      <FaRobot size={20} />
-                    </div>
-                  </div>
-                  <h2 className="fw-bold mb-1">
-                    {stats.activity?.activeToday || 0} user
-                  </h2>
-                  <p className="small m-0 text-white-50">
-                    Đang online trên hệ thống
-                  </p>
-                </div>
+              <div className="col-xl-4 col-lg-5 d-flex flex-column gap-4">
+                <TopSkillGaps topGaps={topGaps} />
+                {/* Lắp ráp ở file Dashboard.jsx */}
+                <GithubPortfolio studentId={studentId} />
+                <MarketPulse
+                  topTrends={topTrends}
+                  aiPulseSummary={overview?.marketPulse?.aiPulseSummary}
+                />
               </div>
             </div>
 
