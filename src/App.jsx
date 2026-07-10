@@ -15,14 +15,16 @@ import SkillAssessment from "./pages/SkillAssessment";
 import AssessmentHistory from "./pages/dashboard/AssessmentHistory";
 import PublicPortfolio from "./pages/PublicPortfolio";
 import VirtualMentor from "./pages/dashboard/VirtualMentor";
-import AdminStats from "./pages/dashboard/admin/AdminStats";
-import AdminCreateCourse from "./pages/dashboard/admin/AdminCreateCourse";
 import { AppSettingsProvider } from "./components/dashboard/setting/AppSettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
-// Import Component quản lý người dùng (Dùng chung cho cả Admin/Mentor/Counselor)
+// Import các Component cho phân hệ Admin Quản trị
+import AdminStats from "./pages/dashboard/admin/AdminStats";
 import AdminUserManagement from "./pages/dashboard/admin/AdminUserManagement";
+import AdminResourceList from "./pages/dashboard/admin/AdminResourceList";
+import AdminCreateResource from "./pages/dashboard/admin/AdminCreateResource";
+import AdminEditResource from "./pages/dashboard/admin/AdminEditResource";
 
 function App() {
   const location = useLocation();
@@ -71,18 +73,15 @@ function App() {
               element={<VirtualMentor />}
             />
 
-            {/* Các route dành riêng cho Admin */}
+            {/* Các route bảo vệ dành riêng cho Quản trị viên (Admin) */}
             <Route element={<AdminRoute />}>
               <Route path="/dashboard/admin" element={<AdminStats />} />
-              <Route
-                path="/dashboard/admin/create-course"
-                element={<AdminCreateCourse />}
-              />
-              {/* Chỉ giữ lại route Quản lý người dùng */}
-              <Route
-                path="/dashboard/admin/users"
-                element={<AdminUserManagement />}
-              />
+              <Route path="/dashboard/admin/users" element={<AdminUserManagement />} />
+              
+              {/* Hệ thống định tuyến CRUD phân trang cho Tài nguyên học tập */}
+              <Route path="/dashboard/admin/management" element={<AdminResourceList />} />
+              <Route path="/dashboard/admin/resources/create" element={<AdminCreateResource />} />
+              <Route path="/dashboard/admin/resources/edit/:id" element={<AdminEditResource />} />
             </Route>
           </Route>
         </Routes>

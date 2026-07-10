@@ -13,9 +13,13 @@ import {
   FaHistory,
   FaRobot,
   FaChartLine,
-  FaPlusCircle,
-  FaSlidersH,
+  FaBook,
   FaUsers,
+  FaChalkboardTeacher,
+  FaCalendarAlt,
+  FaUserTie,
+  FaComments,
+  FaClipboardList
 } from "react-icons/fa";
 
 import { PROFILE_DATA } from "../../data/profileData";
@@ -47,23 +51,23 @@ function decodeToken(token) {
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState({});
+
+  // FIX LỖI NHÁY MÀN HÌNH: Khởi tạo user ngay từ token trong localStorage trước khi render HTML
+  const [user, setUser] = useState(() => {
+    const token = localStorage.getItem("token");
+    const payload = decodeToken(token);
+    const role = payload?.role || payload?.Role || localStorage.getItem("role") || "student";
+    
+    return {
+      fullName: payload?.fullName || payload?.name || payload?.unique_name || "",
+      email: payload?.email || payload?.sub || "",
+      role: role.toLowerCase(),
+      avatar: null
+    };
+  });
 
   useEffect(() => {
     async function fetchUser() {
-      // Luôn lấy role/thông tin cơ bản từ token trước - không phụ thuộc API
-      const token = localStorage.getItem("token");
-      const payload = decodeToken(token);
-      const tokenRole =
-        payload?.role || payload?.Role || localStorage.getItem("role") || "";
-      const tokenFallback = {
-        fullName:
-          payload?.fullName || payload?.name || payload?.unique_name || "",
-        email: payload?.email || payload?.sub || "",
-        avatar: null,
-        role: tokenRole,
-      };
-
       try {
         const response = await axiosClient.get("/api/Profile/me");
         const result = response.data;
@@ -71,38 +75,33 @@ function Sidebar() {
           const fetchedUser = result.data.user || result.data;
           const fetchedDetails = result.data.details || {};
 
-          setUser({
+          setUser((prev) => ({
+            ...prev,
             ...fetchedUser,
             ...fetchedDetails,
-            role: fetchedUser.roleName || fetchedUser.role || tokenRole,
-          });
-        } else {
-          setUser(tokenFallback);
+            // Ưu tiên role từ DB, nếu không có thì giữ nguyên role đã decode từ token
+            role: (fetchedUser.roleName || fetchedUser.role || prev.role).toLowerCase(),
+          }));
         }
       } catch (error) {
-        console.warn(
-          "Không tải được /api/Profile/me, dùng dữ liệu cơ bản từ token:",
-          error?.message,
-        );
-        setUser(tokenFallback);
+        console.warn("Không tải được thông tin mới nhất, tiếp tục dùng data từ Token.");
       }
     }
     fetchUser();
   }, []);
 
   const studentId = user?.userId || user?.studentId || "";
-  const historyPath = studentId
-    ? `/dashboard/assessment-history/${studentId}`
-    : "#";
+  const historyPath = studentId ? `/dashboard/assessment-history/${studentId}` : "#";
+  const userRole = user?.role || "student";
 
-  // 1. Nhóm Menu dành cho Học viên (Đã xóa AI Insight Center)
-  const baseMenuItems = [
+  // ==========================================
+  // CẤU HÌNH MENU CHO TỪNG ROLE (1, 2, 3, 4)
+  // ==========================================
+
+  // Role 2: Student
+  const studentMenuItems = [
     { icon: <FaHome />, text: "Tổng quan", path: "/dashboard" },
-    {
-      icon: <FaGraduationCap />,
-      text: "Learning Hub",
-      path: "/dashboard/learning",
-    },
+    { icon: <FaGraduationCap />, text: "Learning Hub", path: "/dashboard/learning" },
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
     { icon: <FaBriefcase />, text: "Career & Jobs", path: "/dashboard/jobs" },
     { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" },
@@ -110,40 +109,75 @@ function Sidebar() {
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
   ];
 
-  // 2. Nhóm Menu chỉ hiển thị khi tài khoản đăng nhập có Role là Admin
+  // Role 1: Admin
   const adminMenuItems = [
     { icon: <FaChartLine />, text: "Admin Stats", path: "/dashboard/admin" },
-
-    {
-      icon: <FaPlusCircle />,
-      text: "Tạo khoá học",
-      path: "/dashboard/admin/create-course",
-    },
-    // Bổ sung menu Quản lý người dùng vào đây
-    {
-      icon: <FaUsers />,
-      text: "Quản lý người dùng",
-      path: "/dashboard/admin/users",
-    },
+    { icon: <FaBook />, text: "Quản lý tài liệu", path: "/dashboard/admin/management" },
+    { icon: <FaUsers />, text: "Quản lý người dùng", path: "/dashboard/admin/users" },
   ];
 
-  // Kiểm tra xem user hiện tại có phải là Admin hay không
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  // Role 3: Mentor
+  const mentorMenuItems = [
+    { icon: <FaChalkboardTeacher />, text: "Tổng quan Mentor", path: "/dashboard/mentor" },
+    { icon: <FaCalendarAlt />, text: "Lịch hẹn hướng dẫn", path: "/dashboard/mentor/sessions" },
+    { icon: <FaClipboardList />, text: "Đánh giá học viên", path: "/dashboard/mentor/evaluations" },
+    { icon: <FaUser />, text: "Hồ sơ chuyên gia", path: "/dashboard/profile" },
+  ];
 
+  // Role 4: Counselor
+  const counselorMenuItems = [
+    { icon: <FaUserTie />, text: "Tổng quan Cố vấn", path: "/dashboard/counselor" },
+    { icon: <FaComments />, text: "Lịch tư vấn", path: "/dashboard/counselor/sessions" },
+    { icon: <FaUsers />, text: "Quản lý sinh viên", path: "/dashboard/counselor/students" },
+    { icon: <FaUser />, text: "Hồ sơ cố vấn", path: "/dashboard/profile" },
+  ];
+
+  // Xác định danh sách menu và tiêu đề dựa vào role hiện tại
+  let currentMenuItems = [];
+  let menuHeader = "";
+  let headerColor = "";
+
+  switch (userRole) {
+    case "admin":
+      currentMenuItems = adminMenuItems;
+      menuHeader = "QUẢN TRỊ VIÊN";
+      headerColor = "#10b981"; // Màu xanh lá
+      break;
+    case "mentor":
+      currentMenuItems = mentorMenuItems;
+      menuHeader = "MENTOR (CHUYÊN GIA)";
+      headerColor = "#3b82f6"; // Màu xanh dương
+      break;
+    case "counselor":
+      currentMenuItems = counselorMenuItems;
+      menuHeader = "CỐ VẤN HỌC TẬP";
+      headerColor = "#f59e0b"; // Màu vàng/cam
+      break;
+    default:
+      currentMenuItems = studentMenuItems;
+      menuHeader = "MENU HỌC VIÊN";
+      headerColor = "#a78bfa"; // Màu tím nhạt
+      break;
+  }
+
+  // Thông số mục tiêu (Chỉ hiển thị cho Student)
   const hourStat = PROFILE_DATA.stats.find((s) => s.label === "Giờ học");
-  const currentHours =
-    parseInt(hourStat?.value?.replace(/[^0-9]/g, ""), 10) || 0;
+  const currentHours = parseInt(hourStat?.value?.replace(/[^0-9]/g, ""), 10) || 0;
   const targetHours = 100;
-  const goalPercentage = Math.min(
-    100,
-    Math.round((currentHours / targetHours) * 100),
-  );
+  const goalPercentage = Math.min(100, Math.round((currentHours / targetHours) * 100));
 
   const renderMenuItem = (item, index) => {
-    const isItemActive =
-      item.text === "Lịch sử đánh giá"
-        ? location.pathname.includes("/assessment-history")
-        : location.pathname === item.path && item.path !== "#";
+    let isItemActive = false;
+    
+    // Logic Active chuẩn xác hơn
+    if (item.text === "Lịch sử đánh giá") {
+      isItemActive = location.pathname.includes("/assessment-history");
+    } else if (item.text === "Quản lý tài liệu") {
+      isItemActive = location.pathname.includes("/dashboard/admin/management") || 
+                     location.pathname.includes("/dashboard/admin/resources/");
+    } else {
+      isItemActive = location.pathname === item.path && item.path !== "#";
+    }
 
     return (
       <li key={index}>
@@ -156,20 +190,13 @@ function Sidebar() {
             isItemActive
               ? {
                   color: "#fff",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--accent) 25%, transparent) !important",
+                  backgroundColor: "color-mix(in srgb, var(--accent) 25%, transparent) !important",
                 }
               : {}
           }
           onClick={() => item.path !== "#" && navigate(item.path)}
         >
-          <span
-            className={
-              isItemActive
-                ? "text-white"
-                : "text-white-50 d-flex align-items-center"
-            }
-          >
+          <span className={isItemActive ? "text-white" : "text-white-50 d-flex align-items-center"}>
             {item.icon}
           </span>
           <span className="text-white">{item.text}</span>
@@ -191,8 +218,7 @@ function Sidebar() {
       <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4 mb-4">
         <span
           style={{
-            background:
-              "linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, #ffffff 70%, #ffffff 100%)",
+            background: "linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, #ffffff 70%, #ffffff 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             display: "inline-block",
@@ -204,6 +230,7 @@ function Sidebar() {
         </span>
       </Navbar.Brand>
 
+      {/* THÔNG TIN USER */}
       <div className="p-3 mb-4 rounded" style={{ backgroundColor: "#111122" }}>
         <div className="d-flex align-items-center gap-3">
           {user?.avatar ? (
@@ -222,74 +249,43 @@ function Sidebar() {
             </div>
           )}
           <div>
-            <div className="fw-semibold small text-white">
+            <div className="fw-semibold small text-white text-truncate" style={{ maxWidth: "130px" }}>
               {user?.fullName || "Người dùng"}
             </div>
-            <div
-              className="text-white-50 extra-small"
-              style={{ fontSize: "12px" }}
-            >
+            <div className="text-white-50 extra-small text-truncate" style={{ fontSize: "12px", maxWidth: "130px" }}>
               {user?.email || "Email chưa cập nhật"}
             </div>
           </div>
         </div>
 
-        {!isAdmin && (
+        {/* Chỉ hiển thị thanh tiến độ mục tiêu cho Học viên */}
+        {userRole === "student" && (
           <div className="mt-3">
-            <div
-              className="d-flex justify-content-between text-white-50 small mb-1"
-              style={{ fontSize: "11.5px" }}
-            >
+            <div className="d-flex justify-content-between text-white-50 small mb-1" style={{ fontSize: "11.5px" }}>
               <span>Mục tiêu tuần này</span>
-              <span className="text-success fw-semibold">
-                {currentHours}h / {targetHours}h
-              </span>
+              <span className="text-success fw-semibold">{currentHours}h / {targetHours}h</span>
             </div>
-            <div
-              className="progress"
-              style={{ height: "6px", backgroundColor: "#22223b" }}
-            >
-              <div
-                className="progress-bar bg-success"
-                style={{ width: `${goalPercentage}%` }}
-              ></div>
+            <div className="progress" style={{ height: "6px", backgroundColor: "#22223b" }}>
+              <div className="progress-bar bg-success" style={{ width: `${goalPercentage}%` }}></div>
             </div>
           </div>
         )}
       </div>
 
-      {!isAdmin && (
-        <>
-          <div
-            className="small text-white mb-2 px-2 uppercase fw-bold"
-            style={{ fontSize: "11px", letterSpacing: "1px" }}
-          >
-            MENU THÀNH VIÊN
-          </div>
-          <ul className="nav nav-pills flex-column gap-1 mb-3">
-            {baseMenuItems.map((item, index) => renderMenuItem(item, index))}
-          </ul>
-        </>
-      )}
-
-      {isAdmin && (
-        <>
-          <div
-            className="small text-white mb-2 px-2 uppercase fw-bold mt-2"
-            style={{ fontSize: "11px", letterSpacing: "1px", color: "#10b981" }}
-          >
-            QUẢN TRỊ VIÊN
-          </div>
-          <ul className="nav nav-pills flex-column gap-1 mb-auto">
-            {adminMenuItems.map((item, index) => renderMenuItem(item, index))}
-          </ul>
-        </>
-      )}
-
-      {!isAdmin && <div className="mb-auto"></div>}
+      {/* RENDER MENU ĐỘNG THEO ROLE */}
+      <div
+        className="small mb-2 px-2 uppercase fw-bold mt-2"
+        style={{ fontSize: "11px", letterSpacing: "1px", color: headerColor }}
+      >
+        {menuHeader}
+      </div>
+      <ul className="nav nav-pills flex-column gap-1 mb-auto">
+        {currentMenuItems.map((item, index) => renderMenuItem(item, index))}
+      </ul>
 
       <hr style={{ backgroundColor: "#22223b" }} />
 
+      {/* MENU CỐ ĐỊNH Ở DƯỚI CÙNG */}
       <ul className="nav nav-pills flex-column gap-1">
         <li>
           <button
@@ -297,13 +293,7 @@ function Sidebar() {
             className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 border-0 ${location.pathname === "/dashboard/setting" ? "bg-success bg-opacity-10 fw-semibold" : "bg-transparent text-white-50"}`}
             onClick={() => navigate("/dashboard/setting")}
           >
-            <FaCog
-              className={
-                location.pathname === "/dashboard/setting"
-                  ? "text-white"
-                  : "text-white-50"
-              }
-            />
+            <FaCog className={location.pathname === "/dashboard/setting" ? "text-white" : "text-white-50"} />
             <span className="text-white">Cài đặt</span>
           </button>
         </li>
