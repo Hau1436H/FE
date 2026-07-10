@@ -19,16 +19,14 @@ import AdminStats from "./pages/dashboard/admin/AdminStats";
 import AdminCreateCourse from "./pages/dashboard/admin/AdminCreateCourse";
 import { AppSettingsProvider } from "./components/dashboard/setting/AppSettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminManagement from "./pages/dashboard/admin/AdminManagement";
 import AdminRoute from "./components/AdminRoute";
 
-// BƯỚC 1: IMPORT COMPONENT QUẢN LÝ NGƯỜI DÙNG
+// Import Component quản lý người dùng (Dùng chung cho cả Admin/Mentor/Counselor)
 import AdminUserManagement from "./pages/dashboard/admin/AdminUserManagement";
 
 function App() {
   const location = useLocation();
 
-  // Ẩn Navbar chung mặc định cho các đường dẫn này (Thêm '/p/' để nhà tuyển dụng không thấy Navbar)
   const noNavarPaths = [
     "/login",
     "/register",
@@ -52,27 +50,22 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* ROUTE PUBLIC: Dành cho nhà tuyển dụng xem E-Portfolio (Bắt buộc nằm ngoài ProtectedRoute) */}
           <Route path="/p/:slug" element={<PublicPortfolio />} />
 
-          {/* Các route yêu cầu đăng nhập */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/learning" element={<Learning />} />
             <Route path="/dashboard/practice" element={<Practice />} />
             <Route path="/dashboard/jobs" element={<Jobs />} />
             <Route path="/dashboard/profile" element={<Profile />} />
-
             <Route path="/dashboard/setting" element={<Setting />} />
             <Route path="/skill-assessment" element={<SkillAssessment />} />
 
-            {/* Route Lịch sử đánh giá với ID động */}
             <Route
               path="/dashboard/assessment-history/:studentId"
               element={<AssessmentHistory />}
             />
 
-            {/* Route Virtual Mentor */}
             <Route
               path="/dashboard/virtual-mentor"
               element={<VirtualMentor />}
@@ -85,12 +78,7 @@ function App() {
                 path="/dashboard/admin/create-course"
                 element={<AdminCreateCourse />}
               />
-              <Route
-                path="/dashboard/admin/management"
-                element={<AdminManagement />}
-              />
-
-              {/* BƯỚC 2: KHAI BÁO ROUTE CHO QUẢN LÝ NGƯỜI DÙNG */}
+              {/* Chỉ giữ lại route Quản lý người dùng */}
               <Route
                 path="/dashboard/admin/users"
                 element={<AdminUserManagement />}

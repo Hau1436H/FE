@@ -113,11 +113,7 @@ function Sidebar() {
   // 2. Nhóm Menu chỉ hiển thị khi tài khoản đăng nhập có Role là Admin
   const adminMenuItems = [
     { icon: <FaChartLine />, text: "Admin Stats", path: "/dashboard/admin" },
-    {
-      icon: <FaSlidersH />,
-      text: "Quản lý hệ thống",
-      path: "/dashboard/admin/management",
-    },
+
     {
       icon: <FaPlusCircle />,
       text: "Tạo khoá học",

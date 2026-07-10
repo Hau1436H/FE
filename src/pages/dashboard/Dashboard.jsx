@@ -6,7 +6,6 @@ import Sidebar from "../../components/dashboard/Sidebar";
 import DashboardHeader from "../../components/dashboard/DashboardHeader";
 import axiosClient from "../../api/axiosClient";
 
-// Import các Component con vừa tạo
 import CareerSnapshot from "../../components/dashboard/overview/CareerSnapshot";
 import NextAction from "../../components/dashboard/overview/NextAction";
 import TopSkillGaps from "../../components/dashboard/overview/TopSkillGaps";
@@ -19,11 +18,11 @@ const COLORS = {
   textSecondary: "#8C8C8C",
 };
 
-function AdminDashboard() {
-  const [stats, setStats] = useState({
-    market: null,
-    students: null,
-    activity: null,
+function Dashboard() {
+  const [data, setData] = useState({
+    overview: null,
+    topGaps: [],
+    topTrends: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,9 +53,10 @@ function AdminDashboard() {
 
   const studentId = getStudentId();
 
-  // Fetch dữ liệu song song
+  // Fetch dữ liệu song song từ API thực tế
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    if (!studentId) return;
+    const fetchAllData = async () => {
       try {
         setLoading(true);
         const [overviewRes, gapRes, marketRes] = await Promise.all([
@@ -67,6 +67,7 @@ function AdminDashboard() {
 
         const overview = overviewRes.data?.data || overviewRes.data;
 
+        // Xử lý dữ liệu Skill Gaps nâng cao
         const gapsRaw =
           gapRes.data?.data?.gapItems || gapRes.data?.gapItems || [];
         const topGaps = gapsRaw
@@ -90,6 +91,7 @@ function AdminDashboard() {
               (item.currentScore || item.current || 0),
           }));
 
+        // Xử lý dữ liệu Market Pulse thực tế
         const rawTrends = marketRes.data?.data || marketRes.data || [];
         const latestDemand = {};
         rawTrends.forEach((g) => {
@@ -112,9 +114,9 @@ function AdminDashboard() {
 
         setData({ overview, topGaps, topTrends });
       } catch (err) {
-        console.error("Lỗi khi tải dữ liệu Admin Dashboard:", err);
+        console.error("Lỗi fetch Dashboard Command Center:", err);
         setError(
-          "Không thể kết nối đến máy chủ quản trị. Vui lòng kiểm tra lại quyền truy cập hoặc hệ thống.",
+          "Chưa thiết lập mục tiêu nghề nghiệp. Vui lòng cập nhật trong Hồ sơ của bạn.",
         );
       } finally {
         setLoading(false);
@@ -123,7 +125,7 @@ function AdminDashboard() {
     fetchAllData();
   }, [studentId, refreshTrigger]);
 
-  // SignalR & Timer
+  // Đồng bộ thời gian thực qua SignalR Hub
   useEffect(() => {
     if (!studentId) return;
     const token = localStorage.getItem("token");
@@ -142,13 +144,16 @@ function AdminDashboard() {
           setRefreshTrigger((prev) => prev + 1),
         );
       })
-      .catch((e) => console.warn("SignalR chưa bật."));
+      .catch((e) =>
+        console.warn("SignalR chưa kích hoạt hoặc thiếu cấu hình CORS Hub."),
+      );
 
     return () => {
       if (connection.state === "Connected") connection.stop();
     };
   }, [studentId]);
 
+  // Bộ đếm ngược thời gian (Countdown Timer)
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -162,6 +167,8 @@ function AdminDashboard() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const { overview, topGaps, topTrends } = data;
 
   return (
     <div
@@ -178,7 +185,7 @@ function AdminDashboard() {
         className="flex-grow-1 p-4 overflow-auto text-white"
         style={{ maxHeight: "100vh", backgroundColor: "#06060c" }}
       >
-        <DashboardHeader title="Admin Command Center" />
+        <DashboardHeader />
 
         {loading ? (
           <div className="text-center py-5 mt-5">
@@ -187,10 +194,10 @@ function AdminDashboard() {
               style={{ color: COLORS.accentCyan }}
             ></div>
             <p style={{ color: COLORS.textSecondary }}>
-              Hệ thống đang tải dữ liệu tổng quan...
+              AI đang tổng hợp chiến lược học tập cho bạn...
             </p>
           </div>
-        ) : error ? (
+        ) : error || !overview ? (
           <div
             className="alert mt-4 text-center py-4 rounded-4"
             style={{
@@ -204,10 +211,11 @@ function AdminDashboard() {
           </div>
         ) : (
           <div className="d-flex flex-column gap-4">
-            {/* Lắp ráp các Component con */}
+            {/* Header thông tin tiến độ */}
             <CareerSnapshot overview={overview} />
 
             <div className="row g-4">
+              {/* Cột chính (Nhiệm vụ trọng tâm) */}
               <div className="col-xl-8 col-lg-7">
                 <NextAction
                   nextAction={overview.nextAction}
@@ -215,9 +223,9 @@ function AdminDashboard() {
                 />
               </div>
 
+              {/* Cột phụ (Báo cáo tổng hợp từ AI) */}
               <div className="col-xl-4 col-lg-5 d-flex flex-column gap-4">
                 <TopSkillGaps topGaps={topGaps} />
-                {/* Lắp ráp ở file Dashboard.jsx */}
                 <GithubPortfolio studentId={studentId} />
                 <MarketPulse
                   topTrends={topTrends}
@@ -225,9 +233,6 @@ function AdminDashboard() {
                 />
               </div>
             </div>
-
-            {/* Bạn có thể chèn thêm các Component Biểu đồ (Charts) ở bên dưới đây */}
-            {/* <AdminCharts marketData={stats.market} /> */}
           </div>
         )}
       </div>
@@ -235,4 +240,4 @@ function AdminDashboard() {
   );
 }
 
-export default AdminDashboard;
+export default Dashboard;
