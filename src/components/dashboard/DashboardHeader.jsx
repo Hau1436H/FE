@@ -33,22 +33,32 @@ function DashboardHeader() {
   // Kiểm tra role có phải là Student không
   const isStudent = headerData.role?.toLowerCase() === 'student';
 
-  return (
-    <div className="d-flex justify-content-between align-items-center mb-4">
-      {/* Lời chào động: Chỉ hiển thị khi là Student */}
+  // Cập nhật lại phần return của DashboardHeader.jsx
+return (
+  <div className="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 className="fw-bold mb-0 text-white">
+        Chào mừng {headerData.fullName || "bạn"}!
+      </h4>
+      
+      {/* Chỉ hiện điểm/streak nếu là Student */}
       {isStudent && (
-        <div>
-          <h4 className="fw-bold mb-0 text-white">Chào mừng {headerData.fullName}!</h4>
-          <span className="text-white-50 small">
-            Streak ngày • điểm
-          </span>
-        </div>
+        <span className="text-white-50 small">
+          Streak ngày • điểm
+        </span>
       )}
       
-      {/* Nếu bạn có các thành phần khác trên Header (như thanh tìm kiếm), 
-          đặt chúng ở ngoài khối isStudent này để các role khác vẫn thấy */}
+      {/* Hiển thị chức danh cho Mentor/Counselor */}
+      {!isStudent && (
+        <span className="text-info small text-uppercase fw-bold">
+          {headerData.role === 'mentor' ? "Không gian làm việc Mentor" : 
+           headerData.role === 'counselor' ? "Không gian Cố vấn" : 
+           headerData.role === 'admin' ? "Quản trị viên" : ""}
+        </span>
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 export default DashboardHeader;

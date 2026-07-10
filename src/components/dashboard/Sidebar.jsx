@@ -1,5 +1,4 @@
-// src/components/dashboard/Sidebar.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Navbar } from "react-bootstrap";
 import {
@@ -15,11 +14,10 @@ import {
   FaChartLine,
   FaBook,
   FaUsers,
-  FaChalkboardTeacher,
-  FaCalendarAlt,
-  FaUserTie,
-  FaComments,
-  FaClipboardList
+  FaUserGraduate,
+  FaClipboardCheck,
+  FaChartPie,
+  FaFolderOpen
 } from "react-icons/fa";
 
 import { PROFILE_DATA } from "../../data/profileData";
@@ -59,7 +57,7 @@ function Sidebar() {
     const role = payload?.role || payload?.Role || localStorage.getItem("role") || "student";
     
     return {
-      fullName: payload?.fullName || payload?.name || payload?.unique_name || "",
+      fullName: payload?.fullName || payload?.name || payload?.unique_name || payload?.email?.split('@')[0] || "",
       email: payload?.email || payload?.sub || "",
       role: role.toLowerCase(),
       avatar: null
@@ -84,7 +82,7 @@ function Sidebar() {
           }));
         }
       } catch (error) {
-        console.warn("Không tải được thông tin mới nhất, tiếp tục dùng data từ Token.");
+        console.warn("Không tải được thông tin mới nhất, tiếp tục dùng data từ Token.", error);
       }
     }
     fetchUser();
@@ -117,25 +115,21 @@ function Sidebar() {
   ];
 
   // Role 3: Mentor
-  const mentorMenuItems = [
-    { icon: <FaChalkboardTeacher />, text: "Tổng quan Mentor", path: "/dashboard/mentor" },
-    { icon: <FaCalendarAlt />, text: "Lịch hẹn hướng dẫn", path: "/dashboard/mentor/sessions" },
-    { icon: <FaClipboardList />, text: "Đánh giá học viên", path: "/dashboard/mentor/evaluations" },
-    { icon: <FaUser />, text: "Hồ sơ chuyên gia", path: "/dashboard/profile" },
-  ];
+const mentorMenuItems = [
+  { icon: <FaFolderOpen />, text: "Duyệt Portfolio", path: "/dashboard/mentor" },
+  { icon: <FaClipboardCheck />, text: "Lịch sử nhận xét", path: "/dashboard/mentor/history" }, 
+];
 
   // Role 4: Counselor
   const counselorMenuItems = [
-    { icon: <FaUserTie />, text: "Tổng quan Cố vấn", path: "/dashboard/counselor" },
-    { icon: <FaComments />, text: "Lịch tư vấn", path: "/dashboard/counselor/sessions" },
-    { icon: <FaUsers />, text: "Quản lý sinh viên", path: "/dashboard/counselor/students" },
-    { icon: <FaUser />, text: "Hồ sơ cố vấn", path: "/dashboard/profile" },
+    { icon: <FaChartPie />, text: "Thống kê tổng quan", path: "/dashboard/counselor" },
+    { icon: <FaUserGraduate />, text: "Danh sách sinh viên", path: "/dashboard/counselor/students" }, 
   ];
 
   // Xác định danh sách menu và tiêu đề dựa vào role hiện tại
-  let currentMenuItems = [];
-  let menuHeader = "";
-  let headerColor = "";
+  let currentMenuItems;
+  let menuHeader;
+  let headerColor;
 
   switch (userRole) {
     case "admin":
@@ -161,13 +155,13 @@ function Sidebar() {
   }
 
   // Thông số mục tiêu (Chỉ hiển thị cho Student)
-  const hourStat = PROFILE_DATA.stats.find((s) => s.label === "Giờ học");
+  const hourStat = PROFILE_DATA?.stats?.find((s) => s.label === "Giờ học");
   const currentHours = parseInt(hourStat?.value?.replace(/[^0-9]/g, ""), 10) || 0;
   const targetHours = 100;
   const goalPercentage = Math.min(100, Math.round((currentHours / targetHours) * 100));
 
   const renderMenuItem = (item, index) => {
-    let isItemActive = false;
+    let isItemActive;
     
     // Logic Active chuẩn xác hơn
     if (item.text === "Lịch sử đánh giá") {

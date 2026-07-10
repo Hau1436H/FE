@@ -26,6 +26,12 @@ import AdminResourceList from "./pages/dashboard/admin/AdminResourceList";
 import AdminCreateResource from "./pages/dashboard/admin/AdminCreateResource";
 import AdminEditResource from "./pages/dashboard/admin/AdminEditResource";
 
+// Import các Component cho Counselor và Mentor
+import CounselorDashboard from "./pages/dashboard/counselor/CounselorDashboard";
+import MentorDashboard from "./pages/dashboard/mentor/MentorDashboard";
+import CounselorStudentList from "./pages/dashboard/counselor/CounselorStudentList";
+import MentorFeedbackHistory from "./pages/dashboard/mentor/MentorFeedbackHistory";
+
 function App() {
   const location = useLocation();
 
@@ -83,6 +89,15 @@ function App() {
               <Route path="/dashboard/admin/resources/create" element={<AdminCreateResource />} />
               <Route path="/dashboard/admin/resources/edit/:id" element={<AdminEditResource />} />
             </Route>
+
+            {/* Các route dành cho Cố vấn học tập (Counselor) */}
+            <Route path="/dashboard/counselor" element={<CounselorDashboard />} />
+            <Route path="/dashboard/counselor/students" element={<CounselorStudentList />} />
+
+            {/* Các route dành cho Chuyên gia doanh nghiệp (Mentor) */}
+            <Route path="/dashboard/mentor" element={<MentorDashboard />} />
+            <Route path="/dashboard/mentor/history" element={<MentorFeedbackHistory />} /> {/* THÊM DÒNG NÀY */}
+            
           </Route>
         </Routes>
       </div>

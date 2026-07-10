@@ -8,6 +8,7 @@ import InfoForm from '../../components/dashboard/profile/InfoForm';
 import SocialLinks from '../../components/dashboard/profile/SocialLinks';
 import GithubPortfolioSync from '../../components/dashboard/profile/GithubPortfolioSync';
 import AssessmentTab from '../../components/dashboard/profile/AssessmentTab';
+import FeedbackHistoryTab from '../../components/dashboard/profile/FeedbackHistoryTab';
 import { PROFILE_DATA } from '../../data/profileData';
 import axiosClient from '../../api/axiosClient';
 
@@ -184,7 +185,7 @@ function Profile() {
 
           ) : activeTab === 'chat' ? (
             <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4">
-              Nội dung tab AI Chat History đang được cập nhật...
+              <FeedbackHistoryTab />
             </div>
           ) : (
             <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4">

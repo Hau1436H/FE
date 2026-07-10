@@ -57,9 +57,9 @@ function Login() {
     ) {
       navigate("/student/home");
     } else if (roleId === 3 || roleName.toLowerCase() === "mentor") {
-      navigate("/mentor/dashboard"); // Bạn có thể đổi route tùy dự án
+      navigate("/dashboard/mentor"); // Bạn có thể đổi route tùy dự án
     } else if (roleId === 4 || roleName.toLowerCase() === "counselor") {
-      navigate("/counselor/dashboard"); // Bạn có thể đổi route tùy dự án
+      navigate("/dashboard/counselor"); // Bạn có thể đổi route tùy dự án
     } else {
       navigate("/dashboard"); // Mặc định
     }
