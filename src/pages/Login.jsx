@@ -45,21 +45,21 @@ function Login() {
   const [message, setMessage] = useState({ type: "", content: "" });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Xử lý điều hướng dựa trên role
+  // ĐÃ SỬA LẠI LUỒNG ĐIỀU HƯỚNG TẠI ĐÂY
   const handleRoleRedirect = (roleId, roleName) => {
     // Kiểm tra theo roleId trước (ưu tiên), nếu không có thì check theo roleName
     if (roleId === 1 || roleName.toLowerCase() === "admin") {
-      navigate("/admin/dashboard");
+      navigate("/dashboard/admin"); // Cập nhật đúng đường dẫn Sidebar
     } else if (
       roleId === 2 ||
       roleName.toLowerCase() === "student" ||
       roleName.toLowerCase() === "user"
     ) {
-      navigate("/student/home");
+      navigate("/dashboard"); // Đã sửa lại đường dẫn Student
     } else if (roleId === 3 || roleName.toLowerCase() === "mentor") {
-      navigate("/dashboard/mentor"); // Bạn có thể đổi route tùy dự án
+      navigate("/dashboard/mentor"); 
     } else if (roleId === 4 || roleName.toLowerCase() === "counselor") {
-      navigate("/dashboard/counselor"); // Bạn có thể đổi route tùy dự án
+      navigate("/dashboard/counselor"); 
     } else {
       navigate("/dashboard"); // Mặc định
     }
@@ -77,14 +77,13 @@ function Login() {
       });
 
       const token = response.data.token || response.data.Token;
-      const roleId = response.data.roleId; // Lấy roleId từ API Response (nếu backend có trả)
+      const roleId = response.data.roleId; 
 
       if (token) {
         localStorage.setItem("token", token);
-        if (roleId) localStorage.setItem("roleId", roleId); // Lưu thêm roleId vào localStorage
+        if (roleId) localStorage.setItem("roleId", roleId); 
 
         const payload = decodeToken(token);
-        // Lấy RoleName từ token (dự phòng)
         const roleName =
           payload[
             "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
@@ -98,7 +97,7 @@ function Login() {
 
         setTimeout(() => {
           window.dispatchEvent(new Event("authChange"));
-          handleRoleRedirect(roleId, roleName); // Gọi hàm điều hướng
+          handleRoleRedirect(roleId, roleName); 
         }, 800);
       }
     } catch (error) {
@@ -395,7 +394,7 @@ function Login() {
                           });
                           setTimeout(() => {
                             window.dispatchEvent(new Event("authChange"));
-                            handleRoleRedirect(roleId, roleName); // Sử dụng lại hàm điều hướng
+                            handleRoleRedirect(roleId, roleName); 
                           }, 800);
                         }
                       } catch (error) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { HubConnectionBuilder } from "@microsoft/signalr";
 import { FaExclamationTriangle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom"; // Thêm dòng này
 
 import Sidebar from "../../components/dashboard/Sidebar";
 import DashboardHeader from "../../components/dashboard/DashboardHeader";
@@ -19,6 +20,8 @@ const COLORS = {
 };
 
 function Dashboard() {
+  const navigate = useNavigate(); // Khởi tạo điều hướng
+
   const [data, setData] = useState({
     overview: null,
     topGaps: [],
@@ -28,6 +31,39 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [timeLeftStr, setTimeLeftStr] = useState("Đang tính...");
+
+  // TRẠM GÁC: Kiểm tra Role ngay khi component vừa mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const base64Url = token.split(".")[1];
+        let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        while (base64.length % 4) {
+          base64 += "=";
+        }
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const payload = JSON.parse(jsonPayload);
+        const role = (payload?.role || payload?.Role || localStorage.getItem("role") || "").toLowerCase();
+
+        // Chuyển hướng nếu không phải là student
+        if (role === "admin") {
+          navigate("/dashboard/admin");
+        } else if (role === "mentor") {
+          navigate("/dashboard/mentor");
+        } else if (role === "counselor") {
+          navigate("/dashboard/counselor");
+        }
+      } catch (e) {
+        console.error("Lỗi parse token ở trạm gác Dashboard", e);
+      }
+    }
+  }, [navigate]);
 
   const getStudentId = () => {
     try {
