@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AssessmentTest from '../components/skillAssessment/AssessmentTest';
 import CodeAssessment from '../components/skillAssessment/CodeAssessment';
@@ -9,23 +9,36 @@ import Logo from '../components/Logo';
 import axiosClient from "../api/axiosClient";
 
 const TAB_ORDER = ['goal', 'test', 'code', 'stats', 'roadmap'];
+const DRAFT_KEY = 'aicareer_exam_draft'; 
+
+// HÀM ĐỌC NHÁP 1 LẦN DUY NHẤT LÚC KHỞI ĐỘNG
+const getInitialDraft = () => {
+  try {
+    const draft = sessionStorage.getItem(DRAFT_KEY);
+    return draft ? JSON.parse(draft) : null;
+  } catch {
+    return null;
+  }
+};
 
 function SkillAssessment() {
-  const [activeTab, setActiveTab] = useState('goal');
-  const [maxUnlockedIdx, setMaxUnlockedIdx] = useState(0);
+  // Lấy bản nháp ra trước (nếu có)
+  const [draftData] = useState(getInitialDraft); // Dùng useState truyền func để nó chỉ chạy 1 lần lúc Mount
 
-  // LƯU CẢ ROLE VÀ SKILL ĐỂ DÙNG CHO CÁC API KHÁC NHAU
-  const [targetRoleId, setTargetRoleId] = useState(null);
-  const [targetSkillId, setTargetSkillId] = useState(null);
+  // Truyền thẳng giá trị nháp vào các state khởi tạo
+  const [activeTab, setActiveTab] = useState(draftData?.activeTab || 'goal');
+  const [maxUnlockedIdx, setMaxUnlockedIdx] = useState(draftData?.maxUnlockedIdx || 0);
+  const [targetRoleId, setTargetRoleId] = useState(draftData?.targetRoleId || null);
+  const [targetSkillId, setTargetSkillId] = useState(draftData?.targetSkillId || null);
 
-  const [examData, setExamData] = useState({
+  const [examData, setExamData] = useState(draftData?.examData || {
     quizAnswers: [],
     codeSubmission: null
   });
 
-  const [testResult, setTestResult] = useState({
+  const [testResult, setTestResult] = useState(draftData?.testResult || {
     hasTaken: false,
-    sessionId: null, // Thêm sessionId để truyền cho RoadmapTab
+    sessionId: null,
     quizScore: 0,
     codeScore: 0,
     score: 0,
@@ -33,12 +46,28 @@ function SkillAssessment() {
     aiFeedback: ''
   });
 
+  // TÍNH NĂNG MỚI: Auto-save xuống Session Storage mỗi khi có tiến độ mới
+  useEffect(() => {
+    const stateToSave = {
+      activeTab,
+      maxUnlockedIdx,
+      targetRoleId,
+      targetSkillId,
+      examData,
+      testResult
+    };
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(stateToSave));
+  }, [activeTab, maxUnlockedIdx, targetRoleId, targetSkillId, examData, testResult]);
+
+  const handleClearSession = () => {
+    sessionStorage.removeItem(DRAFT_KEY);
+  };
+
   const getStudentId = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return null;
 
-      // Giải mã an toàn hỗ trợ Base64Url và Unicode (Fix lỗi atob crash)
       const base64Url = token.split('.')[1];
       let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       while (base64.length % 4) {
@@ -58,6 +87,7 @@ function SkillAssessment() {
       return null;
     }
   };
+  
   const tabs = [
     { id: 'goal', label: 'Mục tiêu' },
     { id: 'test', label: 'Lý thuyết' },
@@ -88,7 +118,6 @@ function SkillAssessment() {
         return;
       }
       
-      // LƯU STATE ĐỂ TRUYỀN XUỐNG COMPONENT CON
       setTargetRoleId(roleId);
       setTargetSkillId(skillsArray[0]);        
       unlockNextTab('goal'); 
@@ -112,7 +141,7 @@ function SkillAssessment() {
     try {
       const fullPayload = {
         studentId: studentId,
-        skillNodeId: targetSkillId, // Submit vẫn cần 1 skill gốc để tính điểm
+        skillNodeId: targetSkillId, 
         quizAnswers: examData.quizAnswers,
         codeSubmission: codePayload
       };
@@ -122,7 +151,7 @@ function SkillAssessment() {
 
       setTestResult({
         hasTaken: true,
-        sessionId: data.sessionId || data.SessionId, // BẮT BUỘC CÓ ĐỂ ROADMAP HOẠT ĐỘNG
+        sessionId: data.sessionId || data.SessionId, 
         quizScore: data.quizScore || 0,
         codeScore: data.codeScore || 0,
         score: (data.quizScore || 0) + (data.codeScore || 0),
@@ -166,7 +195,11 @@ function SkillAssessment() {
         <div className="container d-flex justify-content-between align-items-center">
           <div className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4 text-white m-0"><Logo size="md" /></div>
           {testResult.hasTaken && (
-            <Link to="/dashboard" className="btn btn-sm btn-success px-3 py-2 fw-medium rounded-2 shadow-sm">
+            <Link 
+              to="/dashboard" 
+              onClick={handleClearSession}
+              className="btn btn-sm btn-success px-3 py-2 fw-medium rounded-2 shadow-sm"
+            >
               Về Dashboard
             </Link>
           )}
@@ -180,8 +213,22 @@ function SkillAssessment() {
 
         <div className="d-flex flex-wrap justify-content-center gap-2 mb-4 pb-3 border-bottom border-secondary border-opacity-25">
           {tabs.map((tab, index) => {
-            const isLocked = index > maxUnlockedIdx;
+            // 1. Tab tương lai chưa tới lượt
+            const isFutureStep = index > maxUnlockedIdx; 
+            
+            // 2. Tab đã hoàn thành trong lúc thi (Mục tiêu, Lý thuyết)
+            const isPassedStepDuringTest = index < maxUnlockedIdx && maxUnlockedIdx < 3; 
+            
+            // 3. Tab làm bài (index 0, 1, 2) bị khóa vĩnh viễn sau khi đã nhấn Nộp Bài
+            const isSubmittedExamStep = maxUnlockedIdx >= 3 && index < 3; 
+
+            // NÚT BỊ KHÓA NẾU RƠI VÀO 1 TRONG 3 TRƯỜNG HỢP TRÊN
+            const isLocked = isFutureStep || isPassedStepDuringTest || isSubmittedExamStep;
+            
+            // Gắn icon ✅ cho các tab đã vượt qua
+            const isCompletedStep = isPassedStepDuringTest || isSubmittedExamStep;
             const isActive = activeTab === tab.id;
+            
             return (
               <button
                 key={tab.id}
@@ -192,7 +239,7 @@ function SkillAssessment() {
                 }`}
                 style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
               >
-                {tab.label} {isLocked && '🔒'}
+                {tab.label} {isCompletedStep ? '✅' : (isFutureStep && '🔒')}
               </button>
             );
           })}

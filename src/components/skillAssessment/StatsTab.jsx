@@ -15,9 +15,19 @@ function StatsTab({ result, onNavigateToRoadmap }) {
   const total = isNaN(rawTotal) || rawTotal === 0 ? 10 : rawTotal;
   const percentScore = Math.round((score / total) * 100);
 
+  // CÁCH FIX 1: Làm tròn điểm số để hiển thị đẹp hơn (vd: 13.3)
+  const displayScore = score % 1 !== 0 ? score.toFixed(1) : score;
+
+  // CÁCH FIX 2: Bổ sung thuộc tính 'label' và thêm đủ 3 điểm để vẽ được hình tam giác
   const [chartData, setChartData] = useState({
-    labels: ['Chưa có dữ liệu'],
-    datasets: [{ data: [0], backgroundColor: 'rgba(25, 135, 84, 0.2)', borderColor: '#198754' }]
+    labels: ['Dữ liệu trống', 'Dữ liệu trống', 'Dữ liệu trống'],
+    datasets: [{ 
+      label: 'Khung năng lực cốt lõi (%)', // <-- Hết bị lỗi undefined
+      data: [0, 0, 0], 
+      backgroundColor: 'rgba(25, 135, 84, 0.2)', 
+      borderColor: '#198754',
+      borderWidth: 2,
+    }]
   });
 
   const getStudentId = () => {
@@ -37,14 +47,12 @@ function StatsTab({ result, onNavigateToRoadmap }) {
 
       try {
         const response = await axiosClient.get(`/api/assessments/my-history/${studentId}`);
-        const historyData = response.data.data || response.data || [];
+        const historyData = response.data?.data || response.data || [];
 
         if (historyData.length > 0) {
-          // Gom nhóm điểm số cao nhất theo từng môn học (Node)
           const nodeScores = {};
           historyData.forEach(item => {
             const nodeName = item.nodeName || 'Kỹ năng';
-            // Điểm BE trả về là thang 10, nhân 10 để ra %
             const currentScorePercent = (item.testScore || 0) * 10; 
             
             if (!nodeScores[nodeName] || nodeScores[nodeName] < currentScorePercent) {
@@ -55,11 +63,20 @@ function StatsTab({ result, onNavigateToRoadmap }) {
           const labels = Object.keys(nodeScores);
           const dataPoints = Object.values(nodeScores);
 
-          // Nếu chỉ có 1-2 kỹ năng, chart radar nhìn sẽ là 1 đường thẳng. 
-          // Cần ít nhất 3 điểm để vẽ đa giác. Ta fill thêm placeholder nếu thiếu.
-          while (labels.length < 3) {
-            labels.push('Kỹ năng khác');
-            dataPoints.push(0);
+          // CÁCH FIX CỰC XỊN Ở ĐÂY:
+          // Danh sách các kỹ năng cốt lõi ảo để độn vào nếu dữ liệu thật chưa đủ 3 điểm
+          const placeholderSkills = ['Tư duy logic', 'Clean Code', 'Kiến trúc hệ thống', 'Tối ưu hiệu suất'];
+          let placeholderIndex = 0;
+
+          // Fill cho đủ ít nhất 3 (thậm chí 4 hoặc 5 điểm sẽ làm hình đa giác đẹp hơn)
+          // Ở đây mình ép nó lên tối thiểu 4 điểm để ra hình thoi thay vì tam giác
+          while (labels.length < 4) { 
+            labels.push(placeholderSkills[placeholderIndex]);
+            
+            // Có thể để 0, hoặc để 10-20 để nó nhô ra một chút tạo hình khối giọt nước đẹp mắt
+            dataPoints.push(15); 
+            
+            placeholderIndex++;
           }
 
           setChartData({
@@ -113,7 +130,8 @@ function StatsTab({ result, onNavigateToRoadmap }) {
             {hasTaken ? (
               <>
                 <div className="bg-dark bg-opacity-20 p-3 rounded-3 border border-secondary border-opacity-10 mb-4">
-                  <h4 className="text-warning fw-bold mb-0">👉 Tổng Điểm: {score}/{total} (Đạt {percentScore}%)</h4>
+                  {/* Cập nhật biến displayScore ở đây */}
+                  <h4 className="text-warning fw-bold mb-0">👉 Tổng Điểm: {displayScore}/{total} (Đạt {percentScore}%)</h4>
                 </div>
                 <div className="text-white-50 lh-base" style={{ whiteSpace: 'pre-line', maxHeight: '250px', overflowY: 'auto' }}>
                   {result?.aiFeedback || "Hệ thống AI đang xử lý đánh giá chi tiết cho bạn..."}
