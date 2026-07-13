@@ -67,8 +67,8 @@ function AdminUserManagement() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Gọi API tạo User mới đã gộp ở Backend
-      await axiosClient.post("/api/admin/users/create", {
+      // ĐÃ SỬA: Đổi "/api/admin/users/create" thành "/api/admin/users" để khớp với Backend
+      await axiosClient.post("/api/admin/users", {
         ...formData,
         roleId: parseInt(formData.roleId),
       });
@@ -81,7 +81,6 @@ function AdminUserManagement() {
       setLoading(false);
     }
   };
-
   return (
     <div
       className="d-flex"
@@ -103,14 +102,17 @@ function AdminUserManagement() {
             onSubmit={handleSubmit}
             className="p-4 border rounded mb-4"
             style={{ backgroundColor: COLORS.cardBg }}
+            autoComplete="off" // Chặn tự điền toàn bộ form
           >
             <div className="row g-3">
               <div className="col-md-6">
                 <input
                   name="email"
+                  value={formData.email} // Bổ sung value
                   placeholder="Email"
                   className="form-control"
                   onChange={handleChange}
+                  autoComplete="off" // Chặn tự điền email
                   required
                 />
               </div>
@@ -118,15 +120,18 @@ function AdminUserManagement() {
                 <input
                   type="password"
                   name="password"
+                  value={formData.password} // Bổ sung value
                   placeholder="Mật khẩu"
                   className="form-control"
                   onChange={handleChange}
+                  autoComplete="new-password" // CỐT LÕI: Chặn trình duyệt tự điền mật khẩu cũ
                   required
                 />
               </div>
               <div className="col-md-6">
                 <input
                   name="fullName"
+                  value={formData.fullName} // Bổ sung value
                   placeholder="Họ và tên"
                   className="form-control"
                   onChange={handleChange}
@@ -151,6 +156,7 @@ function AdminUserManagement() {
                   <div className="col-md-6">
                     <input
                       name="currentCompany"
+                      value={formData.currentCompany} // Bổ sung value
                       placeholder="Công ty"
                       className="form-control"
                       onChange={handleChange}
@@ -159,6 +165,7 @@ function AdminUserManagement() {
                   <div className="col-md-6">
                     <input
                       name="expertiseTags"
+                      value={formData.expertiseTags} // Bổ sung value
                       placeholder="Kỹ năng (Tags)"
                       className="form-control"
                       onChange={handleChange}
@@ -170,6 +177,7 @@ function AdminUserManagement() {
                 <div className="col-md-12">
                   <input
                     name="department"
+                    value={formData.department} // Bổ sung value
                     placeholder="Phòng ban"
                     className="form-control"
                     onChange={handleChange}
@@ -184,7 +192,6 @@ function AdminUserManagement() {
             </div>
           </form>
         )}
-
         <table className="table table-dark">
           <thead>
             <tr>
