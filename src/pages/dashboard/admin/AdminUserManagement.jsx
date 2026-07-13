@@ -11,11 +11,15 @@ const COLORS = {
 };
 
 function AdminUserManagement() {
-  const [users, setUsers] = useState([]); // Khởi tạo mảng rỗng
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  
+  // State quản lý xem đang Sửa user nào (nếu null là đang Tạo mới)
+  const [editingUserId, setEditingUserId] = useState(null);
 
-  const [formData, setFormData] = useState({
+  // Form data mặc định
+  const initialFormState = {
     email: "",
     password: "",
     fullName: "",
@@ -24,18 +28,13 @@ function AdminUserManagement() {
     currentCompany: "",
     expertiseTags: "",
     department: "",
-  });
+  };
+  const [formData, setFormData] = useState(initialFormState);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const res = await axiosClient.get("/api/admin/users");
-
-      // LOG ĐỂ DEBUG: Kiểm tra cấu trúc Backend trả về trong F12 Console
-      console.log("Dữ liệu API trả về:", res.data);
-
-      // SỬA LỖI: Kiểm tra xem res.data có phải là mảng không,
-      // nếu Backend trả về { data: [...] } thì dùng res.data.data
       if (Array.isArray(res.data)) {
         setUsers(res.data);
       } else if (res.data && Array.isArray(res.data.data)) {
@@ -63,24 +62,70 @@ function AdminUserManagement() {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // Nút mở form thêm mới
+  const handleOpenCreate = () => {
+    setEditingUserId(null);
+    setFormData(initialFormState);
+    setShowForm(!showForm);
+  };
+
+  // Nút Sửa người dùng
+  const handleEditClick = (user) => {
+    setEditingUserId(user.userId);
+    setFormData({
+      ...initialFormState,
+      email: user.email, // Hiển thị cho Admin biết đang sửa ai
+      roleId: user.roleId.toString(),
+      isActive: user.isActive !== undefined ? user.isActive : true,
+    });
+    setShowForm(true);
+  };
+
+  // Nút Xóa người dùng
+  const handleDeleteClick = async (userId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này?")) return;
     try {
-      // ĐÃ SỬA: Đổi "/api/admin/users/create" thành "/api/admin/users" để khớp với Backend
-      await axiosClient.post("/api/admin/users", {
-        ...formData,
-        roleId: parseInt(formData.roleId),
-      });
-      alert("Tạo tài khoản thành công!");
-      setShowForm(false);
-      fetchUsers(); // Refresh lại danh sách
+      setLoading(true);
+      await axiosClient.delete(`/api/admin/users/${userId}`);
+      alert("Xóa người dùng thành công!");
+      fetchUsers();
     } catch (err) {
-      alert("Lỗi: " + (err.response?.data?.message || "Không thể tạo user"));
+      alert("Lỗi xóa user: " + (err.response?.data?.message || "Không thể xóa"));
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (editingUserId) {
+        // GỌI API CẬP NHẬT: Backend chỉ nhận RoleId và IsActive
+        await axiosClient.put(`/api/admin/users/${editingUserId}`, {
+          roleId: parseInt(formData.roleId),
+          isActive: formData.isActive,
+        });
+        alert("Cập nhật thông tin thành công!");
+      } else {
+        // GỌI API TẠO MỚI
+        await axiosClient.post("/api/admin/users", {
+          ...formData,
+          roleId: parseInt(formData.roleId),
+        });
+        alert("Tạo tài khoản thành công!");
+      }
+      setShowForm(false);
+      setEditingUserId(null);
+      setFormData(initialFormState);
+      fetchUsers();
+    } catch (err) {
+      alert("Lỗi: " + (err.response?.data?.message || "Thao tác thất bại"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className="d-flex"
@@ -92,71 +137,103 @@ function AdminUserManagement() {
 
         <button
           className="btn btn-success mb-3"
-          onClick={() => setShowForm(!showForm)}
+          onClick={handleOpenCreate}
         >
-          {showForm ? "Đóng Form" : "+ Thêm người dùng mới"}
+          {showForm && !editingUserId ? "Đóng Form" : "+ Thêm người dùng mới"}
         </button>
 
         {showForm && (
           <form
             onSubmit={handleSubmit}
-            className="p-4 border rounded mb-4"
+            className="p-4 border rounded mb-4 shadow-sm"
             style={{ backgroundColor: COLORS.cardBg }}
-            autoComplete="off" // Chặn tự điền toàn bộ form
+            autoComplete="off"
           >
+            <h5 className="mb-3 text-info">
+              {editingUserId ? `Đang chỉnh sửa: ${formData.email}` : "Tạo tài khoản mới"}
+            </h5>
             <div className="row g-3">
+              
+              {/* CHỈ HIỆN KHI TẠO MỚI */}
+              {!editingUserId && (
+                <>
+                  <div className="col-md-6">
+                    <input
+                      name="email"
+                      value={formData.email}
+                      placeholder="Email"
+                      className="form-control"
+                      onChange={handleChange}
+                      autoComplete="off"
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      placeholder="Mật khẩu"
+                      className="form-control"
+                      onChange={handleChange}
+                      autoComplete="new-password"
+                      required
+                    />
+                  </div>
+                  <div className="col-md-12">
+                    <input
+                      name="fullName"
+                      value={formData.fullName}
+                      placeholder="Họ và tên"
+                      className="form-control"
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* PHẦN DÙNG CHUNG CHO CẢ TẠO MỚI VÀ SỬA */}
               <div className="col-md-6">
-                <input
-                  name="email"
-                  value={formData.email} // Bổ sung value
-                  placeholder="Email"
-                  className="form-control"
-                  onChange={handleChange}
-                  autoComplete="off" // Chặn tự điền email
-                  required
-                />
-              </div>
-              <div className="col-md-6">
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password} // Bổ sung value
-                  placeholder="Mật khẩu"
-                  className="form-control"
-                  onChange={handleChange}
-                  autoComplete="new-password" // CỐT LÕI: Chặn trình duyệt tự điền mật khẩu cũ
-                  required
-                />
-              </div>
-              <div className="col-md-6">
-                <input
-                  name="fullName"
-                  value={formData.fullName} // Bổ sung value
-                  placeholder="Họ và tên"
-                  className="form-control"
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="col-md-6">
+                <label className="form-label text-secondary small">Phân quyền (Role)</label>
                 <select
                   name="roleId"
                   className="form-select"
                   onChange={handleChange}
                   value={formData.roleId}
                 >
-                  <option value="2">Student</option>
-                  <option value="3">Mentor</option>
-                  <option value="4">Counselor</option>
+                  <option value="2">Student (2)</option>
+                  <option value="3">Mentor (3)</option>
+                  <option value="4">Counselor (4)</option>
+                  <option value="1">Admin (1)</option>
                 </select>
               </div>
 
-              {formData.roleId === "3" && (
+              {/* BỔ SUNG TRẠNG THÁI HOẠT ĐỘNG */}
+              <div className="col-md-6 d-flex align-items-end pb-1">
+                <div className="form-check form-switch mt-3">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleChange}
+                    id="flexSwitchCheckChecked"
+                  />
+                  <label className="form-check-label" htmlFor="flexSwitchCheckChecked">
+                    {formData.isActive ? "Tài khoản đang Hoạt động" : "Tài khoản bị Khóa"}
+                  </label>
+                </div>
+              </div>
+
+              {/* CHỈ HIỆN KHI TẠO MỚI & ROLE TƯƠNG ỨNG */}
+              {!editingUserId && formData.roleId === "3" && (
                 <>
                   <div className="col-md-6">
                     <input
                       name="currentCompany"
-                      value={formData.currentCompany} // Bổ sung value
+                      value={formData.currentCompany}
                       placeholder="Công ty"
                       className="form-control"
                       onChange={handleChange}
@@ -165,7 +242,7 @@ function AdminUserManagement() {
                   <div className="col-md-6">
                     <input
                       name="expertiseTags"
-                      value={formData.expertiseTags} // Bổ sung value
+                      value={formData.expertiseTags}
                       placeholder="Kỹ năng (Tags)"
                       className="form-control"
                       onChange={handleChange}
@@ -173,45 +250,83 @@ function AdminUserManagement() {
                   </div>
                 </>
               )}
-              {formData.roleId === "4" && (
+              {!editingUserId && formData.roleId === "4" && (
                 <div className="col-md-12">
                   <input
                     name="department"
-                    value={formData.department} // Bổ sung value
+                    value={formData.department}
                     placeholder="Phòng ban"
                     className="form-control"
                     onChange={handleChange}
                   />
                 </div>
               )}
-              <div className="col-12">
-                <button className="btn btn-primary" disabled={loading}>
-                  Xác nhận tạo
+              
+              <div className="col-12 mt-4">
+                <button className="btn btn-primary px-4" disabled={loading}>
+                  {loading ? "Đang xử lý..." : editingUserId ? "Lưu thay đổi" : "Xác nhận tạo"}
                 </button>
+                {editingUserId && (
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary ms-2"
+                    onClick={() => { setShowForm(false); setEditingUserId(null); }}
+                  >
+                    Hủy
+                  </button>
+                )}
               </div>
             </div>
           </form>
         )}
-        <table className="table table-dark">
+
+        <table className="table table-dark table-hover align-middle mt-2">
           <thead>
             <tr>
               <th>Email</th>
               <th>Role</th>
+              <th>Trạng thái</th>
+              <th className="text-center">Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {/* SỬA LỖI: Thêm kiểm tra Array.isArray để tránh lỗi .map không phải hàm */}
             {Array.isArray(users) && users.length > 0 ? (
               users.map((u) => (
                 <tr key={u.userId}>
                   <td>{u.email}</td>
-                  <td>{u.roleId}</td>
+                  <td>
+                    {u.roleId === 1 && <span className="badge bg-danger">Admin</span>}
+                    {u.roleId === 2 && <span className="badge bg-primary">Student</span>}
+                    {u.roleId === 3 && <span className="badge bg-warning text-dark">Mentor</span>}
+                    {u.roleId === 4 && <span className="badge bg-info text-dark">Counselor</span>}
+                  </td>
+                  <td>
+                    {u.isActive ? (
+                      <span className="text-success fw-bold">✓ Hoạt động</span>
+                    ) : (
+                      <span className="text-danger fw-bold">✗ Bị khóa</span>
+                    )}
+                  </td>
+                  <td className="text-center">
+                    <button 
+                      className="btn btn-sm btn-outline-info me-2"
+                      onClick={() => handleEditClick(u)}
+                    >
+                      Sửa
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleDeleteClick(u.userId)}
+                    >
+                      Xóa
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="2" className="text-center">
-                  Chưa có dữ liệu
+                <td colSpan="4" className="text-center py-4">
+                  Chưa có dữ liệu người dùng
                 </td>
               </tr>
             )}
@@ -221,4 +336,5 @@ function AdminUserManagement() {
     </div>
   );
 }
+
 export default AdminUserManagement;
