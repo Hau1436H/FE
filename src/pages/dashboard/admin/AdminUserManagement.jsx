@@ -14,15 +14,16 @@ function AdminUserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  
-  // State quản lý xem đang Sửa user nào (nếu null là đang Tạo mới)
+
+  // State quản lý xem đang xem Chi tiết / Sửa user nào (nếu null là đang Tạo mới)
   const [editingUserId, setEditingUserId] = useState(null);
 
-  // Form data mặc định
+  // Form data mặc định (đã thêm studentCode)
   const initialFormState = {
     email: "",
     password: "",
     fullName: "",
+    studentCode: "",
     roleId: "2",
     isActive: true,
     currentCompany: "",
@@ -31,6 +32,7 @@ function AdminUserManagement() {
   };
   const [formData, setFormData] = useState(initialFormState);
 
+  // 1. LẤY DANH SÁCH USER
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -62,51 +64,84 @@ function AdminUserManagement() {
     }));
   };
 
-  // Nút mở form thêm mới
+  // 2. MỞ FORM TẠO MỚI
   const handleOpenCreate = () => {
     setEditingUserId(null);
     setFormData(initialFormState);
     setShowForm(!showForm);
   };
 
-  // Nút Sửa người dùng
-  const handleEditClick = (user) => {
-    setEditingUserId(user.userId);
-    setFormData({
-      ...initialFormState,
-      email: user.email, // Hiển thị cho Admin biết đang sửa ai
-      roleId: user.roleId.toString(),
-      isActive: user.isActive !== undefined ? user.isActive : true,
-    });
-    setShowForm(true);
+  // 3. XEM CHI TIẾT & SỬA
+  const handleDetailClick = async (user) => {
+    try {
+      setLoading(true);
+      // Gọi API lấy đầy đủ chi tiết User từ DB
+      const res = await axiosClient.get(`/api/admin/users/${user.userId}`);
+      const userDetail = res.data.data || res.data; // Tùy cấu trúc bọc response
+
+      setEditingUserId(userDetail.userId);
+      setFormData({
+        ...initialFormState,
+        email: userDetail.email || "",
+        fullName: userDetail.fullName || "",
+        studentCode: userDetail.studentCode || "",
+        roleId: userDetail.roleId ? userDetail.roleId.toString() : "2",
+        isActive:
+          userDetail.isActive !== undefined ? userDetail.isActive : true,
+        currentCompany: userDetail.currentCompany || "",
+        expertiseTags: userDetail.expertiseTags || "",
+        department: userDetail.department || "",
+      });
+      setShowForm(true);
+    } catch (err) {
+      alert(
+        "Không thể tải chi tiết người dùng: " +
+          (err.response?.data?.message || "Lỗi server"),
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Nút Xóa người dùng
+  // 4. XÓA USER
   const handleDeleteClick = async (userId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này?")) return;
+    if (
+      !window.confirm(
+        "Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này? Toàn bộ dữ liệu liên quan sẽ bị mất.",
+      )
+    )
+      return;
     try {
       setLoading(true);
       await axiosClient.delete(`/api/admin/users/${userId}`);
       alert("Xóa người dùng thành công!");
       fetchUsers();
     } catch (err) {
-      alert("Lỗi xóa user: " + (err.response?.data?.message || "Không thể xóa"));
+      alert(
+        "Lỗi xóa user: " + (err.response?.data?.message || "Không thể xóa"),
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // 5. SUBMIT FORM (TẠO HOẶC CẬP NHẬT)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       if (editingUserId) {
-        // GỌI API CẬP NHẬT: Backend chỉ nhận RoleId và IsActive
+        // GỌI API CẬP NHẬT: Gửi full data cho AdminUpdateUserDto
         await axiosClient.put(`/api/admin/users/${editingUserId}`, {
           roleId: parseInt(formData.roleId),
           isActive: formData.isActive,
+          fullName: formData.fullName,
+          studentCode: formData.studentCode,
+          currentCompany: formData.currentCompany,
+          expertiseTags: formData.expertiseTags,
+          department: formData.department,
         });
-        alert("Cập nhật thông tin thành công!");
+        alert("Cập nhật thông tin chi tiết thành công!");
       } else {
         // GỌI API TẠO MỚI
         await axiosClient.post("/api/admin/users", {
@@ -120,7 +155,12 @@ function AdminUserManagement() {
       setFormData(initialFormState);
       fetchUsers();
     } catch (err) {
-      alert("Lỗi: " + (err.response?.data?.message || "Thao tác thất bại"));
+      alert(
+        "Lỗi: " +
+          (err.response?.data?.message ||
+            err.response?.data?.title ||
+            "Thao tác thất bại"),
+      );
     } finally {
       setLoading(false);
     }
@@ -135,10 +175,7 @@ function AdminUserManagement() {
       <div className="flex-grow-1 p-4 text-white">
         <DashboardHeader title="Quản lý người dùng" />
 
-        <button
-          className="btn btn-success mb-3"
-          onClick={handleOpenCreate}
-        >
+        <button className="btn btn-success mb-3" onClick={handleOpenCreate}>
           {showForm && !editingUserId ? "Đóng Form" : "+ Thêm người dùng mới"}
         </button>
 
@@ -150,57 +187,69 @@ function AdminUserManagement() {
             autoComplete="off"
           >
             <h5 className="mb-3 text-info">
-              {editingUserId ? `Đang chỉnh sửa: ${formData.email}` : "Tạo tài khoản mới"}
+              {editingUserId
+                ? `Chi tiết & Cập nhật: ${formData.email}`
+                : "Tạo tài khoản mới"}
             </h5>
             <div className="row g-3">
-              
-              {/* CHỈ HIỆN KHI TẠO MỚI */}
+              {/* CÁC TRƯỜNG CƠ BẢN */}
+              <div className="col-md-6">
+                <label className="form-label text-secondary small">Email</label>
+                <input
+                  name="email"
+                  value={formData.email}
+                  placeholder="Email"
+                  className="form-control"
+                  onChange={handleChange}
+                  autoComplete="off"
+                  disabled={editingUserId !== null} // Khóa khi xem chi tiết
+                  required
+                />
+              </div>
+
+              {/* CHỈ HIỂN THỊ MẬT KHẨU KHI TẠO MỚI */}
               {!editingUserId && (
-                <>
-                  <div className="col-md-6">
-                    <input
-                      name="email"
-                      value={formData.email}
-                      placeholder="Email"
-                      className="form-control"
-                      onChange={handleChange}
-                      autoComplete="off"
-                      required
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      placeholder="Mật khẩu"
-                      className="form-control"
-                      onChange={handleChange}
-                      autoComplete="new-password"
-                      required
-                    />
-                  </div>
-                  <div className="col-md-12">
-                    <input
-                      name="fullName"
-                      value={formData.fullName}
-                      placeholder="Họ và tên"
-                      className="form-control"
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </>
+                <div className="col-md-6">
+                  <label className="form-label text-secondary small">
+                    Mật khẩu
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    placeholder="Mật khẩu"
+                    className="form-control"
+                    onChange={handleChange}
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
               )}
 
-              {/* PHẦN DÙNG CHUNG CHO CẢ TẠO MỚI VÀ SỬA */}
               <div className="col-md-6">
-                <label className="form-label text-secondary small">Phân quyền (Role)</label>
+                <label className="form-label text-secondary small">
+                  Họ và tên
+                </label>
+                <input
+                  name="fullName"
+                  value={formData.fullName}
+                  placeholder="Họ và tên người dùng"
+                  className="form-control"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="col-md-3">
+                <label className="form-label text-secondary small">
+                  Phân quyền (Role)
+                </label>
                 <select
                   name="roleId"
                   className="form-select"
                   onChange={handleChange}
                   value={formData.roleId}
+                  disabled={editingUserId !== null} // Backend không cho đổi role trực tiếp
                 >
                   <option value="2">Student (2)</option>
                   <option value="3">Mentor (3)</option>
@@ -209,8 +258,7 @@ function AdminUserManagement() {
                 </select>
               </div>
 
-              {/* BỔ SUNG TRẠNG THÁI HOẠT ĐỘNG */}
-              <div className="col-md-6 d-flex align-items-end pb-1">
+              <div className="col-md-3 d-flex align-items-end pb-1">
                 <div className="form-check form-switch mt-3">
                   <input
                     className="form-check-input"
@@ -221,37 +269,67 @@ function AdminUserManagement() {
                     onChange={handleChange}
                     id="flexSwitchCheckChecked"
                   />
-                  <label className="form-check-label" htmlFor="flexSwitchCheckChecked">
-                    {formData.isActive ? "Tài khoản đang Hoạt động" : "Tài khoản bị Khóa"}
+                  <label
+                    className="form-check-label"
+                    htmlFor="flexSwitchCheckChecked"
+                  >
+                    {formData.isActive ? "Hoạt động" : "Bị khóa"}
                   </label>
                 </div>
               </div>
 
-              {/* CHỈ HIỆN KHI TẠO MỚI & ROLE TƯƠNG ỨNG */}
-              {!editingUserId && formData.roleId === "3" && (
+              {/* TRƯỜNG RIÊNG CHO STUDENT */}
+              {formData.roleId === "2" && editingUserId && (
+                <div className="col-md-6">
+                  <label className="form-label text-secondary small">
+                    Mã số Sinh viên
+                  </label>
+                  <input
+                    name="studentCode"
+                    value={formData.studentCode}
+                    placeholder="VD: SE123456"
+                    className="form-control"
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
+
+              {/* TRƯỜNG RIÊNG CHO MENTOR */}
+              {formData.roleId === "3" && (
                 <>
                   <div className="col-md-6">
+                    <label className="form-label text-secondary small">
+                      Công ty hiện tại
+                    </label>
                     <input
                       name="currentCompany"
                       value={formData.currentCompany}
-                      placeholder="Công ty"
+                      placeholder="Tên công ty"
                       className="form-control"
                       onChange={handleChange}
                     />
                   </div>
                   <div className="col-md-6">
+                    <label className="form-label text-secondary small">
+                      Kỹ năng chuyên môn
+                    </label>
                     <input
                       name="expertiseTags"
                       value={formData.expertiseTags}
-                      placeholder="Kỹ năng (Tags)"
+                      placeholder="C#, React, SQL..."
                       className="form-control"
                       onChange={handleChange}
                     />
                   </div>
                 </>
               )}
-              {!editingUserId && formData.roleId === "4" && (
-                <div className="col-md-12">
+
+              {/* TRƯỜNG RIÊNG CHO COUNSELOR */}
+              {formData.roleId === "4" && (
+                <div className="col-md-6">
+                  <label className="form-label text-secondary small">
+                    Phòng ban làm việc
+                  </label>
                   <input
                     name="department"
                     value={formData.department}
@@ -261,18 +339,25 @@ function AdminUserManagement() {
                   />
                 </div>
               )}
-              
+
               <div className="col-12 mt-4">
                 <button className="btn btn-primary px-4" disabled={loading}>
-                  {loading ? "Đang xử lý..." : editingUserId ? "Lưu thay đổi" : "Xác nhận tạo"}
+                  {loading
+                    ? "Đang xử lý..."
+                    : editingUserId
+                      ? "Lưu cập nhật"
+                      : "Xác nhận tạo"}
                 </button>
                 {editingUserId && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn btn-secondary ms-2"
-                    onClick={() => { setShowForm(false); setEditingUserId(null); }}
+                    onClick={() => {
+                      setShowForm(false);
+                      setEditingUserId(null);
+                    }}
                   >
-                    Hủy
+                    Đóng chi tiết
                   </button>
                 )}
               </div>
@@ -295,10 +380,18 @@ function AdminUserManagement() {
                 <tr key={u.userId}>
                   <td>{u.email}</td>
                   <td>
-                    {u.roleId === 1 && <span className="badge bg-danger">Admin</span>}
-                    {u.roleId === 2 && <span className="badge bg-primary">Student</span>}
-                    {u.roleId === 3 && <span className="badge bg-warning text-dark">Mentor</span>}
-                    {u.roleId === 4 && <span className="badge bg-info text-dark">Counselor</span>}
+                    {u.roleId === 1 && (
+                      <span className="badge bg-danger">Admin</span>
+                    )}
+                    {u.roleId === 2 && (
+                      <span className="badge bg-primary">Student</span>
+                    )}
+                    {u.roleId === 3 && (
+                      <span className="badge bg-warning text-dark">Mentor</span>
+                    )}
+                    {u.roleId === 4 && (
+                      <span className="badge bg-info text-dark">Counselor</span>
+                    )}
                   </td>
                   <td>
                     {u.isActive ? (
@@ -308,13 +401,13 @@ function AdminUserManagement() {
                     )}
                   </td>
                   <td className="text-center">
-                    <button 
+                    <button
                       className="btn btn-sm btn-outline-info me-2"
-                      onClick={() => handleEditClick(u)}
+                      onClick={() => handleDetailClick(u)}
                     >
-                      Sửa
+                      Chi tiết
                     </button>
-                    <button 
+                    <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => handleDeleteClick(u.userId)}
                     >
