@@ -3,13 +3,14 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '../../../components/dashboard/Sidebar';
 import axiosClient from '../../../api/axiosClient';
 import ReactMarkdown from 'react-markdown';
+
 import { 
   FaDatabase, FaUsers, FaServer, FaBrain, 
   FaBolt, FaSync, FaChartPie, FaExternalLinkAlt, FaCheckCircle
 } from 'react-icons/fa';
 
 function AdminStats() {
-  const [stats, setStats] = useState({ totalStudents: 0, totalJobs: 0, lastScraped: '' });
+  const [stats, setStats] = useState({ totalStudents: 0, totalJobsScraped: 0, jobsToday: 0, lastScraped: '' });
   const [marketTrends, setMarketTrends] = useState([]);
   const [systemLogs, setSystemLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ function AdminStats() {
         // Sử dụng .catch() ngầm định để không văng lỗi đỏ rực lên Console
         const [statsRes, marketRes, logsRes, healthRes, aiSummaryRes] = await Promise.all([
           axiosClient.get('/api/admin/dashboard/student-stats')
-            .catch(() => ({ data: { totalStudents: 0, totalJobs: 0, lastScraped: '' } })),
+            .catch(() => ({ data: { totalStudents: 0, totalJobsScraped: 0, jobsToday: 0, lastScraped: '' } })),
           
           axiosClient.get('/api/admin/dashboard/market-analytics')
             .catch(() => ({ data: { data: [] } })),
@@ -82,15 +83,35 @@ function AdminStats() {
     return () => clearInterval(autoRefresh);
   }, []);
 
-  // Hàm xác định màu sắc log
-  const getLogColor = (level) => {
-    switch (level) {
-      case 'WARNING': return '#f59e0b';
-      case 'ERROR': return '#ef4444';
-      case 'INFO': 
-      default: return '#38bdf8';
+  // --- BẮT ĐẦU: Logic tính toán System Health động ---
+  let healthScore = "---%";
+  let healthStatus = "Checking";
+  let healthColor = "#64748b"; // Màu xám mặc định khi đang tải
+
+  if (systemHealth) {
+    const services = Object.values(systemHealth);
+    // Lọc lấy các object có thuộc tính isGood, bỏ qua các object cấu trúc khác nếu có
+    const healthServices = services.filter(s => typeof s === 'object' && s !== null && 'isGood' in s);
+    const totalServices = healthServices.length;
+    
+    if (totalServices > 0) {
+      const activeServices = healthServices.filter(service => service.isGood).length;
+      const percentage = (activeServices / totalServices) * 100;
+      healthScore = `${percentage.toFixed(0)}%`;
+
+      if (percentage === 100) {
+        healthStatus = "Stable";
+        healthColor = "#10b981";
+      } else if (percentage >= 60) {
+        healthStatus = "Degraded";
+        healthColor = "#f59e0b";
+      } else {
+        healthStatus = "Critical";
+        healthColor = "#ef4444";
+      }
     }
-  };
+  }
+  // --- KẾT THÚC: Logic tính toán System Health động ---
 
   const maxTrendScore = Math.max(...marketTrends.map(t => t.scoreToday), 1);
 
@@ -131,14 +152,16 @@ function AdminStats() {
             sparkline="▅▆▇██▇▆▅" 
             color="#38bdf8" 
           />
+          
           <KpiCard 
-            title="Jobs Scraped" 
-            value={stats.totalJobs} 
-            delta="+320" 
-            deltaLabel="Today" 
+            title="Jobs Scraped Today" 
+            value={stats.jobsToday || 0} 
+            delta={`Total: ${stats.totalJobsScraped || 0}`} 
+            deltaLabel="in Database" 
             sparkline="▂▃▄▅▆▇██" 
             color="#10b981" 
           />
+          
           <KpiCard 
             title="Trend Skills" 
             value={marketTrends.length} 
@@ -147,13 +170,15 @@ function AdminStats() {
             sparkline="▃▄▅▆▇█▇▆" 
             color="#a855f7" 
           />
+          
+          {/* Truyền biến phần trăm thực tế và trạng thái */}
           <KpiCard 
             title="System Health" 
-            value="98.5%" 
-            delta="Stable" 
-            deltaLabel="Uptime" 
+            value={healthScore}        
+            delta={healthStatus}       
+            deltaLabel="Status" 
             sparkline="████████" 
-            color="#f59e0b" 
+            color={healthColor}        
             isStatus
           />
         </div>
@@ -234,7 +259,6 @@ function AdminStats() {
                 <FaBrain className="text-purple" style={{ color: '#a855f7' }} /> AI Insight Summary
               </h6>
               
-              {/* Vùng hiển thị Markdown động từ AI */}
               <div className="position-relative z-1 ai-markdown-content text-light" style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>
                 {loading ? (
                   <div className="text-secondary small">Đang chờ AI phân tích dữ liệu...</div>
@@ -242,7 +266,6 @@ function AdminStats() {
                   <ReactMarkdown>{aiSummary}</ReactMarkdown>
                 )}
               </div>
-
             </div>
           </div>
 
@@ -254,18 +277,89 @@ function AdminStats() {
                 <button className="btn btn-link text-secondary text-decoration-none p-0 small" style={{ fontSize: '0.8rem' }}>View All →</button>
               </div>
               
-              <div className="d-flex flex-column gap-3" style={{ maxHeight: '280px', overflowY: 'auto' }}>
-                {loading ? <div className="text-secondary small">Loading logs...</div> : systemLogs.slice(0, 7).map((log) => (
-                  <div key={log.logId} className="d-flex gap-3 align-items-start pb-2 border-bottom border-secondary border-opacity-10">
-                    <div className="fw-bold mt-1" style={{ fontSize: '0.75rem', width: '45px', color: getLogColor(log.logLevel) }}>
-                      {new Date(log.createdAt).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <div>
-                      <div className="text-light fw-medium mb-1" style={{ fontSize: '0.85rem' }}>{log.message.split(' ').slice(0, 3).join(' ').replace('.', '')}</div>
-                      <div className="text-secondary" style={{ fontSize: '0.75rem' }}>{log.message}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className="d-flex flex-column gap-3 custom-scrollbar pe-3" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                {loading ? (
+                  <div className="text-secondary small">Loading logs...</div>
+                ) : (
+                  systemLogs.slice(0, 10).map((log, index) => {
+                    const logDate = new Date(log.recordedAt || log.createdAt || new Date());
+                    const timeStr = logDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = logDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+
+                    const action = log.actionType || log.action_type || "";
+                    const duration = log.durationSeconds || log.duration_seconds || 0;
+                    
+                    let message = "";
+                    let badgeLabel = "System";
+                    let badgeColor = "text-secondary border-secondary bg-secondary bg-opacity-10";
+
+                    switch (action) {
+                      case 'SYSTEM_JOB_SCRAPED':
+                        message = `Tiến trình cào dữ liệu việc làm hoàn tất trong ${duration} giây.`;
+                        badgeLabel = "Scraper";
+                        badgeColor = "text-success border-success bg-success bg-opacity-10";
+                        break;
+                      case 'SYNC_GITHUB_SUCCESS':
+                        message = `Đồng bộ Roadmap Github hoàn tất trong ${duration} giây.`;
+                        badgeLabel = "Github Sync";
+                        badgeColor = "text-purple border-purple bg-purple bg-opacity-10";
+                        break;
+                      case 'AI_REPO_ANALYZED':
+                        message = duration > 0 ? `AI phân tích repository hoàn tất trong ${duration} giây.` : `AI đã phân tích repository thành công.`;
+                        badgeLabel = "AI Engine";
+                        badgeColor = "text-warning border-warning bg-warning bg-opacity-10";
+                        break;
+                      case 'VIEW_SKILL_GAP':
+                        message = `Người dùng vừa truy cập phân tích khoảng trống kỹ năng.`;
+                        badgeLabel = "User Action";
+                        badgeColor = "text-info border-info bg-info bg-opacity-10";
+                        break;
+                      case 'FILTER_JOB_MARKET':
+                        message = `Người dùng vừa tra cứu bộ lọc thị trường việc làm.`;
+                        badgeLabel = "Job Filter";
+                        badgeColor = "text-primary border-primary bg-primary bg-opacity-10";
+                        break;
+                      case 'ENROLL':
+                        message = `Một sinh viên vừa tham gia vào lộ trình học.`;
+                        badgeLabel = "Enrollment";
+                        badgeColor = "text-success border-success bg-success bg-opacity-10";
+                        break;
+                      case 'TEST_WORKER':
+                        message = `Tiến trình Test Worker chạy kiểm tra mất ${duration} giây.`;
+                        badgeLabel = "Worker";
+                        badgeColor = "text-danger border-danger bg-danger bg-opacity-10";
+                        break;
+                      default:
+                        message = duration > 0 ? `Tiến trình ${action} thực thi mất ${duration} giây.` : `Tiến trình ${action} đã thực thi.`;
+                        break;
+                    }
+
+                    return (
+                      <div key={log.historyId || log.logId || index} className="d-flex gap-3 align-items-start pb-3 border-bottom border-secondary border-opacity-10 last-border-none">
+                        <div className="text-center mt-1" style={{ width: '45px' }}>
+                          <div className="fw-bold text-light" style={{ fontSize: '0.8rem' }}>{timeStr}</div>
+                          <div className="text-secondary mt-1" style={{ fontSize: '0.65rem' }}>{dateStr}</div>
+                        </div>
+                        
+                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                          <div className="d-flex align-items-center gap-2 mb-1">
+                            <span className={`badge border ${badgeColor}`} style={{ fontSize: '0.65rem' }}>
+                              {badgeLabel}
+                            </span>
+                            {duration > 0 && (
+                              <span className="text-white-50" style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>⏱ {duration}s</span>
+                            )}
+                          </div>
+                          
+                          <div className="fw-medium text-light text-wrap pe-2" 
+                               style={{ fontSize: '0.85rem', lineHeight: '1.5', wordBreak: 'break-word' }}>
+                            {message}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -308,16 +402,32 @@ function AdminStats() {
 function KpiCard({ title, value, delta, deltaLabel, sparkline, color, isStatus = false }) {
   return (
     <div className="col-12 col-md-6 col-xl-3">
-      <div className="p-4 rounded-4 h-100" style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }}>
-        <div className="text-secondary fw-semibold small text-uppercase tracking-wider mb-2" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>{title}</div>
-        <div className="d-flex justify-content-between align-items-end mb-3">
+      <div className="p-4 rounded-4 h-100 position-relative overflow-hidden" style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }}>
+        
+        <div className="position-absolute top-0 end-0 rounded-circle" 
+             style={{ width: '80px', height: '80px', backgroundColor: color, filter: 'blur(40px)', opacity: 0.15, transform: 'translate(20%, -20%)' }}>
+        </div>
+
+        <div className="text-secondary fw-semibold small text-uppercase tracking-wider mb-2 position-relative z-1" 
+             style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+          {title}
+        </div>
+        
+        <div className="d-flex justify-content-between align-items-end mb-3 position-relative z-1">
           <h2 className="fw-bold m-0 text-white lh-1">{value}</h2>
-          <div className="text-secondary" style={{ fontSize: '1.5rem', letterSpacing: '1px', opacity: 0.5, color: color }}>
+          <div style={{ fontSize: '1.5rem', letterSpacing: '1px', opacity: 0.4, color: color }}>
             {sparkline}
           </div>
         </div>
-        <div className="d-flex align-items-center gap-2">
-          <span className={`fw-bold ${isStatus ? 'text-success' : 'text-success'}`} style={{ fontSize: '0.8rem', backgroundColor: `${color}15`, color: color, padding: '2px 6px', borderRadius: '4px' }}>
+        
+        <div className="d-flex align-items-center gap-2 position-relative z-1">
+          <span className="fw-bold px-2 py-1 rounded" 
+                style={{ 
+                  fontSize: '0.75rem', 
+                  backgroundColor: isStatus ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)', 
+                  color: isStatus ? '#0bf5a7' : '#f8fafc', 
+                  border: isStatus ? '1px solid rgba(16, 185, 129, 0.3)' : `1px solid ${color}40` 
+                }}>
             {delta}
           </span>
           <span className="text-secondary" style={{ fontSize: '0.75rem' }}>{deltaLabel}</span>
@@ -352,11 +462,14 @@ function ActionButton({ icon, label }) {
   );
 }
 
-// Add global styles for hover effects and markdown rendering
 const style = document.createElement('style');
 style.innerHTML = `
   .last-border-none:last-child { border-bottom: none !important; }
   .hover-bg-dark:hover { background-color: #0f172a !important; }
+  
+  /* Bổ sung 2 dòng này để fix lỗi màu text-success trên nền tối */
+  .text-success { color: #10b981 !important; }
+  .bg-success.bg-opacity-10 { background-color: rgba(16, 185, 129, 0.15) !important; }
   
   /* CSS tối ưu cho text markdown do AI generate ra */
   .ai-markdown-content ul { padding-left: 1rem; margin-bottom: 0; }
