@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Plus, Filter, Download, Users, UserCheck, GraduationCap,
-  Briefcase, MoreHorizontal, Eye, Pencil, Trash2, RefreshCw, X,
-  Shield, CheckCircle2, Lock, AlertTriangle, ChevronRight
+  Briefcase, MoreHorizontal, Eye, Trash2, RefreshCw, X,
+  Shield, Lock, AlertTriangle
 } from "lucide-react";
 import Sidebar from "../../../components/dashboard/Sidebar";
 import DashboardHeader from "../../../components/dashboard/DashboardHeader";
@@ -46,11 +46,10 @@ export default function AdminUserManagement() {
     try {
       const res = await axiosClient.get("/api/admin/users");
       const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
-      // Mock data for visual demonstration if API fails/returns empty initially
       setUsers(data.length ? data : mockUsers); 
     } catch (err) {
       console.error("Fetch users error:", err);
-      setUsers(mockUsers); // Fallback to mock for UI demonstration
+      setUsers(mockUsers);
     } finally {
       setLoading(false);
     }
@@ -78,7 +77,6 @@ export default function AdminUserManagement() {
         roleId: detail?.roleId?.toString() || "2",
       });
     } catch (err) {
-      // If API fails, populate with table data
       setFormData({
         ...initialFormState, ...user, roleId: user?.roleId?.toString() || "2"
       });
@@ -141,62 +139,70 @@ export default function AdminUserManagement() {
     students: users.filter(u => u.roleId === 2).length,
   };
 
+  // Bootstrap custom styles cho các component nhỏ để ghi đè default của BS
+  const bsInputStyle = { backgroundColor: 'rgba(0,0,0,0.4)', borderColor: COLORS.border, color: 'white' };
+  const bsBtnDarkStyle = { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' };
+
   return (
-    <div className="flex min-h-screen font-sans" style={{ backgroundColor: COLORS.background, color: COLORS.textMain }}>
+    <div className="d-flex vh-100" style={{ backgroundColor: COLORS.background, color: COLORS.textMain }}>
       <Sidebar />
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
         <DashboardHeader />
         
-        <main className="flex-1 overflow-y-auto p-8 space-y-8">
+        <main className="flex-grow-1 overflow-auto p-4 p-md-5" style={{ gap: '2rem' }}>
           
           {/* HEADER SECTION */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white">User Management</h1>
-              <p className="text-[#94A3B8] mt-1 text-sm">Manage platform users, permissions and account status.</p>
+              <h1 className="h3 fw-bold mb-1">User Management</h1>
+              <p style={{ color: COLORS.textMuted, fontSize: '0.875rem', margin: 0 }}>Manage platform users, permissions and account status.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+            <div className="d-flex align-items-center gap-2">
+              <button className="btn btn-sm d-flex align-items-center gap-2" style={bsBtnDarkStyle}>
                 <Filter size={16} /> Filter
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+              <button className="btn btn-sm d-flex align-items-center gap-2" style={bsBtnDarkStyle}>
                 <Download size={16} /> Export
               </button>
-              <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#10B981] text-black hover:bg-[#059669] transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              <button onClick={handleOpenCreate} className="btn btn-sm d-flex align-items-center gap-2 border-0" style={{ backgroundColor: COLORS.accent, color: 'black', fontWeight: '500' }}>
                 <Plus size={16} /> Add User
               </button>
             </div>
           </div>
 
           {/* STATISTICS CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard icon={<Users />} title="Total Users" value={stats.total} trend="+12% this month" />
-            <StatCard icon={<UserCheck />} title="Active Users" value={stats.active} trend="+5% this week" />
-            <StatCard icon={<Briefcase />} title="Mentors" value={stats.mentors} trend="+2 new" />
-            <StatCard icon={<GraduationCap />} title="Students" value={stats.students} trend="+18% this month" />
+          <div className="row g-3 mb-4">
+            <div className="col-12 col-md-3"><StatCard icon={<Users />} title="Total Users" value={stats.total} trend="+12% this month" /></div>
+            <div className="col-12 col-md-3"><StatCard icon={<UserCheck />} title="Active Users" value={stats.active} trend="+5% this week" /></div>
+            <div className="col-12 col-md-3"><StatCard icon={<Briefcase />} title="Mentors" value={stats.mentors} trend="+2 new" /></div>
+            <div className="col-12 col-md-3"><StatCard icon={<GraduationCap />} title="Students" value={stats.students} trend="+18% this month" /></div>
           </div>
 
           {/* MAIN CONTENT / TABLE AREA */}
-          <div className="rounded-2xl border border-white/5 bg-[#111827]/50 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="card border-0 shadow-lg" style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)', borderRadius: '1rem' }}>
             
             {/* TOOLBAR */}
-            <div className="p-4 border-b border-white/5 flex flex-wrap items-center justify-between gap-4 bg-[#111827]/80">
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+            <div className="card-header border-bottom p-3 d-flex flex-wrap align-items-center justify-content-between gap-3" style={{ backgroundColor: 'rgba(17, 24, 39, 0.8)', borderColor: COLORS.border }}>
+              <div className="position-relative flex-grow-1" style={{ maxWidth: '300px' }}>
+                <div className="position-absolute top-50 translate-middle-y" style={{ left: '10px', color: COLORS.textMuted }}>
+                  <Search size={16} />
+                </div>
                 <input 
                   type="text" 
-                  placeholder="Search users by name or email..." 
+                  placeholder="Search users..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 text-white text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-[#10B981] transition-colors"
+                  className="form-control form-control-sm"
+                  style={{ ...bsInputStyle, paddingLeft: '2.5rem' }}
                 />
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="d-flex align-items-center gap-2">
                 <select 
                   value={roleFilter} 
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="bg-black/40 border border-white/10 text-sm text-[#94A3B8] rounded-lg px-3 py-2 focus:outline-none focus:border-[#10B981] appearance-none cursor-pointer"
+                  className="form-select form-select-sm"
+                  style={{ ...bsInputStyle, color: COLORS.textMuted, width: 'auto' }}
                 >
                   <option value="All">All Roles</option>
                   <option value="1">Admins</option>
@@ -208,46 +214,41 @@ export default function AdminUserManagement() {
                 <select 
                   value={statusFilter} 
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-black/40 border border-white/10 text-sm text-[#94A3B8] rounded-lg px-3 py-2 focus:outline-none focus:border-[#10B981] appearance-none cursor-pointer"
+                  className="form-select form-select-sm"
+                  style={{ ...bsInputStyle, color: COLORS.textMuted, width: 'auto' }}
                 >
                   <option value="All">All Status</option>
                   <option value="Active">Active</option>
                   <option value="Locked">Locked</option>
                 </select>
 
-                <button onClick={fetchUsers} className="p-2 rounded-lg text-[#94A3B8] hover:text-white hover:bg-white/5 transition-colors">
-                  <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                <button onClick={fetchUsers} className="btn btn-sm text-secondary">
+                  <RefreshCw size={16} className={loading ? "spinner-border spinner-border-sm" : ""} />
                 </button>
               </div>
             </div>
 
             {/* DATATABLE */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="table-responsive">
+              <table className="table table-dark table-hover align-middle mb-0" style={{ '--bs-table-bg': 'transparent', '--bs-table-border-color': COLORS.border }}>
                 <thead>
-                  <tr className="border-b border-white/5 bg-white/[0.01]">
-                    <th className="px-6 py-4 text-xs font-medium text-[#94A3B8] uppercase tracking-wider">User</th>
-                    <th className="px-6 py-4 text-xs font-medium text-[#94A3B8] uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-4 text-xs font-medium text-[#94A3B8] uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-xs font-medium text-[#94A3B8] uppercase tracking-wider">Joined Date</th>
-                    <th className="px-6 py-4 text-xs font-medium text-[#94A3B8] uppercase tracking-wider text-right">Actions</th>
+                  <tr>
+                    <th className="text-uppercase" style={{ color: COLORS.textMuted, fontSize: '0.75rem', fontWeight: 500, padding: '1rem 1.5rem' }}>User</th>
+                    <th className="text-uppercase" style={{ color: COLORS.textMuted, fontSize: '0.75rem', fontWeight: 500, padding: '1rem 1.5rem' }}>Role</th>
+                    <th className="text-uppercase" style={{ color: COLORS.textMuted, fontSize: '0.75rem', fontWeight: 500, padding: '1rem 1.5rem' }}>Status</th>
+                    <th className="text-uppercase" style={{ color: COLORS.textMuted, fontSize: '0.75rem', fontWeight: 500, padding: '1rem 1.5rem' }}>Joined Date</th>
+                    <th className="text-uppercase text-end" style={{ color: COLORS.textMuted, fontSize: '0.75rem', fontWeight: 500, padding: '1rem 1.5rem' }}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody>
                   {loading ? (
-                    <TableSkeleton rows={5} />
+                    <tr><td colSpan="5" className="text-center p-5">Loading...</td></tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-20 text-center">
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 text-[#94A3B8]">
-                            <Search size={24} />
-                          </div>
-                          <h3 className="text-lg font-medium text-white mb-1">No users found</h3>
-                          <p className="text-sm text-[#94A3B8] mb-4">Try adjusting your filters or search query.</p>
-                          <button onClick={handleOpenCreate} className="text-[#10B981] hover:text-[#059669] text-sm font-medium transition-colors">
-                            + Create first user
-                          </button>
+                      <td colSpan="5" className="text-center p-5">
+                        <div className="d-flex flex-column align-items-center">
+                           <Search size={24} className="mb-3 text-secondary" />
+                           <h5 className="text-white">No users found</h5>
                         </div>
                       </td>
                     </tr>
@@ -255,35 +256,25 @@ export default function AdminUserManagement() {
                     filteredUsers.map((u) => (
                       <motion.tr 
                         key={u.userId}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        whileHover={{ backgroundColor: "rgba(255,255,255,0.02)" }}
-                        className="group transition-colors"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
+                        <td className="px-4 py-3">
+                          <div className="d-flex align-items-center gap-3">
                             <Avatar name={u.fullName || u.email} />
                             <div>
-                              <div className="text-sm font-medium text-white">{u.fullName || "Unnamed User"}</div>
-                              <div className="text-xs text-[#94A3B8]">{u.email}</div>
+                              <div className="fw-medium text-white" style={{ fontSize: '0.875rem' }}>{u.fullName || "Unnamed User"}</div>
+                              <div style={{ fontSize: '0.75rem', color: COLORS.textMuted }}>{u.email}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <RoleBadge roleId={u.roleId} />
+                        <td className="px-4 py-3"><RoleBadge roleId={u.roleId} /></td>
+                        <td className="px-4 py-3"><StatusBadge isActive={u.isActive} /></td>
+                        <td className="px-4 py-3" style={{ fontSize: '0.875rem', color: COLORS.textMuted }}>
+                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US') : 'Jul 15, 2026'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <StatusBadge isActive={u.isActive} />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#94A3B8]">
-                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jul 15, 2026'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ActionButton icon={<Eye size={16} />} onClick={() => handleOpenDetail(u)} tooltip="View Details" />
-                            <ActionButton icon={<Trash2 size={16} className="text-red-400" />} onClick={() => confirmDelete(u)} tooltip="Delete User" hoverBg="hover:bg-red-500/10" />
-                            <ActionButton icon={<MoreHorizontal size={16} />} />
-                          </div>
+                        <td className="px-4 py-3 text-end">
+                          <ActionButton icon={<Eye size={16} />} onClick={() => handleOpenDetail(u)} />
+                          <ActionButton icon={<Trash2 size={16} color="#ef4444" />} onClick={() => confirmDelete(u)} />
                         </td>
                       </motion.tr>
                     ))
@@ -291,24 +282,13 @@ export default function AdminUserManagement() {
                 </tbody>
               </table>
             </div>
-            
-            {/* PAGINATION (Static Mockup for Visual) */}
-            <div className="p-4 border-t border-white/5 flex items-center justify-between text-sm text-[#94A3B8]">
-              <div>Showing <span className="text-white font-medium">1</span> to <span className="text-white font-medium">{filteredUsers.length}</span> of <span className="text-white font-medium">{users.length}</span> results</div>
-              <div className="flex gap-1">
-                <button className="px-3 py-1 rounded border border-white/10 hover:bg-white/5 disabled:opacity-50" disabled>Prev</button>
-                <button className="px-3 py-1 rounded bg-white/10 text-white">1</button>
-                <button className="px-3 py-1 rounded border border-white/10 hover:bg-white/5">2</button>
-                <button className="px-3 py-1 rounded border border-white/10 hover:bg-white/5">Next</button>
-              </div>
-            </div>
-
           </div>
         </main>
       </div>
 
       {/* --- DRAWERS AND MODALS --- */}
-
+      {/* Giữ nguyên Framer Motion cho animation, nhưng bọc CSS bằng Bootstrap */}
+      
       {/* DETAIL/EDIT DRAWER */}
       <AnimatePresence>
         {isDetailDrawerOpen && (
@@ -316,166 +296,90 @@ export default function AdminUserManagement() {
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsDetailDrawerOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75" style={{ zIndex: 1040 }}
             />
             <motion.div 
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full max-w-[500px] bg-[#111827] border-l border-white/10 shadow-2xl z-50 flex flex-col"
+              className="position-fixed top-0 end-0 h-100 d-flex flex-column shadow"
+              style={{ width: '100%', maxWidth: '500px', backgroundColor: COLORS.card, borderLeft: `1px solid ${COLORS.border}`, zIndex: 1045 }}
             >
-              <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Avatar name={formData.fullName || formData.email} size="lg" />
+              <div className="p-4 border-bottom d-flex align-items-center justify-content-between" style={{ borderColor: COLORS.border }}>
+                <div className="d-flex align-items-center gap-3">
+                  <Avatar name={formData.fullName || formData.email} />
                   <div>
-                    <h2 className="text-xl font-semibold text-white">{formData.fullName || "User Profile"}</h2>
-                    <p className="text-sm text-[#94A3B8]">{formData.email}</p>
+                    <h5 className="mb-0 text-white">{formData.fullName || "User Profile"}</h5>
+                    <small style={{ color: COLORS.textMuted }}>{formData.email}</small>
                   </div>
                 </div>
-                <button onClick={() => setIsDetailDrawerOpen(false)} className="p-2 text-[#94A3B8] hover:text-white rounded-full hover:bg-white/10 transition-colors">
-                  <X size={20} />
-                </button>
+                <button onClick={() => setIsDetailDrawerOpen(false)} className="btn btn-link text-secondary p-0"><X size={20} /></button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                <section>
-                  <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-4 flex items-center gap-2"><Lock size={14} /> Account Status</h3>
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-black/20">
-                    <div>
-                      <div className="text-sm font-medium text-white mb-1">Active Status</div>
-                      <div className="text-xs text-[#94A3B8]">Allow user to access the platform.</div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" checked={formData.isActive} onChange={(e) => setFormData({...formData, isActive: e.target.checked})} />
-                      <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#10B981]"></div>
-                    </label>
-                  </div>
-                </section>
+              <div className="flex-grow-1 overflow-auto p-4">
+                {/* Form Elements mapped with Bootstrap classes */}
+                <div className="mb-4">
+                   <h6 className="text-uppercase mb-3 d-flex align-items-center gap-2" style={{ color: COLORS.textMuted, fontSize: '0.75rem' }}><Lock size={14}/> Account Status</h6>
+                   <div className="form-check form-switch">
+                      <input className="form-check-input" type="checkbox" role="switch" checked={formData.isActive} onChange={(e) => setFormData({...formData, isActive: e.target.checked})} />
+                      <label className="form-check-label text-white ms-2">Active Status</label>
+                   </div>
+                </div>
 
-                <section>
-                  <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-4 flex items-center gap-2"><Shield size={14} /> Role & Permissions</h3>
-                  <div className="space-y-3">
-                    <SelectField label="System Role" value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})}>
-                      <option value="1">Admin</option>
-                      <option value="2">Student</option>
-                      <option value="3">Mentor</option>
-                      <option value="4">Counselor</option>
-                    </SelectField>
-                  </div>
-                </section>
+                <div className="mb-4">
+                  <h6 className="text-uppercase mb-3 d-flex align-items-center gap-2" style={{ color: COLORS.textMuted, fontSize: '0.75rem' }}><Shield size={14}/> Role & Permissions</h6>
+                  <SelectField label="System Role" value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})}>
+                    <option value="1">Admin</option>
+                    <option value="2">Student</option>
+                    <option value="3">Mentor</option>
+                    <option value="4">Counselor</option>
+                  </SelectField>
+                </div>
 
-                <section>
-                  <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-4 flex items-center gap-2"><UserCheck size={14} /> Profile Information</h3>
-                  <div className="space-y-4">
-                    <InputField label="Full Name" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
-                    
-                    {formData.roleId === "2" && (
-                      <InputField label="Student Code" value={formData.studentCode} onChange={(e) => setFormData({...formData, studentCode: e.target.value})} />
-                    )}
-                    
-                    {formData.roleId === "3" && (
-                      <>
-                        <InputField label="Current Company" value={formData.currentCompany} onChange={(e) => setFormData({...formData, currentCompany: e.target.value})} />
-                        <InputField label="Expertise Tags" placeholder="e.g. React, Node.js" value={formData.expertiseTags} onChange={(e) => setFormData({...formData, expertiseTags: e.target.value})} />
-                      </>
-                    )}
-
-                    {formData.roleId === "4" && (
-                      <InputField label="Department" value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})} />
-                    )}
-                  </div>
-                </section>
+                <div className="mb-4">
+                  <h6 className="text-uppercase mb-3 d-flex align-items-center gap-2" style={{ color: COLORS.textMuted, fontSize: '0.75rem' }}><UserCheck size={14}/> Profile Info</h6>
+                  <InputField label="Full Name" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
+                </div>
               </div>
 
-              <div className="p-6 border-t border-white/10 bg-[#111827] flex justify-end gap-3">
-                <button onClick={() => setIsDetailDrawerOpen(false)} className="px-5 py-2.5 rounded-xl text-sm font-medium text-white hover:bg-white/5 transition-colors border border-transparent">
-                  Cancel
-                </button>
-                <button onClick={handleSubmit} className="px-5 py-2.5 rounded-xl text-sm font-medium bg-[#10B981] text-black hover:bg-[#059669] transition-colors shadow-lg shadow-[#10B981]/20">
-                  Save Changes
-                </button>
+              <div className="p-4 border-top text-end" style={{ borderColor: COLORS.border }}>
+                <button onClick={() => setIsDetailDrawerOpen(false)} className="btn btn-outline-secondary me-2">Cancel</button>
+                <button onClick={handleSubmit} className="btn border-0" style={{ backgroundColor: COLORS.accent, color: 'black' }}>Save Changes</button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* CREATE USER MODAL */}
+      {/* CREATE MODAL - Lược giản UI Bootstrap Modal */}
       <AnimatePresence>
         {isCreateModalOpen && (
           <ModalOverlay onClose={() => setIsCreateModalOpen(false)}>
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#111827] w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-semibold text-white">Create New User</h2>
-                  <p className="text-sm text-[#94A3B8] mt-1">Add a new user to the platform and set their role.</p>
-                </div>
-                <button onClick={() => setIsCreateModalOpen(false)} className="text-[#94A3B8] hover:text-white transition-colors"><X size={20} /></button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <InputField label="Email Address" type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                  <div className="space-y-1">
-                    <InputField label="Password" type="password" required value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
-                    <div className="flex gap-1 mt-2">
-                      <div className="h-1 flex-1 bg-red-500 rounded-full"></div>
-                      <div className="h-1 flex-1 bg-orange-500 rounded-full"></div>
-                      <div className="h-1 flex-1 bg-white/10 rounded-full"></div>
-                    </div>
-                    <span className="text-xs text-[#94A3B8]">Fair strength</span>
-                  </div>
-                  
-                  <InputField label="Full Name" required value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
-                  <SelectField label="User Role" value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})}>
-                    <option value="2">Student</option>
-                    <option value="3">Mentor</option>
-                    <option value="4">Counselor</option>
-                    <option value="1">Admin</option>
-                  </SelectField>
-
-                  {formData.roleId === "2" && <InputField label="Student Code" value={formData.studentCode} onChange={(e) => setFormData({...formData, studentCode: e.target.value})} />}
-                  {formData.roleId === "3" && (
-                    <>
-                      <InputField label="Company" value={formData.currentCompany} onChange={(e) => setFormData({...formData, currentCompany: e.target.value})} />
-                      <InputField label="Expertise" value={formData.expertiseTags} onChange={(e) => setFormData({...formData, expertiseTags: e.target.value})} />
-                    </>
-                  )}
-                  {formData.roleId === "4" && <InputField label="Department" value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})} />}
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-                  <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2.5 rounded-xl text-sm font-medium text-white hover:bg-white/5 transition-colors">Cancel</button>
-                  <button type="submit" className="px-5 py-2.5 rounded-xl text-sm font-medium bg-[#10B981] text-black hover:bg-[#059669] transition-colors shadow-lg shadow-[#10B981]/20">Create Account</button>
-                </div>
-              </form>
-            </motion.div>
-          </ModalOverlay>
-        )}
-      </AnimatePresence>
-
-      {/* DELETE CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {isDeleteModalOpen && (
-          <ModalOverlay onClose={() => setIsDeleteModalOpen(false)}>
-            <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#111827] w-full max-w-md p-6 rounded-2xl border border-white/10 shadow-2xl text-center"
+              className="card shadow" style={{ width: '100%', maxWidth: '600px', backgroundColor: COLORS.card, border: `1px solid ${COLORS.border}` }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="text-red-500" size={32} />
+              <div className="card-header border-bottom p-4 d-flex justify-content-between align-items-center" style={{ borderColor: COLORS.border }}>
+                <h5 className="mb-0 text-white">Create New User</h5>
+                <button onClick={() => setIsCreateModalOpen(false)} className="btn btn-link text-secondary p-0"><X size={20} /></button>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Delete User?</h2>
-              <p className="text-[#94A3B8] text-sm mb-6">
-                Are you sure you want to permanently delete <span className="text-white font-medium">{selectedUser?.email}</span>? This action cannot be undone and all associated data will be lost.
-              </p>
-              <div className="flex gap-3 w-full">
-                <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium">Cancel</button>
-                <button onClick={executeDelete} className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors shadow-lg shadow-red-500/20 font-medium">Yes, delete user</button>
+              <div className="card-body p-4">
+                <div className="row g-3">
+                  <div className="col-md-6"><InputField label="Email Address" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
+                  <div className="col-md-6"><InputField label="Password" type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} /></div>
+                  <div className="col-md-6"><InputField label="Full Name" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} /></div>
+                  <div className="col-md-6">
+                    <SelectField label="User Role" value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})}>
+                      <option value="2">Student</option>
+                      <option value="3">Mentor</option>
+                      <option value="1">Admin</option>
+                    </SelectField>
+                  </div>
+                </div>
+              </div>
+              <div className="card-footer p-4 border-top text-end" style={{ borderColor: COLORS.border }}>
+                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="btn btn-outline-secondary me-2">Cancel</button>
+                <button onClick={handleSubmit} className="btn border-0" style={{ backgroundColor: COLORS.accent, color: 'black' }}>Create Account</button>
               </div>
             </motion.div>
           </ModalOverlay>
@@ -486,84 +390,65 @@ export default function AdminUserManagement() {
   );
 }
 
-// --- SUB COMPONENTS ---
+// --- SUB COMPONENTS REFACTORED TO BOOTSTRAP ---
 
 const StatCard = ({ icon, title, value, trend }) => (
-  <div className="p-5 rounded-2xl border border-white/5 bg-[#111827]/60 flex flex-col gap-3 relative overflow-hidden group hover:border-white/10 transition-colors">
-    <div className="flex justify-between items-start">
-      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[#94A3B8] group-hover:text-white transition-colors">
+  <div className="card h-100 p-3 border-0" style={{ backgroundColor: 'rgba(17, 24, 39, 0.6)', borderRadius: '1rem', border: `1px solid ${COLORS.border}` }}>
+    <div className="d-flex justify-content-between align-items-start mb-2">
+      <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: COLORS.textMuted }}>
         {React.cloneElement(icon, { size: 20 })}
       </div>
-      <span className="text-xs font-medium text-[#10B981] bg-[#10B981]/10 px-2 py-1 rounded-full">{trend}</span>
+      <span className="badge" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: COLORS.accent }}>{trend}</span>
     </div>
-    <div>
-      <h3 className="text-3xl font-semibold text-white tracking-tight">{value}</h3>
-      <p className="text-sm text-[#94A3B8] mt-1">{title}</p>
-    </div>
-    {/* Subtle gradient blob for glassmorphism effect */}
-    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#10B981]/5 blur-3xl rounded-full pointer-events-none"></div>
+    <h3 className="fw-bold text-white mb-0">{value}</h3>
+    <small style={{ color: COLORS.textMuted }}>{title}</small>
   </div>
 );
 
 const RoleBadge = ({ roleId }) => {
   const roles = {
-    1: { label: "Admin", color: "text-red-400 bg-red-400/10 border-red-400/20" },
-    2: { label: "Student", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
-    3: { label: "Mentor", color: "text-orange-400 bg-orange-400/10 border-orange-400/20" },
-    4: { label: "Counselor", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+    1: { label: "Admin", color: "danger" },
+    2: { label: "Student", color: "primary" },
+    3: { label: "Mentor", color: "warning" },
+    4: { label: "Counselor", color: "info" },
   };
   const role = roles[roleId] || roles[2];
-  return (
-    <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${role.color}`}>
-      {role.label}
-    </span>
-  );
+  return <span className={`badge bg-${role.color} bg-opacity-10 text-${role.color} border border-${role.color}`}>{role.label}</span>;
 };
 
 const StatusBadge = ({ isActive }) => (
-  <div className="flex items-center gap-2">
-    <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-gray-500'}`} />
-    <span className={`text-sm font-medium ${isActive ? 'text-[#10B981]' : 'text-gray-400'}`}>
-      {isActive ? "Active" : "Locked"}
-    </span>
-  </div>
+  <span className={`badge ${isActive ? 'bg-success' : 'bg-secondary'}`}>
+    {isActive ? "Active" : "Locked"}
+  </span>
 );
 
-const ActionButton = ({ icon, onClick, hoverBg = "hover:bg-white/10" }) => (
-  <button onClick={onClick} className={`p-2 rounded-lg text-[#94A3B8] hover:text-white ${hoverBg} transition-all`}>
+const ActionButton = ({ icon, onClick }) => (
+  <button onClick={onClick} className="btn btn-sm btn-link text-secondary p-1 ms-1">
     {icon}
   </button>
 );
 
-const Avatar = ({ name, size = "md" }) => {
-  const sizeClasses = size === "md" ? "w-10 h-10 text-sm" : "w-14 h-14 text-xl";
+const Avatar = ({ name }) => {
   const initial = name ? name.charAt(0).toUpperCase() : "U";
   return (
-    <div className={`${sizeClasses} rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-semibold text-white shadow-inner flex-shrink-0`}>
+    <div className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
+         style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
       {initial}
     </div>
   );
 };
 
-const InputField = ({ label, required, ...props }) => (
-  <div className="flex flex-col gap-1.5 w-full">
-    <label className="text-xs font-medium text-[#94A3B8]">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <input 
-      className="w-full bg-black/40 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981]/50 transition-all placeholder:text-gray-600"
-      {...props}
-    />
+const InputField = ({ label, ...props }) => (
+  <div className="mb-2">
+    <label className="form-label mb-1" style={{ fontSize: '0.75rem', color: COLORS.textMuted, fontWeight: 500 }}>{label}</label>
+    <input className="form-control form-control-sm" style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: COLORS.border, color: 'white' }} {...props} />
   </div>
 );
 
 const SelectField = ({ label, children, ...props }) => (
-  <div className="flex flex-col gap-1.5 w-full">
-    <label className="text-xs font-medium text-[#94A3B8]">{label}</label>
-    <select 
-      className="w-full bg-black/40 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#10B981] transition-all appearance-none cursor-pointer"
-      {...props}
-    >
+  <div className="mb-2">
+    <label className="form-label mb-1" style={{ fontSize: '0.75rem', color: COLORS.textMuted, fontWeight: 500 }}>{label}</label>
+    <select className="form-select form-select-sm" style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: COLORS.border, color: 'white' }} {...props}>
       {children}
     </select>
   </div>
@@ -573,30 +458,14 @@ const ModalOverlay = ({ children, onClose }) => (
   <motion.div 
     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
     onClick={onClose}
-    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+    style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050, backdropFilter: 'blur(4px)' }}
   >
     {children}
   </motion.div>
 );
 
-const TableSkeleton = ({ rows = 5 }) => (
-  <>
-    {Array(rows).fill(0).map((_, i) => (
-      <tr key={i} className="border-b border-white/5 animate-pulse">
-        <td className="px-6 py-4"><div className="flex gap-3"><div className="w-10 h-10 rounded-full bg-white/5"></div><div className="space-y-2"><div className="w-32 h-4 bg-white/5 rounded"></div><div className="w-24 h-3 bg-white/5 rounded"></div></div></div></td>
-        <td className="px-6 py-4"><div className="w-20 h-6 bg-white/5 rounded-full"></div></td>
-        <td className="px-6 py-4"><div className="w-16 h-4 bg-white/5 rounded"></div></td>
-        <td className="px-6 py-4"><div className="w-24 h-4 bg-white/5 rounded"></div></td>
-        <td className="px-6 py-4 text-right"><div className="w-8 h-8 bg-white/5 rounded-lg inline-block"></div></td>
-      </tr>
-    ))}
-  </>
-);
-
-// --- MOCK DATA FOR DEMO PURPOSES ---
 const mockUsers = [
-  { userId: 1, email: "john.smith@example.com", fullName: "John Smith", roleId: 3, isActive: true, createdAt: "2026-07-15T00:00:00Z" },
-  { userId: 2, email: "alice.wonder@example.com", fullName: "Alice Wonderland", roleId: 2, isActive: true, createdAt: "2026-07-14T00:00:00Z" },
-  { userId: 3, email: "david.admin@system.io", fullName: "David Cohen", roleId: 1, isActive: true, createdAt: "2026-07-13T00:00:00Z" },
-  { userId: 4, email: "emily.counsel@school.edu", fullName: "Emily Rose", roleId: 4, isActive: false, createdAt: "2026-07-10T00:00:00Z" }
+  { userId: 1, email: "john@example.com", fullName: "John Smith", roleId: 3, isActive: true },
+  { userId: 2, email: "alice@example.com", fullName: "Alice W", roleId: 2, isActive: true },
 ];

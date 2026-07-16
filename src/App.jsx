@@ -31,6 +31,7 @@ import CounselorDashboard from "./pages/dashboard/counselor/CounselorDashboard";
 import MentorDashboard from "./pages/dashboard/mentor/MentorDashboard";
 import CounselorStudentList from "./pages/dashboard/counselor/CounselorStudentList";
 import MentorFeedbackHistory from "./pages/dashboard/mentor/MentorFeedbackHistory";
+import CounselorStudentDetail from "./pages/dashboard/counselor/CounselorStudentDetail";
 
 function App() {
   const location = useLocation();
@@ -93,6 +94,7 @@ function App() {
             {/* Các route dành cho Cố vấn học tập (Counselor) */}
             <Route path="/dashboard/counselor" element={<CounselorDashboard />} />
             <Route path="/dashboard/counselor/students" element={<CounselorStudentList />} />
+            <Route path="/dashboard/counselor/students/:studentId" element={<CounselorStudentDetail />} />
 
             {/* Các route dành cho Chuyên gia doanh nghiệp (Mentor) */}
             <Route path="/dashboard/mentor" element={<MentorDashboard />} />
