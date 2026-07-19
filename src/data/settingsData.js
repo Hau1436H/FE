@@ -20,13 +20,13 @@ export const SETTINGS_DATA = {
 
   // ─── Danh sách các tab điều hướng bên trong Settings ───
   settingsNav: [
-    {
-      id: 'billing',
+    // {
+    //   id: 'billing',
       
-      label: 'Gói & Thanh toán',
-      sub: 'Quản lý gói đăng ký, hoá đơn và sử dụng',
-      badge: 'Pro',
-    },
+    //   label: 'Gói & Thanh toán',
+    //   sub: 'Quản lý gói đăng ký, hoá đơn và sử dụng',
+    //   badge: 'Pro',
+    // },
     {
       id: 'appearance',
     
