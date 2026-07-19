@@ -88,6 +88,9 @@ function PracticeWorkspace() {
   const [isRunning, setIsRunning] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [problemDescription, setProblemDescription] = useState('');
+  
+  // STATE MỚI: Quản lý dữ liệu đầu vào (stdin)
+  const [stdin, setStdin] = useState('');
 
   // ================= TÍCH HỢP API RUN CODE =================
   const handleRunCode = async () => {
@@ -105,7 +108,7 @@ function PracticeWorkspace() {
       const payload = {
         language: activeTab.language,
         sourceCode: activeTab.code,
-        stdin: "" 
+        stdin: stdin // Truyền dữ liệu đầu vào thực tế
       };
 
       const response = await axiosClient.post('/api/v1/PracticeWorkspace/run-code', payload);
@@ -313,6 +316,10 @@ function PracticeWorkspace() {
             <div className="border-top border-secondary border-opacity-10 d-flex flex-column" style={{ height: '220px', backgroundColor: '#07080f' }}>
               <div className="px-3 py-2 border-bottom border-secondary border-opacity-10 d-flex gap-3 text-white-50 font-monospace" style={{ fontSize: '0.75rem', backgroundColor: '#0b0c16' }}>
                 <span className={`${activeConsoleTab === 'console' ? 'text-success border-bottom border-success pb-1 fw-medium' : ''}`} style={{ cursor: 'pointer' }} onClick={() => setActiveConsoleTab('console')}>Console</span>
+                
+                {/* TAB INPUT MỚI */}
+                <span className={`${activeConsoleTab === 'input' ? 'text-success border-bottom border-success pb-1 fw-medium' : ''}`} style={{ cursor: 'pointer' }} onClick={() => setActiveConsoleTab('input')}>Input (stdin)</span>
+                
                 <span className={`${activeConsoleTab === 'results' ? 'text-success border-bottom border-success pb-1 fw-medium' : ''}`} style={{ cursor: 'pointer' }} onClick={() => setActiveConsoleTab('results')}>Test Results</span>
               </div>
               
@@ -320,6 +327,18 @@ function PracticeWorkspace() {
                 {activeConsoleTab === 'console' && (
                   <div className="text-secondary">// Trình biên dịch: Sẵn sàng thực thi mã {SUPPORTED_LANGUAGES.find(l => l.id === activeTab.language)?.label}.</div>
                 )}
+                
+                {/* TEXTAREA ĐỂ NHẬP INPUT */}
+                {activeConsoleTab === 'input' && (
+                  <textarea
+                    className="form-control bg-dark text-white border-secondary border-opacity-25 w-100 h-100 custom-scrollbar"
+                    placeholder="Nhập các giá trị đầu vào (mỗi giá trị 1 dòng hoặc cách nhau bằng dấu cách) TRƯỚC KHI bấm Run Code..."
+                    value={stdin}
+                    onChange={(e) => setStdin(e.target.value)}
+                    style={{ resize: 'none', fontSize: '0.8rem' }}
+                  ></textarea>
+                )}
+
                 {activeConsoleTab === 'results' && (
                   consoleLogs.length === 0 
                     ? <div className="text-secondary">// Nhấn nút "Run Code" để xem kết quả biên dịch.</div>

@@ -10,7 +10,6 @@ import Learning from "./pages/dashboard/Learning";
 import Practice from "./pages/dashboard/Practice";
 import Jobs from "./pages/dashboard/Jobs";
 import Profile from "./pages/dashboard/Profile";
-import Setting from "./pages/dashboard/Setting";
 import SkillAssessment from "./pages/SkillAssessment";
 import AssessmentHistory from "./pages/dashboard/AssessmentHistory";
 import PublicPortfolio from "./pages/PublicPortfolio";
@@ -67,7 +66,6 @@ function App() {
             <Route path="/dashboard/practice" element={<Practice />} />
             <Route path="/dashboard/jobs" element={<Jobs />} />
             <Route path="/dashboard/profile" element={<Profile />} />
-            <Route path="/dashboard/setting" element={<Setting />} />
             <Route path="/skill-assessment" element={<SkillAssessment />} />
 
             <Route

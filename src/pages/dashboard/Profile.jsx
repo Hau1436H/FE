@@ -5,11 +5,10 @@ import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import ProfileCard from '../../components/dashboard/profile/ProfileCard';
 import ProfileNav from '../../components/dashboard/profile/ProfileNav';
 import InfoForm from '../../components/dashboard/profile/InfoForm';
-import SocialLinks from '../../components/dashboard/profile/SocialLinks';
 import GithubPortfolioSync from '../../components/dashboard/profile/GithubPortfolioSync';
 import AssessmentTab from '../../components/dashboard/profile/AssessmentTab';
 import FeedbackHistoryTab from '../../components/dashboard/profile/FeedbackHistoryTab';
-import { PROFILE_DATA } from '../../data/profileData';
+import TechIdentity from '../../components/dashboard/profile/TechIdentity'; 
 import axiosClient from '../../api/axiosClient';
 
 function Profile() {
@@ -124,75 +123,124 @@ function Profile() {
       <div className="flex-grow-1 p-4 overflow-auto text-white" style={{ maxHeight: '100vh', minWidth: 0 }}>
         <DashboardHeader />
         
-        <div className="container-fluid px-0" style={{ maxWidth: '1200px' }}>
-          <ProfileCard data={PROFILE_DATA} />
-          <ProfileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        {/* Đã gỡ bỏ style={{ maxWidth: '1200px' }} để giao diện tràn viền theo ý bạn */}
+        <div className="container-fluid px-0 w-100">
+  {/* SỬA LỖI Ở ĐÂY: Thêm lại ProfileCard để truyền user thật vào và hết lỗi báo chưa sử dụng */}
+  <ProfileCard user={user} />
+  
+  <ProfileNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          {activeTab === 'profile' ? (
-            <>
-              <InfoForm info={user} />
+  {activeTab === 'profile' ? (
+    <>
+      <TechIdentity user={user} />
+      <InfoForm info={user} />
 
-              {/* MODULE PHÂN TÍCH BẢNG ĐIỂM (TRANSCRIPT AI) */}
-              <div className="card bg-dark border-secondary border-opacity-25 mt-4 p-4 rounded-4">
-                <h5 className="text-white mb-3 d-flex align-items-center gap-2">
-                  <span className="text-success">✨</span> AI Phân tích Bảng điểm (FAP)
-                </h5>
-                <p className="text-white-50 small">
-                  Tải lên bảng điểm PDF của bạn để AI tự động trích xuất các kỹ năng cốt lõi và điểm mạnh tiềm ẩn (Latent Talent).
-                </p>
-                
-                <div className="d-flex align-items-center gap-3">
-                  <input 
-                    type="file" 
-                    accept=".pdf" 
-                    className="form-control form-control-sm bg-dark text-white border-secondary border-opacity-50 w-auto"
-                    ref={fileInputRef}
-                    onChange={handleTranscriptUpload}
-                    disabled={isUploading}
-                  />
-                  {isUploading && <span className="spinner-border spinner-border-sm text-success"></span>}
-                </div>
-
-                {uploadMessage.text && (
-                  <div className={`alert alert-${uploadMessage.type} mt-3 mb-0 py-2 small border-0 bg-opacity-10`} style={{ backgroundColor: uploadMessage.type === 'danger' ? '#dc3545' : uploadMessage.type === 'success' ? '#198754' : '#0dcaf0' }}>
-                    {uploadMessage.text}
-                  </div>
-                )}
-
-                {/* Hiển thị kết quả AI đã phân tích */}
-                {user.latentTalentSummary && (
-                  <div className="mt-3 p-3 bg-black bg-opacity-25 rounded border border-success border-opacity-25 text-white-50 small" style={{ whiteSpace: 'pre-wrap' }}>
-                    <strong className="text-success">Kết luận từ AI:</strong><br/>
-                    {user.latentTalentSummary}
-                  </div>
-                )}
-              </div>
-
-              {/* MODULE E-PORTFOLIO */}
-              {studentId ? (
-                <GithubPortfolioSync studentId={studentId} />
-              ) : (
-                <div className="alert alert-warning mt-4 text-center border-0 bg-warning bg-opacity-10 text-warning">
-                  Đang tải thông tin định danh để đồng bộ GitHub...
-                </div>
-              )}
-
-              <SocialLinks socials={PROFILE_DATA.socials} />
-            </>
-          ) : activeTab === 'assessment' ? (
-            
-            <AssessmentTab studentId={studentId} />
-
-          ) : activeTab === 'chat' ? (
-            <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4">
-              <FeedbackHistoryTab />
-            </div>
-          ) : (
-            <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4">
-              Nội dung tab Cài đặt hệ thống...
-            </div>
-          )}
+      {/* KHU VỰC ĐÃ ĐƯỢC REDESIGN: MODULE PHÂN TÍCH BẢNG ĐIỂM (TRANSCRIPT AI) */}
+      <div className="rounded-4 p-4 mb-4" style={{ backgroundColor: '#131520', border: '1px solid #1e2235' }}>
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <span style={{ fontSize: '1.2rem' }}>✨</span>
+          <h5 className="text-white mb-0 fw-bold tracking-tight">AI Phân tích Bảng điểm</h5>
         </div>
+        <p className="text-white-50 small mb-4">
+          Hệ thống AI sẽ quét file PDF bảng điểm của bạn, phân tích dữ liệu môn học và trích xuất điểm mạnh tiềm ẩn (Latent Talent).
+        </p>
+        
+        {/* Custom Upload Box phong cách Tech */}
+        <div className="mb-4">
+          <label 
+            htmlFor="transcript-upload" 
+            className={`d-flex flex-column align-items-center justify-content-center p-4 rounded-3 w-100 transition-all ${isUploading ? 'opacity-50' : ''}`}
+            style={{ 
+              backgroundColor: '#0a0b10', 
+              border: '1px dashed #2d3748', 
+              cursor: isUploading ? 'not-allowed' : 'pointer',
+              minHeight: '120px'
+            }}
+          >
+            <div className="mb-2">
+              {isUploading ? (
+                <span className="spinner-border text-info" style={{ width: '2rem', height: '2rem' }}></span>
+              ) : (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64ffda" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              )}
+            </div>
+            <span className="text-info fw-bold mb-1">{isUploading ? 'Hệ thống đang xử lý...' : 'Click để tải lên bảng điểm PDF'}</span>
+            <span className="text-white-50 small font-monospace">Hỗ trợ file định dạng .pdf</span>
+          </label>
+          <input 
+            id="transcript-upload"
+            type="file" 
+            accept=".pdf" 
+            className="d-none" // Ẩn input mặc định của browser
+            ref={fileInputRef}
+            onChange={handleTranscriptUpload}
+            disabled={isUploading}
+          />
+        </div>
+
+        {/* Cảnh báo hệ thống (Console Alert) */}
+        {uploadMessage.text && (
+          <div className={`alert py-2 small border-0 font-monospace d-flex align-items-center gap-2 ${
+            uploadMessage.type === 'danger' ? 'bg-danger bg-opacity-10 text-danger' : 
+            uploadMessage.type === 'success' ? 'bg-success bg-opacity-10 text-success' : 
+            'bg-info bg-opacity-10 text-info'
+          }`}>
+            {uploadMessage.type === 'danger' ? '✖' : uploadMessage.type === 'success' ? '✔' : '⚙'} 
+            {uploadMessage.text}
+          </div>
+        )}
+
+        {/* Khung kết quả hiển thị dạng Terminal Output */}
+        {user.latentTalentSummary && (
+          <div className="mt-4 rounded-3 overflow-hidden shadow-sm" style={{ border: '1px solid #1e2235' }}>
+            <div className="px-3 py-2 d-flex align-items-center justify-content-between font-monospace" style={{ backgroundColor: '#1e2235', borderBottom: '1px solid #2d3748', fontSize: '12px' }}>
+              <div className="d-flex align-items-center gap-2">
+                <span className="text-success">●</span>
+                <span className="text-white-50">ai_analysis_output.log</span>
+              </div>
+              <span className="text-white-50 opacity-50">UTF-8</span>
+            </div>
+            <div className="p-3 font-monospace text-light position-relative" style={{ backgroundColor: '#0a0b10', fontSize: '13.5px', lineHeight: '1.7' }}>
+              <div className="text-success mb-2">
+                <span className="opacity-50">root@techcompass:~$</span> cat ai_analysis_output.log
+              </div>
+              <div className="text-info mb-2">{'[SYSTEM_SUCCESS] Latent talent profile generated.'}</div>
+              <div style={{ whiteSpace: 'pre-wrap', color: '#e2e8f0', paddingLeft: '1rem', borderLeft: '2px solid #2d3748' }}>
+                {user.latentTalentSummary}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* END MODULE PHÂN TÍCH BẢNG ĐIỂM */}
+
+      {/* MODULE E-PORTFOLIO */}
+      {studentId ? (
+        <GithubPortfolioSync studentId={studentId} />
+      ) : (
+        <div className="alert alert-warning mt-4 text-center border-0 bg-warning bg-opacity-10 text-warning w-100">
+          Đang tải thông tin định danh để đồng bộ GitHub...
+        </div>
+      )}
+    </>
+  ) : activeTab === 'assessment' ? (
+    
+    <AssessmentTab studentId={studentId} />
+
+  ) : activeTab === 'chat' ? (
+    <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4 w-100">
+      <FeedbackHistoryTab />
+    </div>
+  ) : (
+    <div className="text-center text-white-50 py-5 bg-secondary bg-opacity-5 rounded-4 border border-secondary border-opacity-10 mt-4 w-100">
+      Nội dung tab Cài đặt hệ thống...
+    </div>
+  )}
+</div>
       </div>
     </div>
   );

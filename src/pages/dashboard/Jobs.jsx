@@ -6,12 +6,16 @@ import JobFilters from '../../components/dashboard/myJob/JobFilters';
 import JobCard from '../../components/dashboard/myJob/JobCard';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import SkillGapReport from '../../components/dashboard/myJob/SkillGapReport';
-import MarketTrendChart from '../../components/dashboard/myJob/MarketTrendChart'; // Import component biểu đồ
+import MarketTrendChart from '../../components/dashboard/myJob/MarketTrendChart';
 import axiosClient from '../../api/axiosClient';
 
 function Jobs() {
   const [currentMainTab, setCurrentMainTab] = useState('gap-analysis');
   const [jobs, setJobs] = useState([]);
+  
+  // State mới để lưu thống kê từ Admin/System
+  const [marketStats, setMarketStats] = useState({});
+  
   const [loading, setLoading] = useState(true);
   const [isScraping, setIsScraping] = useState(false); 
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
@@ -26,7 +30,6 @@ function Jobs() {
       const token = localStorage.getItem('token');
       if (!token) return null;
 
-      // Giải mã an toàn hỗ trợ Base64Url (Fix lỗi atob crash)
       const base64Url = token.split('.')[1];
       let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       while (base64.length % 4) {
@@ -47,6 +50,21 @@ function Jobs() {
     }
   };
 
+  // NẠP THỐNG KÊ THỊ TRƯỜNG CHUNG (Để lấy số Job cào hôm nay)
+  useEffect(() => {
+    const fetchMarketStats = async () => {
+      try {
+        const response = await axiosClient.get('/api/AdminAnalytics/student-stats');
+        setMarketStats(response.data || response.data?.Data || {});
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu thống kê thị trường:", error);
+      }
+    };
+    
+    fetchMarketStats();
+  }, [refreshTrigger]); 
+
+  // NẠP DANH SÁCH VIỆC LÀM MATCHING (Cũ)
   useEffect(() => {
     const fetchMatchingJobs = async () => {
       const studentId = getStudentId();
@@ -141,9 +159,11 @@ function Jobs() {
       <Sidebar />
       <div className="flex-grow-1 p-4 overflow-auto text-white" style={{ maxHeight: '100vh', minWidth: 0 }}>
         <DashboardHeader />
-        <div className="container-fluid px-0" style={{ maxWidth: '1200px' }}>
+        
+        {/* Đã xóa maxWidth: '1200px' và thêm w-100 để giao diện tràn viền */}
+        <div className="container-fluid px-0 w-100">
           
-          <JobHeader />
+          <JobHeader jobs={jobs} marketStats={marketStats} />
 
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div className="d-flex gap-2">
@@ -163,7 +183,6 @@ function Jobs() {
                 <i className="bi bi-briefcase me-1"></i> Việc làm phù hợp
               </button>
 
-              {/* Nút Xu hướng thị trường mới thêm */}
               <button 
                 className="btn btn-sm rounded-pill px-3 py-1.5 fw-medium transition-all" 
                 style={{ backgroundColor: currentMainTab === 'market-trends' ? '#ffc107' : 'rgba(255,255,255,0.05)', color: currentMainTab === 'market-trends' ? '#000' : 'rgba(255,255,255,0.5)', fontSize: '13px', border: 'none' }}
@@ -214,7 +233,7 @@ function Jobs() {
               </div>
 
               <div className="col-12">
-                <div className="card bg-dark border-secondary border-opacity-25 p-4 rounded-4">
+                <div className="card bg-dark border-secondary border-opacity-25 p-4 rounded-4 w-100">
                   <SkillGapReport studentId={getStudentId()} />
                 </div>
               </div>
@@ -222,7 +241,6 @@ function Jobs() {
 
           ) : currentMainTab === 'market-trends' ? (
 
-            /* Vùng render cho MarketTrendChart */
             <div className="row mt-3">
               <div className="col-12">
                 <MarketTrendChart />
@@ -256,7 +274,7 @@ function Jobs() {
               </div>
             </>
           ) : (
-            <div className="text-center py-5 mt-4 bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25">
+            <div className="text-center py-5 mt-4 bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25 w-100">
               <i className="bi bi-tools text-warning mb-3" style={{ fontSize: '2rem' }}></i>
               <h5 className="text-white">Tính năng đang được phát triển</h5>
               <p className="text-white-50 small">Chức năng tìm kiếm Mentor dựa trên Lộ trình của bạn sẽ sớm ra mắt.</p>

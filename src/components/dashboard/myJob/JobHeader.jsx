@@ -1,8 +1,8 @@
 // src/components/dashboard/myJob/JobHeader.jsx
 import React from 'react';
 
-function JobHeader({ jobs = [] }) {
-  // Tính toán dữ liệu thực tế từ API
+function JobHeader({ jobs = [], marketStats = {} }) {
+  // Tính toán dữ liệu thực tế từ danh sách job AI Match
   const totalJobs = jobs.length;
   const avgMatch = totalJobs > 0 
     ? Math.round(jobs.reduce((acc, job) => acc + (job.match || 0), 0) / totalJobs) 
@@ -10,6 +10,10 @@ function JobHeader({ jobs = [] }) {
   
   // Đếm số lượng công ty duy nhất (Tập đoàn)
   const uniqueCompanies = new Set(jobs.filter(j => j.companyName).map(j => j.companyName)).size;
+
+  // Lấy số liệu Job cào được trong ngày từ DB (được truyền từ file cha)
+  // Xử lý an toàn chữ hoa/chữ thường tùy thuộc vào cách C# serialize JSON
+  const newlyScrapedToday = marketStats?.jobsToday || marketStats?.JobsToday || 0;
 
   return (
     <div className="mb-4">
@@ -40,7 +44,7 @@ function JobHeader({ jobs = [] }) {
           { icon: "💼", num: totalJobs.toString(), text: "Việc phù hợp" },
           { icon: "📊", num: `${avgMatch}%`, text: "Chỉ số Match TB" },
           { icon: "🏢", num: uniqueCompanies.toString(), text: "Công ty / Tập đoàn" },
-          { icon: "🚀", num: totalJobs.toString(), text: "Mới cào về" }
+          { icon: "🚀", num: newlyScrapedToday.toString(), text: "Mới cào về" }
         ].map((item, idx) => (
           <div key={idx} className="col-6 col-md-3">
             <div className="p-3 rounded-4 h-100 d-flex align-items-center gap-3" style={{ backgroundColor: '#131520', border: '1px solid #1e2235' }}>

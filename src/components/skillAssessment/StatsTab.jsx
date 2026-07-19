@@ -15,14 +15,12 @@ function StatsTab({ result, onNavigateToRoadmap }) {
   const total = isNaN(rawTotal) || rawTotal === 0 ? 10 : rawTotal;
   const percentScore = Math.round((score / total) * 100);
 
-  // CÁCH FIX 1: Làm tròn điểm số để hiển thị đẹp hơn (vd: 13.3)
   const displayScore = score % 1 !== 0 ? score.toFixed(1) : score;
 
-  // CÁCH FIX 2: Bổ sung thuộc tính 'label' và thêm đủ 3 điểm để vẽ được hình tam giác
   const [chartData, setChartData] = useState({
     labels: ['Dữ liệu trống', 'Dữ liệu trống', 'Dữ liệu trống'],
     datasets: [{ 
-      label: 'Khung năng lực cốt lõi (%)', // <-- Hết bị lỗi undefined
+      label: 'Khung năng lực cốt lõi (%)',
       data: [0, 0, 0], 
       backgroundColor: 'rgba(25, 135, 84, 0.2)', 
       borderColor: '#198754',
@@ -32,23 +30,49 @@ function StatsTab({ result, onNavigateToRoadmap }) {
 
   const getStudentId = () => {
     try {
-      const token = localStorage.getItem('token');
+      // Quét thêm các key token phổ biến đề phòng trường hợp lưu khác tên
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken') || localStorage.getItem('jwt');
       if (!token) return null;
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.studentId || payload.StudentId || payload.sub || payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
     } catch (e) { return null; }
   };
 
-  // FETCH DỮ LIỆU THẬT TỪ DATABASE ĐỂ VẼ BIỂU ĐỒ
   useEffect(() => {
+    // 1. HÀM FALLBACK: Xử lý khi API lỗi hoặc chưa có dữ liệu DB
+    const buildFallbackChart = () => {
+      setChartData({
+        labels: ['Kỹ năng vừa test', 'Tư duy logic', 'Clean Code', 'Kiến trúc hệ thống'],
+        datasets: [
+          {
+            label: 'Khung năng lực cốt lõi (%)',
+            data: [percentScore, 20, 20, 20], // Dùng % điểm thật kết hợp các điểm độn
+            backgroundColor: 'rgba(25, 135, 84, 0.2)',
+            borderColor: '#198754',
+            borderWidth: 2,
+            pointBackgroundColor: '#ffc107',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#198754',
+          },
+        ],
+      });
+    };
+
     const fetchHistoryForChart = async () => {
+      if (!hasTaken) return;
+      
       const studentId = getStudentId();
-      if (!studentId || !hasTaken) return;
+      if (!studentId) {
+        buildFallbackChart(); // Không có ID thì dùng dữ liệu giả lập
+        return;
+      }
 
       try {
         const response = await axiosClient.get(`/api/assessments/my-history/${studentId}`);
         const historyData = response.data?.data || response.data || [];
 
+        // 2. NẾU CÓ DỮ LIỆU LỊCH SỬ TỪ DB
         if (historyData.length > 0) {
           const nodeScores = {};
           historyData.forEach(item => {
@@ -60,22 +84,20 @@ function StatsTab({ result, onNavigateToRoadmap }) {
             }
           });
 
+          // Nếu Node mới test chưa kịp lưu vào History do Race Condition, nhét điểm mới vào luôn
+          if (Object.keys(nodeScores).length === 0) {
+             nodeScores['Kỹ năng vừa test'] = percentScore;
+          }
+
           const labels = Object.keys(nodeScores);
           const dataPoints = Object.values(nodeScores);
 
-          // CÁCH FIX CỰC XỊN Ở ĐÂY:
-          // Danh sách các kỹ năng cốt lõi ảo để độn vào nếu dữ liệu thật chưa đủ 3 điểm
           const placeholderSkills = ['Tư duy logic', 'Clean Code', 'Kiến trúc hệ thống', 'Tối ưu hiệu suất'];
           let placeholderIndex = 0;
 
-          // Fill cho đủ ít nhất 3 (thậm chí 4 hoặc 5 điểm sẽ làm hình đa giác đẹp hơn)
-          // Ở đây mình ép nó lên tối thiểu 4 điểm để ra hình thoi thay vì tam giác
           while (labels.length < 4) { 
             labels.push(placeholderSkills[placeholderIndex]);
-            
-            // Có thể để 0, hoặc để 10-20 để nó nhô ra một chút tạo hình khối giọt nước đẹp mắt
             dataPoints.push(15); 
-            
             placeholderIndex++;
           }
 
@@ -95,14 +117,19 @@ function StatsTab({ result, onNavigateToRoadmap }) {
               },
             ],
           });
+        } 
+        // 3. NẾU LỊCH SỬ TRẢ VỀ RỖNG (DB CHƯA KỊP COMMIT)
+        else {
+          buildFallbackChart();
         }
       } catch (error) {
         console.error("Lỗi lấy dữ liệu vẽ chart:", error);
+        buildFallbackChart();
       }
     };
 
     fetchHistoryForChart();
-  }, [hasTaken]);
+  }, [hasTaken, percentScore]); // Thêm percentScore vào dependency để chart update chuẩn
 
   const radarOptions = {
     scales: {
@@ -130,7 +157,6 @@ function StatsTab({ result, onNavigateToRoadmap }) {
             {hasTaken ? (
               <>
                 <div className="bg-dark bg-opacity-20 p-3 rounded-3 border border-secondary border-opacity-10 mb-4">
-                  {/* Cập nhật biến displayScore ở đây */}
                   <h4 className="text-warning fw-bold mb-0">👉 Tổng Điểm: {displayScore}/{total} (Đạt {percentScore}%)</h4>
                 </div>
                 <div className="text-white-50 lh-base" style={{ whiteSpace: 'pre-line', maxHeight: '250px', overflowY: 'auto' }}>

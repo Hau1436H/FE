@@ -1,84 +1,96 @@
-import React, { useEffect, useState } from 'react';
-import { FiEdit2 } from 'react-icons/fi';
-import { BiMap } from 'react-icons/bi';
-import { HiOutlineCalendar } from 'react-icons/hi';
-import axiosClient from '../../../api/axiosClient';
+// src/components/dashboard/profile/ProfileCard.jsx
+import { FiMail, FiShield, FiHash, FiGithub } from 'react-icons/fi';
 
-/**
- * COMPONENT: ProfileCard
- * CHỨC NĂNG CHÍNH: 
- * - Hiển thị ảnh đại diện (Avatar), Họ tên, Chức danh, Địa điểm và Ngày tham gia của người dùng.
- * - Cung cấp nút nhanh để mở tính năng chỉnh sửa hồ sơ tổng quan.
- * - Render danh sách 5 thông số kỹ thuật cốt lõi (XP, Streak, Số kỹ năng, Giờ học, Điểm Test) dạng lưới ngang.
- */
-function ProfileCard({ data }) {
+function ProfileCard({ user }) {
+  // 1. Tránh lỗi Cannot read properties of undefined khi user chưa load xong
+  if (!user || Object.keys(user).length === 0) {
+    return (
+      <div className="rounded-4 p-4 mb-4 text-center text-white-50" style={{ backgroundColor: '#131520', border: '1px solid #1e2235' }}>
+        <span className="spinner-border spinner-border-sm me-2"></span> Đang nạp dữ liệu định danh...
+      </div>
+    );
+  }
 
-  const [user, setUser] = useState({});
+  // Lấy chữ cái đầu của tên làm Avatar mặc định
+  const getInitials = (name) => {
+    if (!name) return 'Dev';
+    const parts = name.split(' ');
+    return parts[parts.length - 1].charAt(0).toUpperCase();
+  };
 
-  useEffect(() => {
-    async function fetchUser() {
-      try{
-        const respone = await axiosClient.get('/api/Profile/me');
-        const result = respone.data;
-
-        if (result.data){
-          setUser(result.data);
-        }
-      }
-      catch(error){
-        console.error("Lỗi nạp dữ liệu", error);
-      }
-    }
-    fetchUser();
-  }, []);
   return (
-    <div className="rounded-4 p-4 mb-4" style={{ backgroundColor: '#131520', border: '1px solid #1e2235' }}>
+    <div className="rounded-4 p-4 mb-4 position-relative overflow-hidden" style={{ backgroundColor: '#0d0e15', border: '1px solid #1e2235' }}>
       
-      {/* KHỐI TRÊN: Thông tin định danh cá nhân & Nút Chỉnh sửa */}
-      <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 border-bottom border-secondary border-opacity-10 pb-4 mb-4">
-        <div className="d-flex gap-3 align-items-center flex-wrap">
-          {user.avatar ? (
-            <img 
-              src={user.avatar} 
-              alt={user.fullName} 
-              className="rounded-circle" 
-              style={{ width: '40px', height: '40px', objectFit: 'cover' }} 
-            />
-          ) : (
-            <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center fw-bold text-dark" style={{ width: '40px', height: '40px' }}>
-             {user?.fullName?.charAt(0)?.toUpperCase() || "?"}
-            </div>
-          )}
-          <div>
-            {/* Tên & Badge chức danh công việc */}
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <h5 className="fw-bold text-white mb-0 fs-5">{user.fullName}</h5>
-              <span className="badge text-success rounded-pill px-2.5 py-0.5 extra-small fw-medium" style={{ fontSize: '11px', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important' }}>
-                {user.email}
+      {/* Background decoration */}
+      <div className="position-absolute top-0 start-0 w-100 h-100 opacity-25" style={{
+        background: 'radial-gradient(circle at 10% 20%, rgba(100, 255, 218, 0.05) 0%, transparent 50%)',
+        pointerEvents: 'none'
+      }}></div>
+
+      <div className="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4 position-relative z-1">
+        
+        {/* Avatar phong cách Tech/Console */}
+        <div 
+          className="rounded-3 d-flex align-items-center justify-content-center fw-bold fs-2 shadow"
+          style={{ 
+            width: '100px', 
+            height: '100px', 
+            backgroundColor: '#131520', 
+            color: '#64ffda', // Mã màu Cyan chuẩn IDE
+            border: '2px solid #1e2235',
+            boxShadow: '0 0 20px rgba(100, 255, 218, 0.1)'
+          }}
+        >
+          {getInitials(user.fullName)}
+        </div>
+
+        {/* Thông tin User (Lấy 100% từ API thật) */}
+        <div className="text-center text-md-start flex-grow-1">
+          <div className="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
+            <h3 className="mb-0 fw-bold text-white tracking-tight">{user.fullName || 'Người dùng hệ thống'}</h3>
+            {user.roleName === 'Student' && (
+              <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1" style={{ fontSize: '11px' }}>
+                PRO
               </span>
+            )}
+          </div>
+          
+          <div className="text-white-50 font-monospace small mb-3">
+            Hệ thống phân tích năng lực lõi AI
+          </div>
+
+          {/* Các tags thông tin */}
+          <div className="d-flex flex-wrap justify-content-center justify-content-md-start gap-3 mt-2 font-monospace" style={{ fontSize: '13px' }}>
+            <div className="d-flex align-items-center gap-2 text-light p-2 rounded bg-dark border border-secondary border-opacity-25">
+              <FiMail className="text-info" /> 
+              <span className="opacity-75">{user.email || 'Awaiting_Email'}</span>
             </div>
-            {/* Trường đại học và thông tin phụ (Vị trí, ngày tham gia) */}
-            <p className="text-white-50 small mb-2" style={{ fontSize: '13px' }}>{data.user.major}</p>
-            <div className="d-flex gap-3 text-white-50 extra-small opacity-60" style={{ fontSize: '12px' }}>
-              <span className="d-flex align-items-center gap-1"><BiMap size={14} /> {data.user.location}</span>
-              <span className="d-flex align-items-center gap-1"><HiOutlineCalendar size={14} /> {data.user.joinDate}</span>
+            
+            <div className="d-flex align-items-center gap-2 text-light p-2 rounded bg-dark border border-secondary border-opacity-25">
+              <FiShield className="text-warning" /> 
+              <span className="opacity-75">Quyền: {user.roleName || 'Unknown'}</span>
+            </div>
+
+            <div className="d-flex align-items-center gap-2 text-light p-2 rounded bg-dark border border-secondary border-opacity-25">
+              <FiHash className="text-danger" /> 
+              <span className="opacity-75">
+                UID: {user.userId ? user.userId.substring(0, 8) + '...' : 'Loading'}
+              </span>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* KHỐI DƯỚI: Vòng lặp kết xuất 5 ô chỉ số học tập (Stats Grid) */}
-      <div className="row g-3 text-center">
-        {data.stats.map((stat, idx) => (
-          <div key={idx} className="col-6 col-md-2.4 col-lg">
-            <div className="p-2.5 rounded-3 d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: 'rgba(255,255,255,0.01)' }}>
-              {/* Định dạng màu sắc icon riêng biệt theo từng loại stats */}
-              <span className="fs-5 mb-1" style={{ color: stat.color }}>{stat.icon}</span>
-              <h6 className="fw-bold text-white mb-0.5" style={{ fontSize: '15px' }}>{stat.value}</h6>
-              <small className="text-white-50 extra-small opacity-50" style={{ fontSize: '11px' }}>{stat.label}</small>
-            </div>
-          </div>
-        ))}
+        {/* Khối bên phải (Đồng bộ GitHub) */}
+        <div className="d-none d-lg-flex flex-column align-items-end justify-content-center">
+           <div className="text-success font-monospace mb-2 d-flex align-items-center gap-2" style={{ fontSize: '12px' }}>
+             <span className="spinner-grow spinner-grow-sm text-success" role="status" style={{ width: '8px', height: '8px' }}></span>
+             System Online
+           </div>
+           <button className="btn btn-outline-secondary btn-sm font-monospace d-flex align-items-center gap-2" style={{ fontSize: '12px' }}>
+             <FiGithub /> Khớp nối GitHub
+           </button>
+        </div>
+
       </div>
     </div>
   );

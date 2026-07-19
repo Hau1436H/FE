@@ -252,18 +252,18 @@ const mentorMenuItems = [
           </div>
         </div>
 
-        {/* Chỉ hiển thị thanh tiến độ mục tiêu cho Học viên */}
-        {userRole === "student" && (
-          <div className="mt-3">
-            <div className="d-flex justify-content-between text-white-50 small mb-1" style={{ fontSize: "11.5px" }}>
-              <span>Mục tiêu tuần này</span>
-              <span className="text-success fw-semibold">{currentHours}h / {targetHours}h</span>
-            </div>
-            <div className="progress" style={{ height: "6px", backgroundColor: "#22223b" }}>
-              <div className="progress-bar bg-success" style={{ width: `${goalPercentage}%` }}></div>
-            </div>
-          </div>
-        )}
+        {/* Lựa chọn 2: Mục tiêu nghề nghiệp */}
+{userRole === "student" && (
+  <div className="mt-3">
+    <div className="d-flex align-items-center gap-2 px-2 py-1.5 rounded-3" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px solid rgba(23, 162, 184, 0.2)' }}>
+      <i className="bi bi-compass text-info" style={{ fontSize: '13px' }}></i>
+      <div className="d-flex flex-column">
+        <span className="text-info fw-medium" style={{ fontSize: '11px', lineHeight: '1' }}>Mục tiêu:</span>
+        <span className="text-white-50" style={{ fontSize: '11px', lineHeight: '1.2' }}>Backend Developer</span>
+      </div>
+    </div>
+  </div>
+)}
       </div>
 
       {/* RENDER MENU ĐỘNG THEO ROLE */}
@@ -281,16 +281,6 @@ const mentorMenuItems = [
 
       {/* MENU CỐ ĐỊNH Ở DƯỚI CÙNG */}
       <ul className="nav nav-pills flex-column gap-1">
-        <li>
-          <button
-            type="button"
-            className={`nav-link w-100 text-start d-flex align-items-center gap-3 px-3 py-2 border-0 ${location.pathname === "/dashboard/setting" ? "bg-success bg-opacity-10 fw-semibold" : "bg-transparent text-white-50"}`}
-            onClick={() => navigate("/dashboard/setting")}
-          >
-            <FaCog className={location.pathname === "/dashboard/setting" ? "text-white" : "text-white-50"} />
-            <span className="text-white">Cài đặt</span>
-          </button>
-        </li>
         <li>
           <button
             type="button"

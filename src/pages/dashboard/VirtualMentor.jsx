@@ -1,5 +1,6 @@
 // src/pages/dashboard/VirtualMentor.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import Sidebar from '../../components/dashboard/Sidebar';
 import axiosClient from '../../api/axiosClient';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
@@ -29,7 +30,6 @@ function VirtualMentor() {
     const connectSignalR = async () => {
       try {
         const newConnection = new HubConnectionBuilder()
-          // LƯU Ý: Thay đổi domain/port cho khớp với backend của cậu
           .withUrl("https://localhost:7196/hubs/virtualMentor", { 
             accessTokenFactory: () => localStorage.getItem('token') 
           })
@@ -87,11 +87,12 @@ function VirtualMentor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Truyền cờ true để báo hiệu đây là lần load đầu tiên
   useEffect(() => {
-    fetchSessions();
+    fetchSessions(true);
   }, []);
 
-  const fetchSessions = async () => {
+  const fetchSessions = async (isInitialLoad = false) => {
     try {
       const response = await axiosClient.get('/api/v1/VirtualMentor/sessions');
       const responseData = response.data || response;
@@ -99,8 +100,9 @@ function VirtualMentor() {
 
       if (Array.isArray(sessionList)) {
         setSessions(sessionList);
-        if (sessionList.length > 0 && !activeSessionId) {
-          handleSelectSession(sessionList[0].sessionId || sessionList[0].SessionId);
+        // FIX: Mở ô trò chuyện mới thay vì tự động load lịch sử cũ khi vừa vào trang
+        if (isInitialLoad) {
+          handleNewChat();
         }
       } else {
         console.warn("Dữ liệu trả về không phải là mảng (Array)!", sessionList);
@@ -179,7 +181,7 @@ function VirtualMentor() {
       };
 
       const response = await axiosClient.post('/api/v1/VirtualMentor/chat', payload);
-      const returnedSessionId = response.data.sessionId || response.data.SessionId;
+      const returnedSessionId = response.data?.sessionId || response.data?.SessionId;
 
       if (!activeSessionId && returnedSessionId) {
         setActiveSessionId(returnedSessionId);
@@ -188,9 +190,7 @@ function VirtualMentor() {
         }
         fetchSessions(); 
       }
-
     } catch (error) {
-      setIsAiTyping(false);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
@@ -198,11 +198,34 @@ function VirtualMentor() {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isStreaming: false
       }]);
+    } finally {
+      // Đảm bảo cờ Typing được tắt nếu request bị lỗi hoặc backend response full mà không gọi EndMessageChunk
+      setIsAiTyping(false); 
     }
   };
 
   return (
     <div className="d-flex vh-100 overflow-hidden" style={{ backgroundColor: '#020205', color: '#e3e4ed', fontFamily: 'system-ui' }}>
+      
+      {/* CSS Nhúng cho hiệu ứng con trỏ nhấp nháy */}
+      <style>
+        {`
+          @keyframes blinkCursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+          }
+          .cursor-blink {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background-color: #198754;
+            animation: blinkCursor 0.8s step-end infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+          }
+        `}
+      </style>
+
       <Sidebar />
 
       <div className="d-flex flex-grow-1 h-100 overflow-hidden p-3 gap-3" style={{ backgroundColor: '#07080f' }}>
@@ -261,42 +284,52 @@ function VirtualMentor() {
           </div>
 
           <div className="flex-grow-1 overflow-auto p-4 d-flex flex-column gap-3 custom-scrollbar" style={{ scrollBehavior: 'smooth' }}>
-            {isLoadingHistory ? (
-              <div className="d-flex h-100 align-items-center justify-content-center flex-column gap-3 text-white-50">
-                <div className="spinner-border text-success" role="status"></div>
-                <span>Đang tải lịch sử...</span>
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className={`d-flex flex-column ${msg.sender === 'user' ? 'align-items-end' : 'align-items-start'}`}>
-                  <div className="p-3 rounded-4 shadow-sm" style={{ 
-                    maxWidth: '80%', 
-                    backgroundColor: msg.sender === 'user' ? '#198754' : '#1e1e24', 
-                    color: '#e3e4ed', 
-                    fontSize: '0.95rem',
-                    lineHeight: '1.6',
-                    whiteSpace: 'pre-wrap',
-                    borderBottomRightRadius: msg.sender === 'user' ? '4px' : '16px',
-                    borderBottomLeftRadius: msg.sender === 'ai' ? '4px' : '16px'
-                  }}>
-                    {msg.text}
-                  </div>
-                  <span className="text-secondary mt-1" style={{ fontSize: '0.7rem' }}>{msg.time}</span>
-                </div>
-              ))
-            )}
-            
-            {isAiTyping && (!messages[messages.length - 1]?.isStreaming) && (
-              <div className="d-flex align-items-start">
-                <div className="p-3 rounded-4" style={{ backgroundColor: '#1e1e24', borderBottomLeftRadius: '4px' }}>
-                  <span className="spinner-grow spinner-grow-sm text-success me-1" style={{ width: '0.5rem', height: '0.5rem' }}></span>
-                  <span className="spinner-grow spinner-grow-sm text-success me-1" style={{ width: '0.5rem', height: '0.5rem', animationDelay: '0.2s' }}></span>
-                  <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '0.5rem', height: '0.5rem', animationDelay: '0.4s' }}></span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+  {isLoadingHistory ? (
+    <div className="d-flex h-100 align-items-center justify-content-center flex-column gap-3 text-white-50">
+      <div className="spinner-border text-success" role="status"></div>
+      <span>Đang tải lịch sử...</span>
+    </div>
+  ) : (
+    messages.map((msg) => (
+      <div key={msg.id} className={`d-flex flex-column ${msg.sender === 'user' ? 'align-items-end' : 'align-items-start'}`}>
+        <div className="p-3 rounded-4 shadow-sm" style={{ 
+          maxWidth: '80%', 
+          backgroundColor: msg.sender === 'user' ? '#198754' : '#1e1e24', 
+          color: '#e3e4ed', 
+          fontSize: '0.95rem',
+          lineHeight: '1.6',
+          // Note: Khi dùng ReactMarkdown, bạn có thể cân nhắc bỏ whiteSpace: 'pre-wrap' 
+          // nếu thư viện đã tự động xử lý xuống dòng bằng các thẻ <p>
+          whiteSpace: 'normal', 
+          borderBottomRightRadius: msg.sender === 'user' ? '4px' : '16px',
+          borderBottomLeftRadius: msg.sender === 'ai' ? '4px' : '16px'
+        }}>
+          
+          <ReactMarkdown>
+            {msg.text}
+          </ReactMarkdown>
+
+          {/* Hộp nhấp nháy báo hiệu AI đang type ở chunk cuối */}
+          {msg.isStreaming && <span className="cursor-blink"></span>}
+          
+        </div>
+        <span className="text-secondary mt-1" style={{ fontSize: '0.7rem' }}>{msg.time}</span>
+      </div>
+    ))
+  )}
+  
+  {/* Dấu 3 chấm chỉ hiện lên khi tin nhắn CỦA USER là tin cuối cùng */}
+  {isAiTyping && messages[messages.length - 1]?.sender === 'user' && (
+    <div className="d-flex align-items-start">
+      <div className="p-3 rounded-4" style={{ backgroundColor: '#1e1e24', borderBottomLeftRadius: '4px' }}>
+        <span className="spinner-grow spinner-grow-sm text-success me-1" style={{ width: '0.5rem', height: '0.5rem' }}></span>
+        <span className="spinner-grow spinner-grow-sm text-success me-1" style={{ width: '0.5rem', height: '0.5rem', animationDelay: '0.2s' }}></span>
+        <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '0.5rem', height: '0.5rem', animationDelay: '0.4s' }}></span>
+      </div>
+    </div>
+  )}
+  <div ref={messagesEndRef} />
+</div>
 
           <div className="p-4 border-top border-secondary border-opacity-10" style={{ backgroundColor: '#07080f' }}>
             <form onSubmit={handleSendMessage} className="d-flex gap-2 mx-auto" style={{ maxWidth: '800px' }}>

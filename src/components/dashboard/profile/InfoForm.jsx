@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FiEdit2, FiUser, FiMail, FiHash, FiAward, FiTarget, FiCheck, FiX } from 'react-icons/fi';
 import axiosClient from '../../../api/axiosClient';
 

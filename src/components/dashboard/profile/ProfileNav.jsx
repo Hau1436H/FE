@@ -13,8 +13,7 @@ function ProfileNav({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'profile', text: 'Hồ sơ cá nhân', icon: <FiUser size={14} /> },
     { id: 'assessment', text: 'Assessment', icon: <FiFileText size={14} /> },
-    { id: 'chat', text: 'AI Chat History', icon: <FiMessageSquare size={14} /> },
-    { id: 'settings', text: 'Cài đặt', icon: <FiSettings size={14} /> }
+    { id: 'chat', text: 'FeedBack E-Portfolio', icon: <FiMessageSquare size={14} /> },
   ];
 
   return (
