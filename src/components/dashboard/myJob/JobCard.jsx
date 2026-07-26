@@ -4,7 +4,6 @@ import { BiMap } from 'react-icons/bi';
 import { FiBookmark } from 'react-icons/fi';
 
 function JobCard({ job }) {
-  // Tách tag vị trí từ mảng tags nếu có
   const locationText = job.tags?.find(t => t.includes('📍'))?.replace('📍 ', '') || 'Toàn quốc';
 
   return (
@@ -13,22 +12,31 @@ function JobCard({ job }) {
       {/* 1. Phần Đầu Card: Ảnh Logo URL, Tiêu đề & Match Score */}
       <div className="d-flex justify-content-between align-items-start mb-3">
         <div className="d-flex gap-3">
-          {/* Thẻ <img> hiển thị Logo thực tế từ URL */}
-          <img 
-            src={job.companyLogo || 'https://via.placeholder.com/56'} // Dự phòng link lỗi mặc định
-            alt={job.companyName} 
-            className="rounded-3 object-cover shadow-sm"
-            style={{ width: '56px', height: '56px', objectFit: 'cover' }}
-            onError={(e) => {
-              // Khử lỗi hiển thị khi link ảnh die, đổi thành màu nền xám kèm chữ cái đầu
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
-          />
-          {/* Khối dự phòng (Fallback) khi ảnh lỗi */}
+          
+          {/* CẢI TIẾN: Chỉ render thẻ img nếu có link thật, bỏ qua link via.placeholder */}
+          {job.companyLogo && (
+            <img 
+              src={job.companyLogo}
+              alt={job.companyName} 
+              className="rounded-3 object-cover shadow-sm"
+              style={{ width: '56px', height: '56px', objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          )}
+
+          {/* Khối chữ cái đầu (Render ngay từ đầu nếu không có Logo, hoặc hiện ra khi ảnh lỗi) */}
           <div 
             className="rounded-3 align-items-center justify-content-center fw-bold text-white shadow-sm"
-            style={{ width: '56px', height: '56px', backgroundColor: '#2d3142', fontSize: '14px', display: 'none' }}
+            style={{ 
+              width: '56px', 
+              height: '56px', 
+              backgroundColor: '#2d3142', 
+              fontSize: '14px', 
+              display: job.companyLogo ? 'none' : 'flex' // Tự động hiện nếu không có ảnh
+            }}
           >
             {job.companyName?.charAt(0) || 'C'}
           </div>
@@ -55,7 +63,7 @@ function JobCard({ job }) {
         </div>
       </div>
 
-      {/* 2. Hàng Badge thông tin cơ bản */}
+      {/* ... Phần code còn lại giữ nguyên ... */}
       <div className="d-flex flex-wrap gap-2 mb-3">
         <span className="badge bg-secondary bg-opacity-20 text-white-50 fw-normal px-2.5 py-1.5 rounded-2" style={{ fontSize: '12px' }}>
           🗄️ {job.type || 'Toàn thời gian'}
@@ -68,21 +76,17 @@ function JobCard({ job }) {
         </span>
       </div>
 
-      {/* 3. Hiển thị Mức Lương */}
       <div className="text-success fw-bold mb-3 d-flex align-items-center gap-1.5" style={{ fontSize: '18px' }}>
         Cast: {job.salary || 'Thỏa thuận'} <span className="text-white-50 fw-normal" style={{ fontSize: '13px' }}>/tháng (gross)</span>
       </div>
 
-      {/* 4. Đoạn mô tả ngắn */}
       <p className="text-white-50 mb-4" style={{ fontSize: '13px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '38px', lineHeight: '1.5' }}>
         {job.description || 'Tham gia thiết kế, phát triển và tối ưu hệ thống dựa trên yêu cầu dự án thực tế.'}
       </p>
 
-      {/* 5. Vùng kỹ năng phù hợp */}
       <div className="mb-3">
         <div className="text-white-50 extra-small mb-2" style={{ fontSize: '12px' }}>Kỹ năng phù hợp</div>
         <div className="d-flex flex-wrap gap-2">
-          {/* ĐÃ SỬA: Thêm ?.map để tránh lỗi khi job.skills là undefined */}
           {job.matchedSkills?.length > 0 ? (
             job.matchedSkills.map((skill, idx) => (
               <span 
@@ -99,7 +103,6 @@ function JobCard({ job }) {
         </div>
       </div>
 
-      {/* Vùng kỹ năng còn thiếu (Tính năng thêm dựa trên JobMatchDto) */}
       {job.missingSkills?.length > 0 && (
         <div className="mb-3">
           <div className="text-white-50 extra-small mb-2" style={{ fontSize: '12px' }}>Cần học thêm</div>
@@ -117,7 +120,6 @@ function JobCard({ job }) {
         </div>
       )}
 
-      {/* 6. Chế độ phúc lợi phụ */}
       <div className="d-flex flex-wrap gap-2 mb-4 mt-auto">
         {['Đào tạo nội bộ', 'Lộ trình thăng tiến rõ ràng', 'ESOP'].map((benefit, idx) => (
           <span key={idx} className="text-white-50 extra-small bg-secondary bg-opacity-10 px-2 py-1 rounded-2" style={{ fontSize: '11px' }}>
@@ -127,7 +129,6 @@ function JobCard({ job }) {
         <span className="text-white-50 extra-small py-1" style={{ fontSize: '11px' }}>+1 khác</span>
       </div>
 
-      {/* 7. Phần Chân Card */}
       <div className="pt-3 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
         <span className="text-white-50 extra-small" style={{ fontSize: '12px' }}>Nguồn: {job.source || 'Hệ thống'}</span>
         

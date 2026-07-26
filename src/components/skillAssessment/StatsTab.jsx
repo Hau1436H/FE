@@ -1,188 +1,138 @@
-// src/components/skillAssessment/StatsTab.jsx
 import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
 import { Radar } from 'react-chartjs-2';
-import axiosClient from '../../api/axiosClient';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 function StatsTab({ result, onNavigateToRoadmap }) {
   const hasTaken = result?.hasTaken || false;
   
-  const rawScore = parseFloat(result?.score);
-  const rawTotal = parseFloat(result?.total);
-  const score = isNaN(rawScore) ? 0 : rawScore;
-  const total = isNaN(rawTotal) || rawTotal === 0 ? 10 : rawTotal;
-  const percentScore = Math.round((score / total) * 100);
+  // Điểm thành phần từ result
+  const quizScore = parseFloat(result?.quizScore) || 0; // Thang 10
+  const codeScore = parseFloat(result?.codeScore) || 0; // Thang 10
+  const totalScore = parseFloat(result?.score) || (quizScore + codeScore);
+  const percentScore = Math.round((totalScore / 20) * 100);
 
-  const displayScore = score % 1 !== 0 ? score.toFixed(1) : score;
+  // Tính toán các chỉ số cho Radar Chart dựa trên bài thi thật
+  // Tránh việc để các trục = 0 làm chart bị co thành 1 đường thẳng
+  const logicScore = Math.max(Math.round(quizScore * 10), 30); 
+  const codeQualityScore = Math.max(Math.round(codeScore * 10), 20);
+  const systemArchitectureScore = Math.max(Math.round(((quizScore + codeScore) / 2) * 8), 25);
+  const speedScore = Math.min(Math.max(percentScore + 5, 40), 95);
 
-  const [chartData, setChartData] = useState({
-    labels: ['Dữ liệu trống', 'Dữ liệu trống', 'Dữ liệu trống'],
-    datasets: [{ 
-      label: 'Khung năng lực cốt lõi (%)',
-      data: [0, 0, 0], 
-      backgroundColor: 'rgba(25, 135, 84, 0.2)', 
-      borderColor: '#198754',
-      borderWidth: 2,
-    }]
-  });
-
-  const getStudentId = () => {
-    try {
-      // Quét thêm các key token phổ biến đề phòng trường hợp lưu khác tên
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken') || localStorage.getItem('jwt');
-      if (!token) return null;
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.studentId || payload.StudentId || payload.sub || payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-    } catch (e) { return null; }
-  };
-
-  useEffect(() => {
-    // 1. HÀM FALLBACK: Xử lý khi API lỗi hoặc chưa có dữ liệu DB
-    const buildFallbackChart = () => {
-      setChartData({
-        labels: ['Kỹ năng vừa test', 'Tư duy logic', 'Clean Code', 'Kiến trúc hệ thống'],
-        datasets: [
-          {
-            label: 'Khung năng lực cốt lõi (%)',
-            data: [percentScore, 20, 20, 20], // Dùng % điểm thật kết hợp các điểm độn
-            backgroundColor: 'rgba(25, 135, 84, 0.2)',
-            borderColor: '#198754',
-            borderWidth: 2,
-            pointBackgroundColor: '#ffc107',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#198754',
-          },
+  const chartData = {
+    labels: ['Kiến thức Lý thuyết', 'Tư duy Thuật toán', 'Clean Code', 'Kiến trúc & Tối ưu'],
+    datasets: [
+      {
+        label: 'Khung năng lực hiện tại (%)',
+        data: [
+          Math.round(quizScore * 10), 
+          logicScore, 
+          codeQualityScore, 
+          systemArchitectureScore
         ],
-      });
-    };
-
-    const fetchHistoryForChart = async () => {
-      if (!hasTaken) return;
-      
-      const studentId = getStudentId();
-      if (!studentId) {
-        buildFallbackChart(); // Không có ID thì dùng dữ liệu giả lập
-        return;
-      }
-
-      try {
-        const response = await axiosClient.get(`/api/assessments/my-history/${studentId}`);
-        const historyData = response.data?.data || response.data || [];
-
-        // 2. NẾU CÓ DỮ LIỆU LỊCH SỬ TỪ DB
-        if (historyData.length > 0) {
-          const nodeScores = {};
-          historyData.forEach(item => {
-            const nodeName = item.nodeName || 'Kỹ năng';
-            const currentScorePercent = (item.testScore || 0) * 10; 
-            
-            if (!nodeScores[nodeName] || nodeScores[nodeName] < currentScorePercent) {
-              nodeScores[nodeName] = currentScorePercent;
-            }
-          });
-
-          // Nếu Node mới test chưa kịp lưu vào History do Race Condition, nhét điểm mới vào luôn
-          if (Object.keys(nodeScores).length === 0) {
-             nodeScores['Kỹ năng vừa test'] = percentScore;
-          }
-
-          const labels = Object.keys(nodeScores);
-          const dataPoints = Object.values(nodeScores);
-
-          const placeholderSkills = ['Tư duy logic', 'Clean Code', 'Kiến trúc hệ thống', 'Tối ưu hiệu suất'];
-          let placeholderIndex = 0;
-
-          while (labels.length < 4) { 
-            labels.push(placeholderSkills[placeholderIndex]);
-            dataPoints.push(15); 
-            placeholderIndex++;
-          }
-
-          setChartData({
-            labels: labels,
-            datasets: [
-              {
-                label: 'Khung năng lực cốt lõi (%)',
-                data: dataPoints,
-                backgroundColor: 'rgba(25, 135, 84, 0.2)',
-                borderColor: '#198754',
-                borderWidth: 2,
-                pointBackgroundColor: '#ffc107',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#198754',
-              },
-            ],
-          });
-        } 
-        // 3. NẾU LỊCH SỬ TRẢ VỀ RỖNG (DB CHƯA KỊP COMMIT)
-        else {
-          buildFallbackChart();
-        }
-      } catch (error) {
-        console.error("Lỗi lấy dữ liệu vẽ chart:", error);
-        buildFallbackChart();
-      }
-    };
-
-    fetchHistoryForChart();
-  }, [hasTaken, percentScore]); // Thêm percentScore vào dependency để chart update chuẩn
+        backgroundColor: 'rgba(25, 135, 84, 0.25)',
+        borderColor: '#198754',
+        borderWidth: 2,
+        pointBackgroundColor: '#ffc107',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: '#198754',
+      },
+    ],
+  };
 
   const radarOptions = {
     scales: {
       r: { 
-        grid: { color: 'rgba(255, 255, 255, 0.1)' }, 
-        angleLines: { color: 'rgba(255, 255, 255, 0.1)' }, 
-        pointLabels: { color: '#fff', font: { size: 12 } }, 
+        grid: { color: 'rgba(255, 255, 255, 0.15)' }, 
+        angleLines: { color: 'rgba(255, 255, 255, 0.15)' }, 
+        pointLabels: { color: '#e0e0e0', font: { size: 12, weight: 'bold' } }, 
         ticks: { display: false, max: 100, min: 0 } 
       }
     },
-    plugins: { legend: { labels: { color: '#fff' } } },
+    plugins: { 
+      legend: { 
+        labels: { color: '#fff', font: { size: 13 } } 
+      } 
+    },
     maintainAspectRatio: false
   };
 
   return (
-    <div className="row g-4 text-white">
+    <div className="row g-4 text-white mx-auto" style={{ maxWidth: '1100px' }}>
+      
+      {/* CỘT BÊN TRÁI: ĐIỂM SỐ & CHỈ SỐ BÀI TEST */}
       <div className="col-lg-6">
-        <div className="card h-100 border-secondary border-opacity-25 p-4 d-flex flex-column justify-content-between" style={{ backgroundColor: '#0b0c16' }}>
+        <div className="card border-secondary border-opacity-25 p-4 h-100 d-flex flex-column justify-content-between" style={{ backgroundColor: '#0b0c16' }}>
           <div>
-            <span className="badge bg-success bg-opacity-10 text-white border border-success border-opacity-25 mb-3 px-3 py-2 rounded-pill">
-              Báo cáo từ AI Expert
-            </span>
-            <h3 className="fw-bold text-white mb-3">Phân Tích Khung Năng Lực</h3>
-            
-            {hasTaken ? (
-              <>
-                <div className="bg-dark bg-opacity-20 p-3 rounded-3 border border-secondary border-opacity-10 mb-4">
-                  <h4 className="text-warning fw-bold mb-0">👉 Tổng Điểm: {displayScore}/{total} (Đạt {percentScore}%)</h4>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <span className="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+                🤖 Báo cáo AI Reviewer
+              </span>
+              <span className="text-white-50 small">Trạng thái: <strong className="text-success">Đã phân tích</strong></span>
+            </div>
+
+            <h4 className="fw-bold text-white mb-4">Kết Quả Đánh Giá Chi Tiết</h4>
+
+            {/* 3 THẺ KPI ĐIỂM SỐ HÀNG NGANG */}
+            <div className="row g-2 mb-4">
+              <div className="col-4">
+                <div className="p-3 rounded-3 text-center border border-secondary border-opacity-25 bg-dark bg-opacity-50">
+                  <span className="text-white-50 d-block small mb-1">Lý thuyết</span>
+                  <strong className="fs-5 text-info">{quizScore}/10</strong>
                 </div>
-                <div className="text-white-50 lh-base" style={{ whiteSpace: 'pre-line', maxHeight: '250px', overflowY: 'auto' }}>
-                  {result?.aiFeedback || "Hệ thống AI đang xử lý đánh giá chi tiết cho bạn..."}
-                </div>
-              </>
-            ) : (
-              <div className="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning rounded-3 small mb-4">
-                ⚠️ Hãy hoàn thành bài kiểm tra để nhận phân tích chính xác.
               </div>
-            )}
+              <div className="col-4">
+                <div className="p-3 rounded-3 text-center border border-secondary border-opacity-25 bg-dark bg-opacity-50">
+                  <span className="text-white-50 d-block small mb-1">Thực hành</span>
+                  <strong className="fs-5 text-warning">{codeScore}/10</strong>
+                </div>
+              </div>
+              <div className="col-4">
+                <div className="p-3 rounded-3 text-center border border-success border-opacity-25 bg-success bg-opacity-10">
+                  <span className="text-success d-block small mb-1">Tổng điểm</span>
+                  <strong className="fs-5 text-success">{totalScore}/20</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* NHẬN XÉT CHI TIẾT TỪ AI */}
+            <div className="bg-dark bg-opacity-40 p-3 rounded-3 border border-secondary border-opacity-25 mb-3">
+              <h6 className="fw-bold text-warning mb-2 d-flex align-items-center gap-2">
+                <i className="bi bi-lightbulb-fill"></i> Đánh giá từ Hệ thống:
+              </h6>
+              <div className="text-white-50 small lh-base custom-scrollbar" style={{ maxHeight: '180px', overflowY: 'auto', whiteSpace: 'pre-line' }}>
+                {result?.aiFeedback && result.aiFeedback !== "Nộp bài, chấm điểm và cập nhật lộ trình hoàn tất!" 
+                  ? result.aiFeedback 
+                  : `• Kiến thức lý thuyết đạt ${(quizScore * 10)}%: Cần chú ý củng cố thêm kiến thức nền tảng.\n• Kỹ năng lập trình đạt ${(codeScore * 10)}%: Code chạy ổn định, tiếp tục phát huy tư duy tối ưu thuật toán.`
+                }
+              </div>
+            </div>
           </div>
 
-          <div className="pt-4 border-top border-secondary border-opacity-10 mt-4 d-flex gap-2">
-            <button className="btn btn-outline-success flex-grow-1 py-2 fw-medium" onClick={onNavigateToRoadmap}>
-              Xem lộ trình học tập 🗺️
+          {/* NÚT CHUYỂN SANG ROADMAP */}
+          <div className="pt-3 border-top border-secondary border-opacity-10 mt-3">
+            <button className="btn btn-success w-100 py-2.5 fw-bold d-flex justify-content-center align-items-center gap-2 shadow" onClick={onNavigateToRoadmap}>
+              Chuyển sang Lộ trình học tập cá nhân hóa 🚀
             </button>
           </div>
         </div>
       </div>
 
+      {/* CỘT BÊN PHẢI: RADAR CHART NĂNG LỰC */}
       <div className="col-lg-6">
-        <div className="card h-100 border-secondary border-opacity-25 p-4" style={{ backgroundColor: '#0b0c16', minHeight: '400px' }}>
-          <Radar data={chartData} options={radarOptions} />
+        <div className="card border-secondary border-opacity-25 p-4 h-100 d-flex flex-column" style={{ backgroundColor: '#0b0c16', minHeight: '420px' }}>
+          <div className="mb-2">
+            <h5 className="fw-bold text-white mb-1">Sơ Đồ Biểu Đồ Năng Lực (Skill Matrix)</h5>
+            <p className="text-white-50 small">Đánh giá đa chiều dựa trên câu hỏi Quiz và Code Review</p>
+          </div>
+          <div className="flex-grow-1 position-relative d-flex justify-content-center align-items-center">
+            <Radar data={chartData} options={radarOptions} />
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

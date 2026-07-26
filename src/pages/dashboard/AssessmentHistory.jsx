@@ -1,4 +1,3 @@
-// src/pages/dashboard/AssessmentHistory.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react'; 
@@ -94,8 +93,6 @@ function AssessmentHistory() {
             ) : (
               <div className="row g-4">
                 {historyList.map((session) => {
-                  
-                  // BẮT CỜ TỪ API ĐỂ PHÂN BIỆT LOẠI BÀI TEST
                   const isSelfDeclared = session.assessmentType === 'SELF_DECLARED';
 
                   return (
@@ -113,13 +110,11 @@ function AssessmentHistory() {
                               </p>
                             </div>
                             
-                            {/* HIỂN THỊ BADGE NẾU LÀ BÀI TỰ KHAI BÁO */}
                             {isSelfDeclared && (
                               <span className="badge bg-info text-dark bg-opacity-75">Tự khai báo</span>
                             )}
                           </div>
                           
-                          {/* ĐỔI UI HIỂN THỊ ĐIỂM SỐ DỰA TRÊN LOẠI BÀI */}
                           {isSelfDeclared ? (
                             <div className="flex-grow-1 d-flex flex-column justify-content-center mb-4">
                               <div className="alert alert-info bg-opacity-10 border-0 text-info text-center mb-0 p-3">
@@ -131,17 +126,16 @@ function AssessmentHistory() {
                             <>
                               <div className="d-flex justify-content-between align-items-center mb-2 p-2 bg-secondary bg-opacity-10 rounded">
                                 <span className="text-white-50"><i className="bi bi-card-list me-2"></i>Điểm Lý thuyết:</span>
-                                <span className="fw-bold text-info">{session.totalQuizScore || session.testScore || 0}/10</span>
+                                <span className="fw-bold text-info">{(session.totalQuizScore ?? session.testScore ?? 0).toFixed(2)}/10</span>
                               </div>
                               
                               <div className="d-flex justify-content-between align-items-center mb-4 p-2 bg-secondary bg-opacity-10 rounded">
                                 <span className="text-white-50"><i className="bi bi-code-slash me-2"></i>Điểm Thực hành:</span>
-                                <span className="fw-bold text-warning">{session.totalCodeScore || 0}/10</span>
+                                <span className="fw-bold text-warning">{(session.totalCodeScore || 0).toFixed(2)}/10</span>
                               </div>
                             </>
                           )}
                           
-                          {/* ĐỔI TRẠNG THÁI NÚT THEO LOẠI BÀI */}
                           <button 
                             className={`btn mt-auto ${isSelfDeclared ? 'btn-outline-info disabled' : 'btn-outline-success'}`}
                             onClick={() => !isSelfDeclared && handleViewDetail(session.assessmentId || session.sessionId)}
@@ -165,7 +159,7 @@ function AssessmentHistory() {
         )}
 
         {/* ==============================================
-            MÀN HÌNH CHI TIẾT (DETAIL) - GIỮ NGUYÊN
+            MÀN HÌNH CHI TIẾT (DETAIL)
         ============================================== */}
         {viewMode === 'detail' && (
           <>
@@ -202,13 +196,13 @@ function AssessmentHistory() {
                     className={`btn ${detailTab === 'quiz' ? 'btn-info text-dark fw-bold' : 'btn-outline-secondary text-white'}`}
                     onClick={() => setDetailTab('quiz')}
                   >
-                    <i className="bi bi-card-list me-2"></i>Lý thuyết ({detailData.totalQuizScore || detailData.testScore || 0}/10)
+                    <i className="bi bi-card-list me-2"></i>Lý thuyết ({(detailData.totalQuizScore ?? detailData.testScore ?? 0).toFixed(2)}/10)
                   </button>
                   <button 
                     className={`btn ${detailTab === 'code' ? 'btn-warning text-dark fw-bold' : 'btn-outline-secondary text-white'}`}
                     onClick={() => setDetailTab('code')}
                   >
-                    <i className="bi bi-code-slash me-2"></i>Thực hành Code ({detailData.totalCodeScore || 0}/10)
+                    <i className="bi bi-code-slash me-2"></i>Thực hành Code ({(detailData.totalCodeScore ?? 0).toFixed(2)}/10)
                   </button>
                   <button 
                     className={`btn ${detailTab === 'roadmap' ? 'btn-success text-white fw-bold shadow' : 'btn-outline-secondary text-white'}`}
@@ -219,11 +213,14 @@ function AssessmentHistory() {
                 </div>
 
                 <div className="card-body p-4">
+                  {/* [FIXED]: TRUYỀN ĐỦ QUIZSCORE & CODESCORE MANG SANG STATSTAB */}
                   {detailTab === 'stats' && (
                     <div className="bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25 p-3">
                       <StatsTab 
                         result={{
                           hasTaken: true, 
+                          quizScore: detailData.totalQuizScore ?? detailData.testScore ?? 0,
+                          codeScore: detailData.totalCodeScore ?? 0,
                           score: (detailData.totalQuizScore || detailData.testScore || 0) + (detailData.totalCodeScore || 0),
                           total: 20,
                           aiFeedback: detailData.codeDetail?.aiFeedback || detailData.aiFeedback

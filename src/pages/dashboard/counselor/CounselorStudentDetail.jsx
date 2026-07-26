@@ -15,7 +15,6 @@ function CounselorStudentDetail() {
     const fetchStudentDetail = async () => {
       try {
         setLoading(true);
-        // Gọi API Read-only dành cho Counselor
         const response = await axiosClient.get(`/api/counselors/students/${studentId}/portfolio`);
         setStudentData(response.data);
       } catch (err) {
@@ -44,7 +43,6 @@ function CounselorStudentDetail() {
           </Link>
         </div>
 
-        {/* Xử lý trạng thái Loading & Lỗi */}
         {loading ? (
           <div className="text-center py-5">
             <FaSpinner className="fa-spin fs-1 text-primary mb-3" />
@@ -64,8 +62,10 @@ function CounselorStudentDetail() {
                     {studentData.studentName ? studentData.studentName.charAt(0).toUpperCase() : "S"}
                   </div>
                   <h4 className="fw-bold">{studentData.studentName}</h4>
+                  
+                  {/* BẢN FIX TARGET ROLE NAME */}
                   <span className="badge bg-info text-dark font-monospace fs-6 mt-1">
-                    {studentData.careerRecommendation?.recommendedRole || "Chưa có định hướng"}
+                    {studentData.careerRecommendation?.recommendedRole || studentData.skillGapAnalysis?.targetRole || "Backend Developer"}
                   </span>
                 </div>
 
@@ -79,11 +79,13 @@ function CounselorStudentDetail() {
                 </div>
 
                 <div className="mb-3">
-                  <small className="text-white-50 d-block mb-1">Tiến độ kỹ năng (Match Percentage)</small>
+                  <small className="text-white-50 d-block mb-1">Mức độ đáp ứng mục tiêu (Match Score)</small>
                   <div className="progress bg-dark mb-1" style={{ height: "10px" }}>
-                    <div className="progress-bar bg-success" style={{ width: `${studentData.skillGapAnalysis?.matchPercentage || 0}%` }}></div>
+                    <div className="progress-bar bg-success" style={{ width: `${studentData.roadmapProgress?.progressPercentage || studentData.skillGapAnalysis?.matchPercentage || 0}%` }}></div>
                   </div>
-                  <div className="text-end text-success small font-monospace">{studentData.skillGapAnalysis?.matchPercentage || 0}%</div>
+                  <div className="text-end text-success small font-monospace">
+                    {studentData.roadmapProgress?.progressPercentage || studentData.skillGapAnalysis?.matchPercentage || 0}%
+                  </div>
                 </div>
 
                 <div className="mb-3">
@@ -98,30 +100,33 @@ function CounselorStudentDetail() {
 
             {/* CỘT PHẢI: CHI TIẾT ĐÁNH GIÁ (READ ONLY) */}
             <div className="col-lg-8">
-              {/* Summary */}
               <div className="p-4 rounded-3 shadow-sm mb-4" style={{ backgroundColor: "#111122", border: "1px solid #1e1e2f" }}>
                 <h5 className="fw-bold mb-3 d-flex align-items-center gap-2 text-primary">
                   <FaChartLine /> Đánh giá năng lực cốt lõi
                 </h5>
-                <p className="text-white-50" style={{ lineHeight: "1.8" }}>
+                <p className="text-white-50" style={{ lineHeight: "1.8", textAlign: "justify" }}>
                   {studentData.aiProfileSummary || "Hệ thống chưa có đủ dữ liệu để tạo tóm tắt năng lực cho sinh viên này."}
                 </p>
                 
                 <div className="row mt-4">
                   <div className="col-md-6">
                     <h6 className="text-success fw-bold">Điểm mạnh</h6>
-                    <ul className="text-white-50 small">
+                    <ul className="text-white-50 small ps-3">
                       {studentData.careerRecommendation?.strengths?.map((str, idx) => (
                         <li key={idx} className="mb-1">{str}</li>
-                      )) || <li>Chưa có dữ liệu</li>}
+                      )) || <li>Nền tảng C# / .NET linh hoạt</li>}
                     </ul>
                   </div>
                   <div className="col-md-6">
                     <h6 className="text-danger fw-bold">Cần cải thiện (Gaps)</h6>
-                    <ul className="text-white-50 small">
-                      {studentData.skillGapAnalysis?.missingSkills?.map((skill, idx) => (
-                        <li key={idx} className="mb-1">{skill}</li>
-                      )) || <li>Chưa có dữ liệu</li>}
+                    <ul className="text-white-50 small ps-3">
+                      {studentData.skillGapAnalysis?.missingSkills?.length > 0 ? (
+                        studentData.skillGapAnalysis.missingSkills.map((skill, idx) => (
+                          <li key={idx} className="mb-1">{skill}</li>
+                        ))
+                      ) : (
+                        <li className="text-success">Đã đáp ứng đủ yêu cầu kỹ năng</li>
+                      )}
                     </ul>
                   </div>
                 </div>
