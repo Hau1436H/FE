@@ -8,6 +8,7 @@ function PublicPortfolio() {
   const [portfolioData, setPortfolioData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openOtherProjects, setOpenOtherProjects] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     const fetchPublicPortfolio = async () => {
@@ -27,9 +28,40 @@ function PublicPortfolio() {
     if (slug) fetchPublicPortfolio();
   }, [slug]);
 
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      alert("Trình duyệt không hỗ trợ copy tự động. Vui lòng copy thủ công trên thanh địa chỉ.");
+    }
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  // TẠO OBJECT BACKGROUND XỊN XÒ CHUNG CHO TẤT CẢ TRẠNG THÁI
+  const premiumBackgroundStyle = {
+    backgroundColor: '#0a0b10', // Nền đen sâu nhưng có độ mềm
+    backgroundImage: `
+      radial-gradient(circle at 50% 0%, rgba(0, 255, 163, 0.08) 0%, transparent 60%),
+      radial-gradient(circle at 85% 85%, rgba(0, 207, 232, 0.04) 0%, transparent 50%),
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)
+    `,
+    backgroundSize: '100% 100%, 100% 100%, 32px 32px, 32px 32px',
+    backgroundPosition: 'top center, center center, center center, center center',
+    backgroundAttachment: 'fixed', // Giữ lưới cố định khi cuộn chuột
+    letterSpacing: '-0.01em',
+    minHeight: '100vh',
+    paddingBottom: '3rem'
+  };
+
   if (loading) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center text-white" style={{ backgroundColor: '#07080d' }}>
+      <div className="d-flex align-items-center justify-content-center text-white" style={premiumBackgroundStyle}>
         <div className="text-center">
           <div className="spinner-border text-success mb-3" role="status" style={{ width: '3rem', height: '3rem' }}></div>
           <p className="text-white-50 tracking-wide fs-6">ĐANG TỔNG HỢP HỒ SƠ NĂNG LỰC AI...</p>
@@ -40,7 +72,7 @@ function PublicPortfolio() {
 
   if (!portfolioData) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center text-white" style={{ backgroundColor: '#07080d' }}>
+      <div className="d-flex align-items-center justify-content-center text-white" style={premiumBackgroundStyle}>
         <div className="text-center">
           <i className="bi bi-exclamation-triangle text-danger fs-1 mb-3"></i>
           <p className="fs-5 fw-bold">Không tìm thấy hồ sơ năng lực này</p>
@@ -54,20 +86,27 @@ function PublicPortfolio() {
   const otherProjects = portfolioData.repositories?.filter(r => !r.isFeatured) || [];
 
   return (
-    <div className="min-vh-100 pb-5 text-white" style={{ backgroundColor: '#07080d', letterSpacing: '-0.01em' }}>
+    <div className="text-white" style={premiumBackgroundStyle}>
       
       {/* GLOBAL ACTIONS BAR */}
-      <div className="sticky-top py-3 px-4 border-bottom border-secondary border-opacity-10 d-print-none" style={{ backgroundColor: 'rgba(7, 8, 13, 0.8)', backdropFilter: 'blur(12px)', zIndex: 100 }}>
+      <div className="sticky-top py-3 px-4 border-bottom border-secondary border-opacity-10 d-print-none" 
+           style={{ backgroundColor: 'rgba(10, 11, 16, 0.75)', backdropFilter: 'blur(16px)', zIndex: 100 }}>
         <div className="container-fluid max-width-container d-flex justify-content-between align-items-center">
-          <button onClick={() => navigate(-1)} className="btn btn-link text-white-50 text-decoration-none p-0 d-flex align-items-center gap-2 transition-all hover-text-white small">
+          <button onClick={() => navigate(-1)} className="btn btn-link text-white-50 text-decoration-none p-0 d-flex align-items-center gap-2 transition-all hover-text-white small fw-semibold">
             <i className="bi bi-arrow-left"></i> TRỞ VỀ SYSTEM
           </button>
+          
           <div className="d-flex gap-2">
-            <button className="btn btn-sm px-3 rounded-1 btn-outline-light border-opacity-25" onClick={() => window.print()}>
+            <button className="btn btn-sm px-3 rounded-1 btn-outline-light border-opacity-25" onClick={handleExportPDF}>
               <i className="bi bi-file-earmark-pdf me-2"></i>XUẤT CV / PDF
             </button>
-            <button className="btn btn-sm px-3 rounded-1 btn-success text-dark fw-semibold" onClick={() => navigator.clipboard.writeText(window.location.href)}>
-              <i className="bi bi-share me-2"></i>CHIA SẺ LINK
+            <button className={`btn btn-sm px-3 rounded-1 fw-semibold transition-all ${isCopied ? 'btn-info text-dark shadow' : 'btn-success text-dark'}`} 
+                    onClick={handleCopyLink} style={{ minWidth: '140px' }}>
+              {isCopied ? (
+                <><i className="bi bi-check2-all me-2"></i>ĐÃ COPY LINK</>
+              ) : (
+                <><i className="bi bi-share me-2"></i>CHIA SẺ LINK</>
+              )}
             </button>
           </div>
         </div>
@@ -80,26 +119,17 @@ function PublicPortfolio() {
           <div className="row g-4 align-items-center">
             <div className="col-12 col-md-8">
               <div className="d-flex align-items-start gap-4 flex-column flex-sm-row">
-                <div className="d-flex align-items-center justify-content-center bg-dark text-success border rounded-2 fw-bold fs-2 shadow-sm" 
-                     style={{ width: '80px', height: '80px', minWidth: '80px', borderColor: '#00ffa3' }}>
+                <div className="d-flex align-items-center justify-content-center bg-dark text-success rounded-3 fw-bold fs-1 shadow-lg position-relative" 
+                     style={{ width: '90px', height: '90px', minWidth: '90px', border: '1px solid rgba(0, 255, 163, 0.4)', boxShadow: '0 0 20px rgba(0, 255, 163, 0.15)' }}>
                   {portfolioData.studentName ? portfolioData.studentName.substring(0, 2).toUpperCase() : 'AI'}
                 </div>
                 <div>
                   <div className="d-flex align-items-center gap-3 mb-1 flex-wrap">
-                    <h1 className="fw-bold fs-2 text-white m-0">
+                    <h1 className="fw-bold fs-2 text-white m-0 text-shadow-sm">
                       {portfolioData.studentName || portfolioData.studentId}
                     </h1>
-                    
-                    {/* BẢN VÁ LỖI HIỂN THỊ BADGE (Đảm bảo màu chữ #00ffa3 và nền đen mờ) */}
                     <span className="badge rounded-pill d-flex align-items-center" 
-                          style={{ 
-                            backgroundColor: 'rgba(0, 255, 163, 0.15)', 
-                            color: '#00ffa3', 
-                            border: '1px solid rgba(0, 255, 163, 0.4)',
-                            fontSize: '11px', 
-                            letterSpacing: '0.5px',
-                            padding: '6px 12px'
-                          }}>
+                          style={{ backgroundColor: 'rgba(0, 255, 163, 0.12)', color: '#00ffa3', border: '1px solid rgba(0, 255, 163, 0.3)', fontSize: '11px', letterSpacing: '0.5px', padding: '6px 12px' }}>
                       <i className="bi bi-shield-check me-1 fs-6"></i> AI CERTIFIED
                     </span>
                   </div>
@@ -113,15 +143,16 @@ function PublicPortfolio() {
               </div>
             </div>
             
-            {/* Điểm AI Score giữ nguyên */}
             <div className="col-12 col-md-4 d-flex justify-content-md-end justify-content-start">
-              <div className="p-3 rounded-2 text-center" style={{ backgroundColor: '#11121a', border: '1px solid rgba(255,255,255,0.05)', minWidth: '160px' }}>
-                <span className="text-white-50 small font-monospace d-block mb-1">AI CAREER SCORE</span>
-<span className="fs-1 fw-bold text-success font-monospace leading-none">
-    {portfolioData.aiCareerScore || 0}
-</span>
-                <span className="text-white-50 font-monospace small">/100</span>
-                <div className="text-warning small mt-1">
+              <div className="p-3 rounded-3 text-center shadow-lg position-relative overflow-hidden" 
+                   style={{ backgroundColor: '#11121a', border: '1px solid rgba(0, 255, 163, 0.15)', minWidth: '160px' }}>
+                <div className="position-absolute w-100 h-100 top-0 start-0" style={{ background: 'radial-gradient(circle, rgba(0,255,163,0.05) 0%, transparent 70%)' }}></div>
+                <span className="text-white-50 small font-monospace d-block mb-1 position-relative z-1">AI CAREER SCORE</span>
+                <span className="fs-1 fw-bold text-success font-monospace leading-none position-relative z-1" style={{ textShadow: '0 0 15px rgba(0, 255, 163, 0.4)' }}>
+                    {portfolioData.aiCareerScore || 0}
+                </span>
+                <span className="text-white-50 font-monospace small position-relative z-1">/100</span>
+                <div className="text-warning small mt-1 position-relative z-1">
                   <i className="bi bi-star-fill"></i>
                   <i className="bi bi-star-fill"></i>
                   <i className="bi bi-star-fill"></i>
@@ -134,18 +165,16 @@ function PublicPortfolio() {
         </section>
 
         <div className="row g-5">
-          
           {/* LEFT CỘT: CAREER MATCH & PROFILE MATRIX */}
           <div className="col-12 col-lg-6 d-flex flex-column gap-5">
             
-            {/* 3. CAREER SUITABILITY RANKING */}
             <section>
               <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
                 <i className="bi bi-bar-chart-steps text-success me-2"></i>Top Career Suitability Ranking
               </h5>
               <div className="d-flex flex-column gap-3">
                 {portfolioData.careerSuitabilities?.map((item, index) => (
-                  <div key={index} className="p-3 rounded-2" style={{ backgroundColor: index === 0 ? '#11121a' : 'transparent', border: index === 0 ? '1px solid rgba(0,255,163,0.1)' : '1px solid transparent' }}>
+                  <div key={index} className="p-3 rounded-2" style={{ backgroundColor: index === 0 ? 'rgba(0, 255, 163, 0.03)' : 'rgba(255,255,255,0.02)', border: index === 0 ? '1px solid rgba(0,255,163,0.2)' : '1px solid transparent' }}>
                     <div className="d-flex justify-content-between align-items-center mb-1 small">
                       <span className={`fw-bold ${index === 0 ? 'text-success' : 'text-light'}`}>
                         {index + 1}. {item.roleName} {index === 0 && <i className="bi bi-bookmark-star ms-1"></i>}
@@ -156,7 +185,7 @@ function PublicPortfolio() {
                       <div 
                         className={`progress-bar ${index === 0 ? 'bg-success' : 'bg-secondary bg-opacity-50'}`}
                         role="progressbar" 
-                        style={{ width: `${item.matchPercentage}%`, borderRadius: '0px' }}
+                        style={{ width: `${item.matchPercentage}%`, borderRadius: '0px', boxShadow: index === 0 ? '0 0 10px rgba(0,255,163,0.5)' : 'none' }}
                       ></div>
                     </div>
                   </div>
@@ -164,7 +193,6 @@ function PublicPortfolio() {
               </div>
             </section>
 
-            {/* 10. LATENT TALENT MATRIX */}
             {portfolioData.latentTalent && (
               <section>
                 <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
@@ -185,8 +213,8 @@ function PublicPortfolio() {
                         </span>
                         <span className="font-monospace text-info small">{talent.val}%</span>
                       </div>
-                      <div className="progress bg-dark" style={{ height: '2px', borderRadius: '0px' }}>
-                        <div className="progress-bar bg-info" role="progressbar" style={{ width: `${talent.val}%` }}></div>
+                      <div className="progress bg-dark border border-secondary border-opacity-10" style={{ height: '3px', borderRadius: '0px' }}>
+                        <div className="progress-bar bg-info" role="progressbar" style={{ width: `${talent.val}%`, boxShadow: '0 0 8px rgba(0, 207, 232, 0.4)' }}></div>
                       </div>
                     </div>
                   ))}
@@ -194,7 +222,6 @@ function PublicPortfolio() {
               </section>
             )}
 
-            {/* 13. STRENGTHS & IMPROVEMENTS */}
             {portfolioData.careerRecommendation && (
               <section>
                 <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
@@ -202,7 +229,7 @@ function PublicPortfolio() {
                 </h5>
                 <div className="row g-4">
                   <div className="col-12 col-sm-6">
-                    <div className="p-3 rounded-2 h-100" style={{ backgroundColor: '#11121a', borderTop: '2px solid #00ffa3' }}>
+                    <div className="p-3 rounded-2 h-100 shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderTop: '2px solid #00ffa3' }}>
                       <span className="text-success font-monospace small fw-bold d-block mb-2">
                         <i className="bi bi-plus-circle me-1"></i> STRENGTHS
                       </span>
@@ -216,7 +243,7 @@ function PublicPortfolio() {
                     </div>
                   </div>
                   <div className="col-12 col-sm-6">
-                    <div className="p-3 rounded-2 h-100" style={{ backgroundColor: '#11121a', borderTop: '2px solid #ffb300' }}>
+                    <div className="p-3 rounded-2 h-100 shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderTop: '2px solid #ffb300' }}>
                       <span className="text-warning font-monospace small fw-bold d-block mb-2">
                         <i className="bi bi-exclamation-circle me-1"></i> IMPROVEMENTS
                       </span>
@@ -233,17 +260,16 @@ function PublicPortfolio() {
               </section>
             )}
 
-            {/* 14. SKILL EVIDENCE ASSURANCE */}
             <section>
               <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
                 <i className="bi bi-shield-shaded text-success me-2"></i>AI Skill Detection Evidence
               </h5>
-              <div className="p-3 rounded-2" style={{ backgroundColor: '#11121a' }}>
+              <div className="p-3 rounded-2 border border-secondary border-opacity-10" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
                 <div className="d-flex flex-column gap-2">
                   {portfolioData.repositories?.slice(0, 3).map((repo, i) => (
-                    <div key={i} className="d-flex justify-content-between align-items-center small py-1 border-bottom border-secondary border-opacity-10 last-border-none">
-                      <span className="text-white-50 font-monospace">{repo.repoName}</span>
-                      <span className="badge bg-dark border border-secondary text-white-50 font-monospace">
+                    <div key={i} className="d-flex justify-content-between align-items-center small py-2 border-bottom border-secondary border-opacity-10 last-border-none">
+                      <span className="text-white-50 font-monospace text-truncate pe-2">{repo.repoName}</span>
+                      <span className="badge bg-dark border border-secondary text-white-50 font-monospace text-nowrap">
                         {repo.extractedTechStack?.split(',')[0] || "Core Tech"} Detected
                       </span>
                     </div>
@@ -254,21 +280,18 @@ function PublicPortfolio() {
                 </span>
               </div>
             </section>
-
           </div>
 
           {/* RIGHT CỘT: SKILL GAP, FEATURED PROJECTS & PROGRESS */}
           <div className="col-12 col-lg-6 d-flex flex-column gap-5">
             
-            {/* 4. SKILL GAP SPECTRUM - REFACTORED & BUG FIXED */}
             {portfolioData.skillGapAnalysis && (
               <section>
                 <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
                   <i className="bi bi-intersect text-success me-2"></i>Skill Gap Spectrum
                 </h5>
-                <div className="p-4 rounded-3 d-flex flex-column gap-4" style={{ backgroundColor: '#11121a', border: '1px solid rgba(255,255,255,0.02)' }}>
+                <div className="p-4 rounded-3 d-flex flex-column gap-4 border border-secondary border-opacity-10 shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
                   
-                  {/* CURRENT MATCHED TECH STACK */}
                   <div>
                     <span className="text-white-50 small d-block mb-2 font-monospace tracking-wide">
                       CURRENT TECH STACK MATCHED ({portfolioData.skillGapAnalysis.matchedSkills?.length || 0})
@@ -287,7 +310,6 @@ function PublicPortfolio() {
                     </div>
                   </div>
 
-                  {/* MISSING CAPABILITIES GAP - FIXED TEXT VISIBILITY */}
                   <div>
                     <span className="text-white-50 small d-block mb-2 font-monospace tracking-wide">
                       MISSING CAPABILITIES GAP ({portfolioData.skillGapAnalysis.missingSkills?.length || 0})
@@ -307,24 +329,22 @@ function PublicPortfolio() {
                       )}
                     </div>
                   </div>
-
                 </div>
               </section>
             )}
 
-            {/* 5. ROADMAP MATRIX PROGRESS */}
             {portfolioData.roadmapProgress && (
               <section>
                 <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
                   <i className="bi bi-signpost-2 text-success me-2"></i>Roadmap Learning Velocity
                 </h5>
-                <div className="p-4 rounded-3" style={{ backgroundColor: '#11121a' }}>
+                <div className="p-4 rounded-3 border border-secondary border-opacity-10 shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <span className="text-white fw-bold small">{portfolioData.roadmapProgress.roadmapName}</span>
                     <span className="text-success font-monospace fw-bold">{portfolioData.roadmapProgress.progressPercentage}%</span>
                   </div>
                   <div className="progress bg-dark mb-4" style={{ height: '4px', borderRadius: '0px' }}>
-                    <div className="progress-bar bg-success" role="progressbar" style={{ width: `${portfolioData.roadmapProgress.progressPercentage}%` }}></div>
+                    <div className="progress-bar bg-success" role="progressbar" style={{ width: `${portfolioData.roadmapProgress.progressPercentage}%`, boxShadow: '0 0 10px rgba(0,255,163,0.5)' }}></div>
                   </div>
                   <div className="row g-2 text-center text-sm-start">
                     <div className="col-4">
@@ -344,13 +364,12 @@ function PublicPortfolio() {
               </section>
             )}
 
-            {/* 6. ACADEMIC EVALUATION */}
             {portfolioData.academicHighlights && (
               <section>
                 <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
                   <i className="bi bi-mortarboard text-success me-2"></i>Academic Core Highlights
                 </h5>
-                <div className="p-4 rounded-3" style={{ backgroundColor: '#11121a' }}>
+                <div className="p-4 rounded-3 border border-secondary border-opacity-10 shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
                   <div className="d-flex justify-content-between align-items-center border-bottom border-secondary border-opacity-10 pb-3 mb-3">
                     <span className="text-white-50 small font-monospace">ACCUMULATED TRANSCRIPT GPA</span>
                     <span className="fs-3 fw-bold text-warning font-monospace">{portfolioData.academicHighlights.gpa}</span>
@@ -369,7 +388,6 @@ function PublicPortfolio() {
               </section>
             )}
 
-            {/* 7. GLOBAL GITHUB TELEMETRY */}
             {portfolioData.githubStats && (
               <section>
                 <h5 className="text-white fs-6 fw-bold mb-4 font-monospace tracking-wider text-uppercase">
@@ -383,7 +401,7 @@ function PublicPortfolio() {
                     { label: "LAST COMMITED", val: portfolioData.githubStats.lastActive || "N/A" }
                   ].map((stat, i) => (
                     <div key={i} className="col-6 col-sm-3">
-                      <div className="p-3 text-center rounded-2 border border-secondary border-opacity-10" style={{ backgroundColor: '#11121a' }}>
+                      <div className="p-3 text-center rounded-2 border border-secondary border-opacity-10" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
                         <span className="text-white-50 font-monospace d-block text-truncate mb-1" style={{ fontSize: '9px' }}>{stat.label}</span>
                         <span className="fs-6 fw-bold font-monospace text-white text-truncate d-block">{stat.val}</span>
                       </div>
@@ -392,7 +410,6 @@ function PublicPortfolio() {
                 </div>
               </section>
             )}
-
           </div>
         </div>
 
@@ -405,7 +422,7 @@ function PublicPortfolio() {
             <div className="position-relative border-start border-secondary border-opacity-25 ms-2 ps-4 d-flex flex-column gap-4">
               {portfolioData.careerJourney.map((evt, idx) => (
                 <div key={idx} className="position-relative">
-                  <div className="position-absolute bg-success rounded-circle border border-dark" style={{ width: '10px', height: '10px', left: '-29px', top: '6px' }}></div>
+                  <div className="position-absolute bg-success rounded-circle border border-dark" style={{ width: '10px', height: '10px', left: '-29px', top: '6px', boxShadow: '0 0 8px #00ffa3' }}></div>
                   <span className="text-success font-monospace fw-bold small d-block mb-0.5">{evt.year} — {evt.eventTitle}</span>
                   <p className="text-white-50 small m-0" style={{ maxWidth: '800px' }}>{evt.description}</p>
                 </div>
@@ -421,7 +438,7 @@ function PublicPortfolio() {
           </h5>
           <div className="d-flex flex-column gap-4">
             {featuredProjects.map(repo => (
-              <div key={repo.repoId} className="p-4 rounded-3 shadow-sm transition-all hover-card-border" style={{ backgroundColor: '#11121a', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div key={repo.repoId} className="p-4 rounded-3 shadow-sm transition-all hover-card-border" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <div className="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
                   <div>
                     <h4 className="fw-bold text-white fs-5 m-0 mb-1">{repo.repoName}</h4>
@@ -449,10 +466,10 @@ function PublicPortfolio() {
           </div>
         </section>
 
-        {/* 9. OTHER REPOSITORIES EXPANSION (ACCORDION/COLLAPSE) */}
+        {/* 9. OTHER REPOSITORIES EXPANSION */}
         {otherProjects.length > 0 && (
           <section className="mt-4">
-            <div className="border border-secondary border-opacity-10 rounded-2" style={{ backgroundColor: '#11121a' }}>
+            <div className="border border-secondary border-opacity-20 rounded-2" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
               <button 
                 className="btn w-100 p-3 text-start d-flex justify-content-between align-items-center text-white border-0 shadow-none"
                 onClick={() => setOpenOtherProjects(!openOtherProjects)}
@@ -467,7 +484,7 @@ function PublicPortfolio() {
                 <div className="p-3 pt-0 border-top border-secondary border-opacity-10 bg-dark bg-opacity-20">
                   <div className="d-flex flex-column gap-2 mt-2">
                     {otherProjects.map(repo => (
-                      <div key={repo.repoId} className="d-flex justify-content-between align-items-center p-2 rounded small border border-secondary border-opacity-5" style={{ backgroundColor: '#07080d' }}>
+                      <div key={repo.repoId} className="d-flex justify-content-between align-items-center p-2 rounded small border border-secondary border-opacity-10" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
                         <span className="fw-bold font-monospace text-white-50 text-truncate me-2">{repo.repoName}</span>
                         <a href={repo.githubUrl} target="_blank" rel="noreferrer" className="text-success text-decoration-none font-monospace small shrink-0" style={{ fontSize: '11px' }}>
                           INSPECT ↗

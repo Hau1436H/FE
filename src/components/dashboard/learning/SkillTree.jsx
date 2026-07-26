@@ -56,7 +56,6 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
   return { layoutedNodes, layoutedEdges: edges };
 };
 
-// NHẬN THÊM PROP highlightHotSkills
 function SkillTree({ skillNodes, onNodeClick, highlightHotSkills }) {
   const [activePhaseId, setActivePhaseId] = useState(null);
 
@@ -83,7 +82,6 @@ function SkillTree({ skillNodes, onNodeClick, highlightHotSkills }) {
     return result;
   }, [skillNodes]);
 
-  // THÊM highlightHotSkills VÀO ARRAY DEPENDENCY
   const { initialNodes, initialEdges } = useMemo(() => {
     const rawNodes = [];
     const rawEdges = [];
@@ -99,7 +97,6 @@ function SkillTree({ skillNodes, onNodeClick, highlightHotSkills }) {
           id: phase.id,
           type: 'customPhase',
           position: { x: xPos, y: yPos },
-          // TRUYỀN highlightMode VÀO DATA
           data: { ...phase, highlightMode: highlightHotSkills }
         });
 
@@ -109,7 +106,7 @@ function SkillTree({ skillNodes, onNodeClick, highlightHotSkills }) {
             id: `e-${prevPhase.id}-${phase.id}`,
             source: prevPhase.id,
             target: phase.id,
-            type: 'bezier', 
+            type: 'default', // <--- ĐÃ SỬA TỪ 'bezier' THÀNH 'default'
             animated: phase.status === 'learning',
             style: { 
               stroke: prevPhase.status === 'completed' ? '#10b981' : '#4b5563', 
@@ -145,7 +142,7 @@ function SkillTree({ skillNodes, onNodeClick, highlightHotSkills }) {
               status: nodeStatus,
               isTrending: node.isTrending === true || node.IsTrending === true,
               currentTrendScore: node.currentTrendScore ?? node.CurrentTrendScore ?? 0,
-              highlightMode: highlightHotSkills, // TRUYỀN highlightMode VÀO DATA
+              highlightMode: highlightHotSkills,
               rawNode: node
             },
           });
@@ -165,7 +162,7 @@ function SkillTree({ skillNodes, onNodeClick, highlightHotSkills }) {
       const layout = getLayoutedElements(rawNodes, rawEdges);
       return { initialNodes: layout.layoutedNodes, initialEdges: layout.layoutedEdges };
     }
-  }, [phases, activePhaseId, highlightHotSkills]); // <-- ĐÃ THÊM highlightHotSkills VÀO ĐÂY
+  }, [phases, activePhaseId, highlightHotSkills]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);

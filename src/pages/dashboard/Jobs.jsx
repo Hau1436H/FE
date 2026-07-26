@@ -52,17 +52,18 @@ function Jobs() {
 
   // NẠP THỐNG KÊ THỊ TRƯỜNG CHUNG (Để lấy số Job cào hôm nay)
   useEffect(() => {
-    const fetchMarketStats = async () => {
-      try {
-        const response = await axiosClient.get('/api/AdminAnalytics/student-stats');
-        setMarketStats(response.data || response.data?.Data || {});
-      } catch (error) {
-        console.error("Lỗi lấy dữ liệu thống kê thị trường:", error);
-      }
-    };
-    
-    fetchMarketStats();
-  }, [refreshTrigger]); 
+  const fetchMarketStats = async () => {
+    try {
+      // Sửa lại đúng đường dẫn Controller MarketPulse
+      const response = await axiosClient.get('/api/v1/MarketPulse/overview-stats');
+      setMarketStats(response.data?.data || response.data || {});
+    } catch (error) {
+      console.warn("Chưa thể lấy thống kê thị trường:", error.message);
+    }
+  };
+  
+  fetchMarketStats();
+}, [refreshTrigger]);
 
   // NẠP DANH SÁCH VIỆC LÀM MATCHING (Cũ)
   useEffect(() => {
