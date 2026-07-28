@@ -96,7 +96,11 @@ function InfoForm({ info, onUpdateSuccess }) {
       }
       setIsEditing(false);
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.');
+      // CẬP NHẬT: Mở rộng việc quét lỗi để bắt được cả chuỗi string trơn từ Backend
+      const responseData = error.response?.data;
+      const backendError = responseData?.message || (typeof responseData === 'string' ? responseData : null);
+      
+      setErrorMessage(backendError || 'Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
