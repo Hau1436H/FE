@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import axiosClient from "../api/axiosClient";
 import Logo from "../components/Logo";
 import { GoogleLogin } from "@react-oauth/google";
@@ -36,6 +36,7 @@ function Login() {
   const leftBgImage =
     "https://i.pinimg.com/736x/2a/2a/33/2a2a337f02b6c63548fb8e03b24a796a.jpg";
   const navigate = useNavigate();
+  const location = useLocation(); // Hook để bắt URL
 
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
@@ -45,26 +46,80 @@ function Login() {
   const [message, setMessage] = useState({ type: "", content: "" });
   const [isLoading, setIsLoading] = useState(false);
 
-  // ĐÃ SỬA LẠI LUỒNG ĐIỀU HƯỚNG TẠI ĐÂY
+  // THAY YOUR_GITHUB_CLIENT_ID BẰNG ID THẬT LẤY TỪ GITHUB DEVELOPER SETTINGS
+  const GITHUB_CLIENT_ID = "Ov23liHvPDkLvId6Zt9S";
+
+  // Hàm điều hướng theo Role
   const handleRoleRedirect = (roleId, roleName) => {
-    // Kiểm tra theo roleId trước (ưu tiên), nếu không có thì check theo roleName
     if (roleId === 1 || roleName.toLowerCase() === "admin") {
-      navigate("/dashboard/admin"); // Cập nhật đúng đường dẫn Sidebar
-    } else if (
-      roleId === 2 ||
-      roleName.toLowerCase() === "student" ||
-      roleName.toLowerCase() === "user"
-    ) {
-      navigate("/dashboard"); // Đã sửa lại đường dẫn Student
+      navigate("/dashboard/admin"); 
+    } else if (roleId === 2 || roleName.toLowerCase() === "student" || roleName.toLowerCase() === "user") {
+      navigate("/dashboard"); 
     } else if (roleId === 3 || roleName.toLowerCase() === "mentor") {
       navigate("/dashboard/mentor"); 
     } else if (roleId === 4 || roleName.toLowerCase() === "counselor") {
       navigate("/dashboard/counselor"); 
     } else {
-      navigate("/dashboard"); // Mặc định
+      navigate("/dashboard"); 
     }
   };
 
+  // Hàm xử lý gọi API login bằng mã code từ GitHub
+  const processGithubLogin = async (code) => {
+    setIsLoading(true);
+    setMessage({ type: "success", content: "Đang ủy quyền với GitHub..." });
+
+    try {
+      const response = await axiosClient.post("/api/Auth/github-login", { code: code });
+      const token = response.data.token || response.data.Token;
+      const roleId = response.data.roleId;
+
+      if (token) {
+        localStorage.setItem("token", token);
+        if (roleId) localStorage.setItem("roleId", roleId);
+
+        const payload = decodeToken(token);
+        const roleName = payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || "User";
+        localStorage.setItem("role", roleName);
+
+        setMessage({ type: "success", content: "Xác thực GitHub thành công! Đang chuyển hướng..." });
+        
+        setTimeout(() => {
+          window.dispatchEvent(new Event("authChange"));
+          handleRoleRedirect(roleId, roleName); 
+        }, 800);
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        content: error.response?.data?.message || "Đăng nhập bằng GitHub thất bại.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // LẮNG NGHE CALLBACK TỪ GITHUB
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      // Gọi API gửi Code lên Backend
+      processGithubLogin(code);
+      // Xóa params khỏi URL cho sạch giao diện
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Kích hoạt luồng OAuth GitHub
+  const handleGithubRedirect = () => {
+    const redirectUri = window.location.origin + "/login";
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email,read:user`;
+  };
+
+  // Đăng nhập truyền thống bằng Email/Password
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -84,16 +139,10 @@ function Login() {
         if (roleId) localStorage.setItem("roleId", roleId); 
 
         const payload = decodeToken(token);
-        const roleName =
-          payload[
-            "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-          ] || "User";
+        const roleName = payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || "User";
         localStorage.setItem("role", roleName);
 
-        setMessage({
-          type: "success",
-          content: "Đăng nhập thành công! Đang chuyển hướng...",
-        });
+        setMessage({ type: "success", content: "Đăng nhập thành công! Đang chuyển hướng..." });
 
         setTimeout(() => {
           window.dispatchEvent(new Event("authChange"));
@@ -104,31 +153,18 @@ function Login() {
       const errRes = error.response;
       const serverMessage = errRes?.data?.message || "";
 
-      if (
-        errRes &&
-        errRes.status === 403 &&
-        serverMessage.toLowerCase().includes("chưa được xác thực")
-      ) {
-        setMessage({
-          type: "error",
-          content:
-            errRes.data.message ||
-            "Tài khoản chưa kích hoạt. Vui lòng xác thực OTP.",
-        });
+      if (errRes && errRes.status === 403 && serverMessage.toLowerCase().includes("chưa được xác thực")) {
+        setMessage({ type: "error", content: errRes.data.message || "Tài khoản chưa kích hoạt. Vui lòng xác thực OTP." });
         setStep(2);
       } else {
-        setMessage({
-          type: "error",
-          content:
-            errRes?.data?.message ||
-            "Sai email hoặc mật khẩu hoặc tài khoản không tồn tại.",
-        });
+        setMessage({ type: "error", content: errRes?.data?.message || "Sai email hoặc mật khẩu hoặc tài khoản không tồn tại." });
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Xác thực OTP
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -140,46 +176,22 @@ function Login() {
         otpCode: otpCode.trim(),
       });
 
-      setMessage({
-        type: "success",
-        content:
-          response.data?.message ||
-          "Xác thực tài khoản thành công! Bạn có thể đăng nhập ngay.",
-      });
+      setMessage({ type: "success", content: response.data?.message || "Xác thực tài khoản thành công! Bạn có thể đăng nhập ngay." });
       setOtpCode("");
       setStep(1);
     } catch (error) {
-      setMessage({
-        type: "error",
-        content:
-          error.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn.",
-      });
+      setMessage({ type: "error", content: error.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn." });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Container
-      fluid
-      className="p-0"
-      style={{ minHeight: "100vh", backgroundColor: "#ffffff" }}
-    >
+    <Container fluid className="p-0" style={{ minHeight: "100vh", backgroundColor: "#ffffff" }}>
       <Row className="g-0" style={{ minHeight: "100vh" }}>
         {/* --- BÊN TRÁI --- */}
-        <Col
-          lg={6}
-          className="d-none d-lg-flex flex-column justify-content-between p-5 position-relative text-white"
-          style={{
-            backgroundImage: `linear-gradient(rgba(10, 25, 20, 0.88), rgba(10, 20, 20, 0.92)), url(${leftBgImage})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div
-            className="fw-bold fs-4"
-            style={{ color: "#10b981", letterSpacing: "0.5px" }}
-          >
+        <Col lg={6} className="d-none d-lg-flex flex-column justify-content-between p-5 position-relative text-white" style={{ backgroundImage: `linear-gradient(rgba(10, 25, 20, 0.88), rgba(10, 20, 20, 0.92)), url(${leftBgImage})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+          <div className="fw-bold fs-4" style={{ color: "#10b981", letterSpacing: "0.5px" }}>
             <Logo size="md" />
           </div>
 
@@ -202,25 +214,14 @@ function Login() {
               >
                 <i className="bi bi-cpu me-2"></i> AI đang phân tích
               </div>
-              <div
-                className="d-flex flex-column gap-3 text-white-50"
-                style={{ fontSize: "0.75rem" }}
-              >
+              <div className="d-flex flex-column gap-3 text-white-50" style={{ fontSize: "0.75rem" }}>
                 <div>
                   <div className="d-flex justify-content-between mb-1">
                     <span>Kỹ năng Frontend</span>
-                    <span className="fw-bold" style={{ color: "#00bfa5" }}>
-                      87%
-                    </span>
+                    <span className="fw-bold" style={{ color: "#00bfa5" }}>87%</span>
                   </div>
-                  <div
-                    className="progress"
-                    style={{ height: "6px", backgroundColor: "#30363d" }}
-                  >
-                    <div
-                      className="progress-bar"
-                      style={{ width: "87%", backgroundColor: "#00bfa5" }}
-                    ></div>
+                  <div className="progress" style={{ height: "6px", backgroundColor: "#30363d" }}>
+                    <div className="progress-bar" style={{ width: "87%", backgroundColor: "#00bfa5" }}></div>
                   </div>
                 </div>
                 <div>
@@ -228,14 +229,8 @@ function Login() {
                     <span>System Design</span>
                     <span className="fw-bold text-warning">47%</span>
                   </div>
-                  <div
-                    className="progress"
-                    style={{ height: "6px", backgroundColor: "#30363d" }}
-                  >
-                    <div
-                      className="progress-bar bg-warning"
-                      style={{ width: "47%" }}
-                    ></div>
+                  <div className="progress" style={{ height: "6px", backgroundColor: "#30363d" }}>
+                    <div className="progress-bar bg-warning" style={{ width: "47%" }}></div>
                   </div>
                 </div>
                 <div>
@@ -243,14 +238,8 @@ function Login() {
                     <span>DevOps & CI/CD</span>
                     <span className="fw-bold text-danger">11%</span>
                   </div>
-                  <div
-                    className="progress"
-                    style={{ height: "6px", backgroundColor: "#30363d" }}
-                  >
-                    <div
-                      className="progress-bar bg-danger"
-                      style={{ width: "11%" }}
-                    ></div>
+                  <div className="progress" style={{ height: "6px", backgroundColor: "#30363d" }}>
+                    <div className="progress-bar bg-danger" style={{ width: "11%" }}></div>
                   </div>
                 </div>
               </div>
@@ -275,10 +264,7 @@ function Login() {
                 <i className="bi bi-lightbulb-fill"></i>
               </div>
               <div>
-                <p
-                  className="m-0 fw-bold text-white"
-                  style={{ fontSize: "0.75rem" }}
-                >
+                <p className="m-0 fw-bold text-white" style={{ fontSize: "0.75rem" }}>
                   Minh Tú vừa pass VNG!
                 </p>
                 <p className="m-0 text-white-50" style={{ fontSize: "0.7rem" }}>
@@ -288,291 +274,137 @@ function Login() {
             </div>
           </div>
 
-          <div
-            className="w-100 ps-3 border-start border-2"
-            style={{ borderColor: "#10b981", maxWidth: "500px" }}
-          >
-            <p
-              className="fst-italic opacity-75 mb-2"
-              style={{ fontSize: "15px", lineHeight: "1.6" }}
-            >
+          <div className="w-100 ps-3 border-start border-2" style={{ borderColor: "#10b981", maxWidth: "500px" }}>
+            <p className="fst-italic opacity-75 mb-2" style={{ fontSize: "15px", lineHeight: "1.6" }}>
               "Tôi không ngờ một bài test 15 phút lại lộ ra đúng điểm yếu mà tôi
               né tránh suốt 2 năm học."
             </p>
             <div className="small fw-semibold">
-              Phương Anh{" "}
-              <span className="text-muted fw-normal">
-                — Frontend Dev tại FPT
-              </span>
+              Phương Anh <span className="text-muted fw-normal">— Frontend Dev tại FPT</span>
             </div>
           </div>
         </Col>
 
         {/* --- BÊN PHẢI --- */}
-        <Col
-          lg={6}
-          xs={12}
-          className="d-flex flex-column justify-content-center align-items-center p-4 p-md-5"
-        >
+        <Col lg={6} xs={12} className="d-flex flex-column justify-content-center align-items-center p-4 p-md-5">
           <div className="w-100" style={{ maxWidth: "420px" }}>
             <div className="text-center text-lg-start mb-4">
-              <h2 className="fw-bold text-dark mb-1">
-                {step === 1 ? "Chào mừng trở lại" : "Xác thực tài khoản"}
-              </h2>
+              <h2 className="fw-bold text-dark mb-1">{step === 1 ? "Chào mừng trở lại" : "Xác thực tài khoản"}</h2>
               <div className="text-muted small">
                 {step === 1 ? (
-                  <>
-                    Chưa có tài khoản?{" "}
-                    <Link
-                      to="/register"
-                      className="text-decoration-none fw-medium"
-                      style={{ color: "#10b981" }}
-                    >
-                      Đăng ký miễn phí
-                    </Link>
-                  </>
+                  <>Chưa có tài khoản? <Link to="/register" className="text-decoration-none fw-medium" style={{ color: "#10b981" }}>Đăng ký miễn phí</Link></>
                 ) : (
-                  <>
-                    Nhập mã OTP vừa được gửi đến{" "}
-                    <strong className="text-dark">{email}</strong>
-                  </>
+                  <>Nhập mã OTP vừa được gửi đến <strong className="text-dark">{email}</strong></>
                 )}
               </div>
             </div>
 
             {message.content && (
-              <div
-                className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"} py-2 mb-3`}
-                style={{ fontSize: "0.85rem" }}
-              >
+              <div className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"} py-2 mb-3`} style={{ fontSize: "0.85rem" }}>
                 {message.content}
               </div>
             )}
 
             {step === 1 ? (
               <>
-                <div
-                  className="mb-4 d-flex justify-content-center"
-                  style={{ minHeight: "40px" }}
-                >
+                {/* BUTTON GOOGLE */}
+                <div className="mb-2 d-flex justify-content-center" style={{ minHeight: "40px" }}>
                   <GoogleLogin
-                    theme="outline"
-                    size="large"
-                    text="continue_with"
-                    shape="rectangular"
-                    width={350}
+                    theme="outline" size="large" text="continue_with" shape="rectangular" width={350}
                     onSuccess={async (credentialResponse) => {
                       setIsLoading(true);
                       setMessage({ type: "", content: "" });
                       try {
                         const googleIdToken = credentialResponse.credential;
-                        const response = await axiosClient.post(
-                          "/api/Auth/google-login",
-                          {
-                            idToken: googleIdToken,
-                          },
-                        );
-
-                        const token =
-                          response.data.token || response.data.Token;
+                        const response = await axiosClient.post("/api/Auth/google-login", { idToken: googleIdToken });
+                        const token = response.data.token || response.data.Token;
                         const roleId = response.data.roleId;
 
                         if (token) {
                           localStorage.setItem("token", token);
                           if (roleId) localStorage.setItem("roleId", roleId);
-
                           const payload = decodeToken(token);
-                          const roleName =
-                            payload[
-                              "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-                            ] || "User";
+                          const roleName = payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || "User";
                           localStorage.setItem("role", roleName);
-
-                          setMessage({
-                            type: "success",
-                            content: "Đăng nhập bằng Google thành công!",
-                          });
+                          setMessage({ type: "success", content: "Đăng nhập bằng Google thành công!" });
                           setTimeout(() => {
                             window.dispatchEvent(new Event("authChange"));
                             handleRoleRedirect(roleId, roleName); 
                           }, 800);
                         }
                       } catch (error) {
-                        setMessage({
-                          type: "error",
-                          content:
-                            error.response?.data?.message ||
-                            "Đăng nhập bằng Google thất bại.",
-                        });
+                        setMessage({ type: "error", content: error.response?.data?.message || "Đăng nhập bằng Google thất bại." });
                       } finally {
                         setIsLoading(false);
                       }
                     }}
-                    onError={() => {
-                      setMessage({
-                        type: "error",
-                        content: "Ủy quyền Google thất bại.",
-                      });
-                    }}
+                    onError={() => { setMessage({ type: "error", content: "Ủy quyền Google thất bại." }); }}
                   />
                 </div>
 
-                <div className="d-flex align-items-center my-4 text-muted small">
-                  <div
-                    className="flex-grow-1 border-bottom"
-                    style={{ borderColor: "#f3f4f6" }}
-                  ></div>
-                  <span className="px-3" style={{ fontSize: "12px" }}>
-                    hoặc đăng nhập bằng email
-                  </span>
-                  <div
-                    className="flex-grow-1 border-bottom"
-                    style={{ borderColor: "#f3f4f6" }}
-                  ></div>
+                {/* BUTTON GITHUB NỚI ĐƯỢC THÊM VÀO */}
+                <div className="mb-4 d-flex justify-content-center" style={{ minHeight: "40px" }}>
+                   <Button 
+                      variant="dark" 
+                      className="d-flex align-items-center justify-content-center w-100 border text-white" 
+                      style={{ maxWidth: "350px", backgroundColor: "#24292e", fontSize: "14px" }}
+                      onClick={handleGithubRedirect}
+                      disabled={isLoading}
+                   >
+                     <i className="bi bi-github me-2 fs-5"></i> Tiếp tục với GitHub
+                   </Button>
                 </div>
-                <form
-                  className="d-flex flex-column gap-3"
-                  onSubmit={handleLogin}
-                >
+
+                <div className="d-flex align-items-center my-4 text-muted small">
+                  <div className="flex-grow-1 border-bottom" style={{ borderColor: "#f3f4f6" }}></div>
+                  <span className="px-3" style={{ fontSize: "12px" }}>hoặc đăng nhập bằng email</span>
+                  <div className="flex-grow-1 border-bottom" style={{ borderColor: "#f3f4f6" }}></div>
+                </div>
+
+                <form className="d-flex flex-column gap-3" onSubmit={handleLogin}>
                   <div>
-                    <label
-                      className="form-label fw-bold text-secondary mb-1"
-                      style={{ fontSize: "0.75rem" }}
-                    >
-                      Email
-                    </label>
+                    <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: "0.75rem" }}>Email</label>
                     <div className="input-group">
-                      <span className="input-group-text bg-light border-end-0 text-muted">
-                        <i className="bi bi-envelope"></i>
-                      </span>
-                      <input
-                        type="email"
-                        placeholder="ten@email.com"
-                        className="form-control form-control-sm bg-light border-start-0"
-                        style={{ fontSize: "0.85rem" }}
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={isLoading}
-                      />
+                      <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-envelope"></i></span>
+                      <input type="email" placeholder="ten@email.com" className="form-control form-control-sm bg-light border-start-0" style={{ fontSize: "0.85rem" }} required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
                     </div>
                   </div>
                   <div>
-                    <label
-                      className="form-label fw-bold text-secondary mb-1"
-                      style={{ fontSize: "0.75rem" }}
-                    >
-                      Mật khẩu
-                    </label>
+                    <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: "0.75rem" }}>Mật khẩu</label>
                     <div className="input-group">
-                      <span className="input-group-text bg-light border-end-0 text-muted">
-                        <i className="bi bi-lock"></i>
-                      </span>
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        className="form-control form-control-sm bg-light border-start-0"
-                        style={{ fontSize: "0.85rem" }}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={isLoading}
-                      />
+                      <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-lock"></i></span>
+                      <input type="password" placeholder="••••••••" className="form-control form-control-sm bg-light border-start-0" style={{ fontSize: "0.85rem" }} required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
                     </div>
                   </div>
                   <div className="form-check d-flex gap-1 align-items-start pt-1 m-0">
-                    <input
-                      type="checkbox"
-                      id="terms"
-                      className="form-check-input mt-1 shadow-none"
-                      style={{ cursor: "pointer" }}
-                    />
-                    <label
-                      htmlFor="terms"
-                      className="form-check-label text-muted lh-sm"
-                      style={{ fontSize: "0.75rem", cursor: "pointer" }}
-                    >
-                      Ghi nhớ đăng nhập
-                    </label>
+                    <input type="checkbox" id="terms" className="form-check-input mt-1 shadow-none" style={{ cursor: "pointer" }} />
+                    <label htmlFor="terms" className="form-check-label text-muted lh-sm" style={{ fontSize: "0.75rem", cursor: "pointer" }}>Ghi nhớ đăng nhập</label>
                   </div>
-                  <Button
-                    variant="success"
-                    type="submit"
-                    className="w-100 py-2 fw-semibold rounded-3 border-0 d-flex align-items-center justify-content-center"
-                    style={{ backgroundColor: "#10b981" }}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Đang xử lý..." : "Đăng nhập"}{" "}
-                    <i className="bi bi-arrow-right ms-2"></i>
+                  <Button variant="success" type="submit" className="w-100 py-2 fw-semibold rounded-3 border-0 d-flex align-items-center justify-content-center" style={{ backgroundColor: "#10b981" }} disabled={isLoading}>
+                    {isLoading ? "Đang xử lý..." : "Đăng nhập"} <i className="bi bi-arrow-right ms-2"></i>
                   </Button>
                 </form>
               </>
             ) : (
-              <form
-                className="d-flex flex-column gap-3"
-                onSubmit={handleVerifyOtp}
-              >
+              <form className="d-flex flex-column gap-3" onSubmit={handleVerifyOtp}>
                 <div>
-                  <label
-                    className="form-label fw-bold text-secondary mb-1"
-                    style={{ fontSize: "0.75rem" }}
-                  >
-                    Mã OTP (6 chữ số)
-                  </label>
+                  <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: "0.75rem" }}>Mã OTP (6 chữ số)</label>
                   <div className="input-group">
-                    <span className="input-group-text bg-light border-end-0 text-muted">
-                      <i className="bi bi-key"></i>
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Ví dụ: 123456"
-                      className="form-control form-control-sm bg-light border-start-0"
-                      style={{ fontSize: "0.85rem", letterSpacing: "0.2rem" }}
-                      required
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      disabled={isLoading}
-                    />
+                    <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-key"></i></span>
+                    <input type="text" placeholder="Ví dụ: 123456" className="form-control form-control-sm bg-light border-start-0" style={{ fontSize: "0.85rem", letterSpacing: "0.2rem" }} required maxLength={6} value={otpCode} onChange={(e) => setOtpCode(e.target.value)} disabled={isLoading} />
                   </div>
                 </div>
-                <button
-                  type="submit"
-                  className="btn border-0 w-100 d-flex align-items-center justify-content-center gap-1 py-2 text-white fw-medium shadow-sm mt-2"
-                  style={{ backgroundColor: "#10b981", fontSize: "0.85rem" }}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Đang xác thực..." : "Xác thực tài khoản"}{" "}
-                  <i className="bi bi-check-circle ms-1"></i>
+                <button type="submit" className="btn border-0 w-100 d-flex align-items-center justify-content-center gap-1 py-2 text-white fw-medium shadow-sm mt-2" style={{ backgroundColor: "#10b981", fontSize: "0.85rem" }} disabled={isLoading}>
+                  {isLoading ? "Đang xác thực..." : "Xác thực tài khoản"} <i className="bi bi-check-circle ms-1"></i>
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-link text-muted mt-2 shadow-none text-decoration-none"
-                  style={{ fontSize: "0.75rem" }}
-                  onClick={() => setStep(1)}
-                  disabled={isLoading}
-                >
+                <button type="button" className="btn btn-link text-muted mt-2 shadow-none text-decoration-none" style={{ fontSize: "0.75rem" }} onClick={() => setStep(1)} disabled={isLoading}>
                   &larr; Quay lại đăng nhập
                 </button>
               </form>
             )}
 
-            <p
-              className="text-center text-muted mt-4"
-              style={{ fontSize: "11px", lineHeight: "1.5" }}
-            >
-              Bằng cách đăng nhập, bạn đồng ý với{" "}
-              <a href="#terms" className="text-dark text-decoration-underline">
-                Điều khoản
-              </a>{" "}
-              và{" "}
-              <a
-                href="#privacy"
-                className="text-dark text-decoration-underline"
-              >
-                Chính sách bảo mật
-              </a>{" "}
-              của AiCareer.
+            <p className="text-center text-muted mt-4" style={{ fontSize: "11px", lineHeight: "1.5" }}>
+              Bằng cách đăng nhập, bạn đồng ý với <a href="#terms" className="text-dark text-decoration-underline">Điều khoản</a> và <a href="#privacy" className="text-dark text-decoration-underline">Chính sách bảo mật</a> của AiCareer.
             </p>
           </div>
         </Col>
