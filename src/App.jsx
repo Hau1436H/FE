@@ -24,7 +24,7 @@ import AdminUserManagement from "./pages/dashboard/admin/AdminUserManagement";
 import AdminResourceList from "./pages/dashboard/admin/AdminResourceList";
 import AdminCreateResource from "./pages/dashboard/admin/AdminCreateResource";
 import AdminEditResource from "./pages/dashboard/admin/AdminEditResource";
-
+import AdminAILogs from "./pages/dashboard/admin/AdminAILogs";
 // Import các Component cho Counselor và Mentor
 import CounselorDashboard from "./pages/dashboard/counselor/CounselorDashboard";
 import MentorDashboard from "./pages/dashboard/mentor/MentorDashboard";
@@ -67,37 +67,57 @@ function App() {
             <Route path="/dashboard/jobs" element={<Jobs />} />
             <Route path="/dashboard/profile" element={<Profile />} />
             <Route path="/skill-assessment" element={<SkillAssessment />} />
-
             <Route
               path="/dashboard/assessment-history/:studentId"
               element={<AssessmentHistory />}
             />
-
             <Route
               path="/dashboard/virtual-mentor"
               element={<VirtualMentor />}
             />
-
             {/* Các route bảo vệ dành riêng cho Quản trị viên (Admin) */}
             <Route element={<AdminRoute />}>
               <Route path="/dashboard/admin" element={<AdminStats />} />
-              <Route path="/dashboard/admin/users" element={<AdminUserManagement />} />
-              
+              <Route
+                path="/dashboard/admin/users"
+                element={<AdminUserManagement />}
+              />
+
               {/* Hệ thống định tuyến CRUD phân trang cho Tài nguyên học tập */}
-              <Route path="/dashboard/admin/management" element={<AdminResourceList />} />
-              <Route path="/dashboard/admin/resources/create" element={<AdminCreateResource />} />
-              <Route path="/dashboard/admin/resources/edit/:id" element={<AdminEditResource />} />
+              <Route
+                path="/dashboard/admin/management"
+                element={<AdminResourceList />}
+              />
+              <Route
+                path="/dashboard/admin/resources/create"
+                element={<AdminCreateResource />}
+              />
+              <Route path="/admin/ai-logs" element={<AdminAILogs />} />
+              <Route
+                path="/dashboard/admin/resources/edit/:id"
+                element={<AdminEditResource />}
+              />
             </Route>
-
             {/* Các route dành cho Cố vấn học tập (Counselor) */}
-            <Route path="/dashboard/counselor" element={<CounselorDashboard />} />
-            <Route path="/dashboard/counselor/students" element={<CounselorStudentList />} />
-            <Route path="/dashboard/counselor/students/:studentId" element={<CounselorStudentDetail />} />
-
+            <Route
+              path="/dashboard/counselor"
+              element={<CounselorDashboard />}
+            />
+            <Route
+              path="/dashboard/counselor/students"
+              element={<CounselorStudentList />}
+            />
+            <Route
+              path="/dashboard/counselor/students/:studentId"
+              element={<CounselorStudentDetail />}
+            />
             {/* Các route dành cho Chuyên gia doanh nghiệp (Mentor) */}
             <Route path="/dashboard/mentor" element={<MentorDashboard />} />
-            <Route path="/dashboard/mentor/history" element={<MentorFeedbackHistory />} /> {/* THÊM DÒNG NÀY */}
-            
+            <Route
+              path="/dashboard/mentor/history"
+              element={<MentorFeedbackHistory />}
+            />{" "}
+            {/* THÊM DÒNG NÀY */}
           </Route>
         </Routes>
       </div>

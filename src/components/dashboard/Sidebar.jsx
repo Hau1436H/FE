@@ -17,7 +17,8 @@ import {
   FaUserGraduate,
   FaClipboardCheck,
   FaChartPie,
-  FaFolderOpen
+  FaFolderOpen,
+  FaMicrochip, // ĐÃ THÊM: Icon cho phần Giám sát AI
 } from "react-icons/fa";
 
 import { PROFILE_DATA } from "../../data/profileData";
@@ -54,13 +55,22 @@ function Sidebar() {
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem("token");
     const payload = decodeToken(token);
-    const role = payload?.role || payload?.Role || localStorage.getItem("role") || "student";
-    
+    const role =
+      payload?.role ||
+      payload?.Role ||
+      localStorage.getItem("role") ||
+      "student";
+
     return {
-      fullName: payload?.fullName || payload?.name || payload?.unique_name || payload?.email?.split('@')[0] || "",
+      fullName:
+        payload?.fullName ||
+        payload?.name ||
+        payload?.unique_name ||
+        payload?.email?.split("@")[0] ||
+        "",
       email: payload?.email || payload?.sub || "",
       role: role.toLowerCase(),
-      avatar: null
+      avatar: null,
     };
   });
 
@@ -78,18 +88,27 @@ function Sidebar() {
             ...fetchedUser,
             ...fetchedDetails,
             // Ưu tiên role từ DB, nếu không có thì giữ nguyên role đã decode từ token
-            role: (fetchedUser.roleName || fetchedUser.role || prev.role).toLowerCase(),
+            role: (
+              fetchedUser.roleName ||
+              fetchedUser.role ||
+              prev.role
+            ).toLowerCase(),
           }));
         }
       } catch (error) {
-        console.warn("Không tải được thông tin mới nhất, tiếp tục dùng data từ Token.", error);
+        console.warn(
+          "Không tải được thông tin mới nhất, tiếp tục dùng data từ Token.",
+          error,
+        );
       }
     }
     fetchUser();
   }, []);
 
   const studentId = user?.userId || user?.studentId || "";
-  const historyPath = studentId ? `/dashboard/assessment-history/${studentId}` : "#";
+  const historyPath = studentId
+    ? `/dashboard/assessment-history/${studentId}`
+    : "#";
   const userRole = user?.role || "student";
 
   // ==========================================
@@ -99,7 +118,11 @@ function Sidebar() {
   // Role 2: Student
   const studentMenuItems = [
     { icon: <FaHome />, text: "Tổng quan", path: "/dashboard" },
-    { icon: <FaGraduationCap />, text: "Learning Hub", path: "/dashboard/learning" },
+    {
+      icon: <FaGraduationCap />,
+      text: "Learning Hub",
+      path: "/dashboard/learning",
+    },
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
     { icon: <FaBriefcase />, text: "Career & Jobs", path: "/dashboard/jobs" },
     { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" },
@@ -110,20 +133,45 @@ function Sidebar() {
   // Role 1: Admin
   const adminMenuItems = [
     { icon: <FaChartLine />, text: "Admin Stats", path: "/dashboard/admin" },
-    { icon: <FaBook />, text: "Quản lý tài liệu", path: "/dashboard/admin/management" },
-    { icon: <FaUsers />, text: "Quản lý người dùng", path: "/dashboard/admin/users" },
+    {
+      icon: <FaBook />,
+      text: "Quản lý tài liệu",
+      path: "/dashboard/admin/management",
+    },
+    {
+      icon: <FaUsers />,
+      text: "Quản lý người dùng",
+      path: "/dashboard/admin/users",
+    },
+    { icon: <FaMicrochip />, text: "Giám sát AI", path: "/admin/ai-logs" }, // ĐÃ THÊM: Nút Giám sát AI
   ];
 
   // Role 3: Mentor
-const mentorMenuItems = [
-  { icon: <FaFolderOpen />, text: "Duyệt Portfolio", path: "/dashboard/mentor" },
-  { icon: <FaClipboardCheck />, text: "Lịch sử nhận xét", path: "/dashboard/mentor/history" }, 
-];
+  const mentorMenuItems = [
+    {
+      icon: <FaFolderOpen />,
+      text: "Duyệt Portfolio",
+      path: "/dashboard/mentor",
+    },
+    {
+      icon: <FaClipboardCheck />,
+      text: "Lịch sử nhận xét",
+      path: "/dashboard/mentor/history",
+    },
+  ];
 
   // Role 4: Counselor
   const counselorMenuItems = [
-    { icon: <FaChartPie />, text: "Thống kê tổng quan", path: "/dashboard/counselor" },
-    { icon: <FaUserGraduate />, text: "Danh sách sinh viên", path: "/dashboard/counselor/students" }, 
+    {
+      icon: <FaChartPie />,
+      text: "Thống kê tổng quan",
+      path: "/dashboard/counselor",
+    },
+    {
+      icon: <FaUserGraduate />,
+      text: "Danh sách sinh viên",
+      path: "/dashboard/counselor/students",
+    },
   ];
 
   // Xác định danh sách menu và tiêu đề dựa vào role hiện tại
@@ -156,19 +204,24 @@ const mentorMenuItems = [
 
   // Thông số mục tiêu (Chỉ hiển thị cho Student)
   const hourStat = PROFILE_DATA?.stats?.find((s) => s.label === "Giờ học");
-  const currentHours = parseInt(hourStat?.value?.replace(/[^0-9]/g, ""), 10) || 0;
+  const currentHours =
+    parseInt(hourStat?.value?.replace(/[^0-9]/g, ""), 10) || 0;
   const targetHours = 100;
-  const goalPercentage = Math.min(100, Math.round((currentHours / targetHours) * 100));
+  const goalPercentage = Math.min(
+    100,
+    Math.round((currentHours / targetHours) * 100),
+  );
 
   const renderMenuItem = (item, index) => {
     let isItemActive;
-    
+
     // Logic Active chuẩn xác hơn
     if (item.text === "Lịch sử đánh giá") {
       isItemActive = location.pathname.includes("/assessment-history");
     } else if (item.text === "Quản lý tài liệu") {
-      isItemActive = location.pathname.includes("/dashboard/admin/management") || 
-                     location.pathname.includes("/dashboard/admin/resources/");
+      isItemActive =
+        location.pathname.includes("/dashboard/admin/management") ||
+        location.pathname.includes("/dashboard/admin/resources/");
     } else {
       isItemActive = location.pathname === item.path && item.path !== "#";
     }
@@ -184,13 +237,20 @@ const mentorMenuItems = [
             isItemActive
               ? {
                   color: "#fff",
-                  backgroundColor: "color-mix(in srgb, var(--accent) 25%, transparent) !important",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent) 25%, transparent) !important",
                 }
               : {}
           }
           onClick={() => item.path !== "#" && navigate(item.path)}
         >
-          <span className={isItemActive ? "text-white" : "text-white-50 d-flex align-items-center"}>
+          <span
+            className={
+              isItemActive
+                ? "text-white"
+                : "text-white-50 d-flex align-items-center"
+            }
+          >
             {item.icon}
           </span>
           <span className="text-white">{item.text}</span>
@@ -212,7 +272,8 @@ const mentorMenuItems = [
       <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4 mb-4">
         <span
           style={{
-            background: "linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, #ffffff 70%, #ffffff 100%)",
+            background:
+              "linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, #ffffff 70%, #ffffff 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             display: "inline-block",
@@ -243,27 +304,52 @@ const mentorMenuItems = [
             </div>
           )}
           <div>
-            <div className="fw-semibold small text-white text-truncate" style={{ maxWidth: "130px" }}>
+            <div
+              className="fw-semibold small text-white text-truncate"
+              style={{ maxWidth: "130px" }}
+            >
               {user?.fullName || "Người dùng"}
             </div>
-            <div className="text-white-50 extra-small text-truncate" style={{ fontSize: "12px", maxWidth: "130px" }}>
+            <div
+              className="text-white-50 extra-small text-truncate"
+              style={{ fontSize: "12px", maxWidth: "130px" }}
+            >
               {user?.email || "Email chưa cập nhật"}
             </div>
           </div>
         </div>
 
         {/* Lựa chọn 2: Mục tiêu nghề nghiệp */}
-{userRole === "student" && (
-  <div className="mt-3">
-    <div className="d-flex align-items-center gap-2 px-2 py-1.5 rounded-3" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px solid rgba(23, 162, 184, 0.2)' }}>
-      <i className="bi bi-compass text-info" style={{ fontSize: '13px' }}></i>
-      <div className="d-flex flex-column">
-        <span className="text-info fw-medium" style={{ fontSize: '11px', lineHeight: '1' }}>Mục tiêu:</span>
-        <span className="text-white-50" style={{ fontSize: '11px', lineHeight: '1.2' }}>Backend Developer</span>
-      </div>
-    </div>
-  </div>
-)}
+        {userRole === "student" && (
+          <div className="mt-3">
+            <div
+              className="d-flex align-items-center gap-2 px-2 py-1.5 rounded-3"
+              style={{
+                backgroundColor: "rgba(23, 162, 184, 0.1)",
+                border: "1px solid rgba(23, 162, 184, 0.2)",
+              }}
+            >
+              <i
+                className="bi bi-compass text-info"
+                style={{ fontSize: "13px" }}
+              ></i>
+              <div className="d-flex flex-column">
+                <span
+                  className="text-info fw-medium"
+                  style={{ fontSize: "11px", lineHeight: "1" }}
+                >
+                  Mục tiêu:
+                </span>
+                <span
+                  className="text-white-50"
+                  style={{ fontSize: "11px", lineHeight: "1.2" }}
+                >
+                  Backend Developer
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* RENDER MENU ĐỘNG THEO ROLE */}
