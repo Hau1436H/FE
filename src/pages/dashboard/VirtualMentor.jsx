@@ -1,21 +1,35 @@
 // src/pages/dashboard/VirtualMentor.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import Sidebar from '../../components/dashboard/Sidebar';
-import axiosClient from '../../api/axiosClient';
-import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import React, { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import Sidebar from "../../components/dashboard/Sidebar";
+import axiosClient from "../../api/axiosClient";
+import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+
+// --- TECH THEME CONSTANTS ---
+const TECH_COLORS = {
+  bgBase: "#030712", // Đen sâu
+  bgSurface: "#0f172a", // Xám slate đậm
+  bgPanel: "rgba(15, 23, 42, 0.6)", // Kính mờ
+  borderSoft: "rgba(148, 163, 184, 0.15)",
+  accentBlue: "#3b82f6",
+  accentCyan: "#06b6d4",
+  textMain: "#f8fafc",
+  textMuted: "#94a3b8",
+};
 
 function VirtualMentor() {
-  const [chatInput, setChatInput] = useState('');
+  const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  
+
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
-  const [connection, setConnection] = useState(null);
 
   const messagesEndRef = useRef(null);
+
+  const AI_AVATAR = "https://img.freepik.com/free-photo/portrait-young-businesswoman-holding-eyeglasses-hand-against-gray-backdrop_23-2148029483.jpg?w=800&t=st=1700000000~exp=1700000000~hmac=123456789";
+  const USER_AVATAR = "https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?w=800&t=st=1700000000~exp=1700000000~hmac=abcdef";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,88 +39,18 @@ function VirtualMentor() {
     scrollToBottom();
   }, [messages, isAiTyping]);
 
-  // KẾT NỐI SIGNALR
-  useEffect(() => {
-    const connectSignalR = async () => {
-      try {
-        const newConnection = new HubConnectionBuilder()
-          .withUrl("https://localhost:7196/hubs/virtualMentor", { 
-            accessTokenFactory: () => localStorage.getItem('token') 
-          })
-          .configureLogging(LogLevel.Information)
-          .withAutomaticReconnect()
-          .build();
-
-        // Lắng nghe AI trả về từng cụm từ (chunk)
-        newConnection.on("ReceiveMessageChunk", (chunk) => {
-          setMessages(prev => {
-            const lastMsg = prev[prev.length - 1];
-            if (lastMsg && lastMsg.sender === 'ai' && lastMsg.isStreaming) {
-              const updatedMessages = [...prev];
-              updatedMessages[updatedMessages.length - 1].text += chunk;
-              return updatedMessages;
-            } else {
-              return [...prev, {
-                id: Date.now().toString(),
-                sender: 'ai',
-                text: chunk,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isStreaming: true
-              }];
-            }
-          });
-        });
-
-        // Lắng nghe tín hiệu kết thúc câu trả lời
-        newConnection.on("EndMessageChunk", () => {
-          setIsAiTyping(false);
-          setMessages(prev => {
-            const updatedMessages = [...prev];
-            if (updatedMessages.length > 0) {
-              updatedMessages[updatedMessages.length - 1].isStreaming = false;
-            }
-            return updatedMessages;
-          });
-        });
-
-        await newConnection.start();
-        console.log("Đã kết nối SignalR - Virtual Mentor Hub");
-        setConnection(newConnection);
-      } catch (error) {
-        console.error("Lỗi kết nối SignalR:", error);
-      }
-    };
-
-    connectSignalR();
-
-    return () => {
-      if (connection) {
-        connection.stop();
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Truyền cờ true để báo hiệu đây là lần load đầu tiên
   useEffect(() => {
     fetchSessions(true);
   }, []);
 
   const fetchSessions = async (isInitialLoad = false) => {
     try {
-      const response = await axiosClient.get('/api/v1/VirtualMentor/sessions');
-      const responseData = response.data || response;
-      const sessionList = responseData.data || responseData.Data || responseData || [];
+      const response = await axiosClient.get("/api/v1/VirtualMentor/sessions");
+      const sessionList = response.data?.data || response.data?.Data || response.data || [];
 
       if (Array.isArray(sessionList)) {
         setSessions(sessionList);
-        // FIX: Mở ô trò chuyện mới thay vì tự động load lịch sử cũ khi vừa vào trang
-        if (isInitialLoad) {
-          handleNewChat();
-        }
-      } else {
-        console.warn("Dữ liệu trả về không phải là mảng (Array)!", sessionList);
-        setSessions([]);
+        if (isInitialLoad) handleNewChat();
       }
     } catch (error) {
       console.error("Lỗi tải danh sách session:", error);
@@ -114,29 +58,20 @@ function VirtualMentor() {
   };
 
   const handleSelectSession = async (sessionId) => {
-    if (connection && activeSessionId) {
-      await connection.invoke("LeaveChatSession", activeSessionId.toString());
-    }
-
     setActiveSessionId(sessionId);
     setIsLoadingHistory(true);
     setMessages([]);
 
-    if (connection && sessionId) {
-      await connection.invoke("JoinChatSession", sessionId.toString());
-    }
-
     try {
-      const response = await axiosClient.get(`/api/v1/VirtualMentor/chat-history/${sessionId}`); 
-      const historyData = response.data.data || response.data.Data || [];
-      
+      const response = await axiosClient.get(`/api/v1/VirtualMentor/chat-history/${sessionId}`);
+      const historyData = response.data?.data || response.data?.Data || [];
+
       if (historyData.length > 0) {
-        const formattedHistory = historyData.map(msg => ({
+        const formattedHistory = historyData.map((msg) => ({
           id: msg.messageId || msg.MessageId,
-          sender: (msg.senderType || msg.SenderType).toLowerCase() === 'student' ? 'user' : 'ai',
+          sender: (msg.senderType || msg.SenderType).toLowerCase() === "student" ? "user" : "ai",
           text: msg.messageText || msg.MessageText,
-          time: new Date(msg.sentAt || msg.SentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isStreaming: false
+          time: new Date(msg.sentAt || msg.SentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         }));
         setMessages(formattedHistory);
       }
@@ -149,13 +84,14 @@ function VirtualMentor() {
 
   const handleNewChat = () => {
     setActiveSessionId(null);
-    setMessages([{
-      id: 'welcome-msg',
-      sender: 'ai',
-      text: 'Xin chào! Mình là AI Career Mentor. Mình có thể giúp gì cho định hướng nghề nghiệp IT của bạn hôm nay?',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isStreaming: false
-    }]);
+    setMessages([
+      {
+        id: "welcome-msg",
+        sender: "ai",
+        text: "Xin chào! Mình là Cố vấn Hướng nghiệp AI của bạn. Hãy cho mình biết bạn đang quan tâm đến vị trí công việc nào trong ngành IT nhé!",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
   };
 
   const handleSendMessage = async (e) => {
@@ -163,102 +99,96 @@ function VirtualMentor() {
     if (!chatInput.trim() || isAiTyping) return;
 
     const userText = chatInput;
-    setChatInput('');
-    
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      sender: 'user',
-      text: userText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }]);
-    
+    setChatInput("");
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        sender: "user",
+        text: userText,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+
     setIsAiTyping(true);
 
     try {
-      const payload = {
-        sessionId: activeSessionId,
-        userMessage: userText
-      };
-
-      const response = await axiosClient.post('/api/v1/VirtualMentor/chat', payload);
+      const payload = { sessionId: activeSessionId, userMessage: userText };
+      const response = await axiosClient.post("/api/v1/VirtualMentor/chat", payload);
       const returnedSessionId = response.data?.sessionId || response.data?.SessionId;
+      const aiResponseText = response.data?.aiResponse || response.data?.AiResponse || "Xin lỗi, không lấy được phản hồi.";
 
       if (!activeSessionId && returnedSessionId) {
         setActiveSessionId(returnedSessionId);
-        if (connection) {
-           await connection.invoke("JoinChatSession", returnedSessionId.toString());
-        }
-        fetchSessions(); 
+        fetchSessions();
       }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: aiResponseText,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
     } catch (error) {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        sender: 'ai',
-        text: `❌ Lỗi kết nối: ${error.response?.data?.Error || error.message}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isStreaming: false
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: `❌ Hệ thống đang quá tải. Vui lòng thử lại: ${error.response?.data?.Error || error.message}`,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
     } finally {
-      // Đảm bảo cờ Typing được tắt nếu request bị lỗi hoặc backend response full mà không gọi EndMessageChunk
-      setIsAiTyping(false); 
+      setIsAiTyping(false);
     }
   };
 
   return (
-    <div className="d-flex vh-100 overflow-hidden" style={{ backgroundColor: '#020205', color: '#e3e4ed', fontFamily: 'system-ui' }}>
-      
-      {/* CSS Nhúng cho hiệu ứng con trỏ nhấp nháy */}
-      <style>
-        {`
-          @keyframes blinkCursor {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-          }
-          .cursor-blink {
-            display: inline-block;
-            width: 8px;
-            height: 15px;
-            background-color: #198754;
-            animation: blinkCursor 0.8s step-end infinite;
-            vertical-align: text-bottom;
-            margin-left: 2px;
-          }
-        `}
-      </style>
-
+    <div className="d-flex vh-100 overflow-hidden" style={{ backgroundColor: TECH_COLORS.bgBase, color: TECH_COLORS.textMain, fontFamily: "'Inter', system-ui, sans-serif" }}>
       <Sidebar />
 
-      <div className="d-flex flex-grow-1 h-100 overflow-hidden p-3 gap-3" style={{ backgroundColor: '#07080f' }}>
-        
+      <div className="d-flex flex-grow-1 h-100 overflow-hidden p-3 gap-3">
         {/* CỘT 1: Lịch sử Chat */}
-        <div className="d-flex flex-column rounded-4 border border-secondary border-opacity-10 overflow-hidden flex-shrink-0" 
-             style={{ backgroundColor: '#0b0c16', width: '280px' }}>
-          
-          <div className="p-3 border-bottom border-secondary border-opacity-10">
-            <button 
+        <div className="d-flex flex-column rounded-4 overflow-hidden flex-shrink-0 tech-glass-panel" style={{ width: "280px" }}>
+          <div className="p-3 border-bottom" style={{ borderColor: TECH_COLORS.borderSoft }}>
+            <button
               onClick={handleNewChat}
-              className="btn btn-outline-success w-100 d-flex align-items-center justify-content-center gap-2 rounded-pill py-2"
-              style={{ fontSize: '0.9rem', fontWeight: '500' }}>
-              <span className="fs-5">+</span> Đoạn chat mới
+              className="btn w-100 d-flex align-items-center justify-content-center gap-2 rounded-pill py-2 border-0 text-white shadow-sm"
+              style={{ fontSize: "0.95rem", fontWeight: "600", backgroundImage: `linear-gradient(135deg, ${TECH_COLORS.accentBlue}, ${TECH_COLORS.accentCyan})` }}
+            >
+              <i className="bi bi-chat-dots-fill"></i> Đoạn chat mới
             </button>
           </div>
 
           <div className="flex-grow-1 overflow-auto p-2 custom-scrollbar">
-            <div className="small text-white-50 px-3 mb-2 mt-2 fw-semibold" style={{ fontSize: '0.75rem' }}>GẦN ĐÂY</div>
-            
+            <div className="small px-3 mb-2 mt-2 fw-semibold" style={{ color: TECH_COLORS.accentCyan, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>
+              Lịch sử trò chuyện
+            </div>
+
             <ul className="nav nav-pills flex-column gap-1">
-              {sessions.length === 0 && <div className="text-center text-white-50 small mt-3">Chưa có lịch sử</div>}
-              
-              {sessions.map(session => (
+              {sessions.length === 0 && <div className="text-center small mt-4" style={{ color: TECH_COLORS.textMuted }}>Chưa có dữ liệu</div>}
+
+              {sessions.map((session) => (
                 <li key={session.sessionId}>
-                  <button 
+                  <button
                     onClick={() => handleSelectSession(session.sessionId)}
-                    className={`nav-link w-100 text-start text-truncate px-3 py-2 rounded-3 border-0 small ${
-                      activeSessionId === session.sessionId ? 'bg-secondary bg-opacity-25 text-white fw-medium' : 'bg-transparent text-white-50'
+                    className={`nav-link w-100 text-start text-truncate px-3 py-2 rounded-3 border-0 transition-all ${
+                      activeSessionId === session.sessionId ? "fw-bold" : ""
                     }`}
-                    style={{ fontSize: '0.85rem' }}
+                    style={{
+                      fontSize: "0.9rem",
+                      backgroundColor: activeSessionId === session.sessionId ? "rgba(6, 182, 212, 0.15)" : "transparent",
+                      color: activeSessionId === session.sessionId ? TECH_COLORS.accentCyan : TECH_COLORS.textMuted,
+                      boxShadow: activeSessionId === session.sessionId ? `inset 3px 0 0 ${TECH_COLORS.accentCyan}` : "none",
+                    }}
                   >
-                    💬 {session.title || "Cuộc trò chuyện mới"}
+                    <i className="bi bi-chat-left-text me-2 opacity-75"></i>
+                    {session.title || "Tư vấn hướng nghiệp"}
                   </button>
                 </li>
               ))}
@@ -267,93 +197,141 @@ function VirtualMentor() {
         </div>
 
         {/* CỘT 2: Khu vực Chat chính */}
-        <div className="d-flex flex-column flex-grow-1 h-100 rounded-4 border border-secondary border-opacity-10 overflow-hidden" 
-             style={{ backgroundColor: '#0b0c16' }}>
-          
-          <div className="px-4 py-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center gap-3">
-            <div className="rounded-circle bg-success d-flex align-items-center justify-content-center fs-5" style={{ width: '42px', height: '42px' }}>
-              ✨
+        <div className="d-flex flex-column flex-grow-1 h-100 rounded-4 overflow-hidden tech-glass-panel shadow-lg">
+          {/* Header Chat */}
+          <div className="px-4 py-3 d-flex align-items-center gap-3 border-bottom" style={{ borderColor: TECH_COLORS.borderSoft, backgroundColor: "rgba(0,0,0,0.2)" }}>
+            <div className="position-relative">
+              <img src={AI_AVATAR} alt="AI Avatar" className="rounded-circle border border-2" style={{ width: "48px", height: "48px", objectFit: "cover", borderColor: TECH_COLORS.accentCyan }} />
+              <span className="position-absolute bottom-0 end-0 rounded-circle border border-dark" style={{ width: "12px", height: "12px", backgroundColor: "#10b981" }}></span>
             </div>
             <div>
-              <h6 className="mb-0 text-white fw-bold">Trợ lý Cố vấn Công nghệ (AI)</h6>
-              <span className="text-success small d-flex align-items-center gap-1">
-                <span className="spinner-grow bg-success" style={{width: '6px', height: '6px'}}></span> 
-                Sẵn sàng
+              <h5 className="mb-0 fw-bold" style={{ color: TECH_COLORS.textMain }}>Sarah - AI Tech Mentor</h5>
+              <span className="small d-flex align-items-center gap-1 fw-medium mt-1" style={{ color: TECH_COLORS.accentCyan }}>
+                <span className="spinner-grow" style={{ width: "8px", height: "8px", backgroundColor: TECH_COLORS.accentCyan }}></span>
+                Đang trực tuyến
               </span>
             </div>
           </div>
 
-          <div className="flex-grow-1 overflow-auto p-4 d-flex flex-column gap-3 custom-scrollbar" style={{ scrollBehavior: 'smooth' }}>
-  {isLoadingHistory ? (
-    <div className="d-flex h-100 align-items-center justify-content-center flex-column gap-3 text-white-50">
-      <div className="spinner-border text-success" role="status"></div>
-      <span>Đang tải lịch sử...</span>
-    </div>
-  ) : (
-    messages.map((msg) => (
-      <div key={msg.id} className={`d-flex flex-column ${msg.sender === 'user' ? 'align-items-end' : 'align-items-start'}`}>
-        <div className="p-3 rounded-4 shadow-sm" style={{ 
-          maxWidth: '80%', 
-          backgroundColor: msg.sender === 'user' ? '#198754' : '#1e1e24', 
-          color: '#e3e4ed', 
-          fontSize: '0.95rem',
-          lineHeight: '1.6',
-          // Note: Khi dùng ReactMarkdown, bạn có thể cân nhắc bỏ whiteSpace: 'pre-wrap' 
-          // nếu thư viện đã tự động xử lý xuống dòng bằng các thẻ <p>
-          whiteSpace: 'normal', 
-          borderBottomRightRadius: msg.sender === 'user' ? '4px' : '16px',
-          borderBottomLeftRadius: msg.sender === 'ai' ? '4px' : '16px'
-        }}>
-          
-          <ReactMarkdown>
-            {msg.text}
-          </ReactMarkdown>
+          {/* Khung tin nhắn */}
+          <div className="flex-grow-1 overflow-auto p-4 d-flex flex-column gap-4 custom-scrollbar" style={{ scrollBehavior: "smooth" }}>
+            {isLoadingHistory ? (
+              <div className="d-flex h-100 align-items-center justify-content-center flex-column gap-3" style={{ color: TECH_COLORS.accentCyan }}>
+                <div className="spinner-border" role="status"></div>
+                <span className="fw-medium">Đang đồng bộ dữ liệu...</span>
+              </div>
+            ) : (
+              messages.map((msg) => {
+                const isUser = msg.sender === "user";
+                return (
+                  <div key={msg.id} className={`d-flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+                    <img
+                      src={isUser ? USER_AVATAR : AI_AVATAR}
+                      alt="avatar"
+                      className="rounded-circle shadow-sm"
+                      style={{ width: "40px", height: "40px", objectFit: "cover", flexShrink: 0, border: isUser ? "none" : `1px solid ${TECH_COLORS.accentCyan}` }}
+                    />
+                    <div className="d-flex flex-column" style={{ maxWidth: "75%", alignItems: isUser ? "flex-end" : "flex-start" }}>
+                      <div
+                        className="p-3 shadow-sm markdown-content"
+                        style={{
+                          backgroundColor: isUser ? "transparent" : "rgba(30, 41, 59, 0.8)",
+                          backgroundImage: isUser ? `linear-gradient(135deg, ${TECH_COLORS.accentBlue}, ${TECH_COLORS.accentCyan})` : "none",
+                          color: TECH_COLORS.textMain,
+                          fontSize: "0.95rem",
+                          lineHeight: "1.6",
+                          borderRadius: "18px",
+                          borderTopRightRadius: isUser ? "4px" : "18px",
+                          borderTopLeftRadius: !isUser ? "4px" : "18px",
+                          border: !isUser ? `1px solid ${TECH_COLORS.borderSoft}` : "none",
+                          backdropFilter: !isUser ? "blur(8px)" : "none",
+                        }}
+                      >
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
+                      <span className="mt-1" style={{ fontSize: "0.75rem", fontWeight: "500", color: TECH_COLORS.textMuted }}>{msg.time}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
 
-          {/* Hộp nhấp nháy báo hiệu AI đang type ở chunk cuối */}
-          {msg.isStreaming && <span className="cursor-blink"></span>}
-          
-        </div>
-        <span className="text-secondary mt-1" style={{ fontSize: '0.7rem' }}>{msg.time}</span>
-      </div>
-    ))
-  )}
-  
-  {/* Dấu 3 chấm chỉ hiện lên khi tin nhắn CỦA USER là tin cuối cùng */}
-  {isAiTyping && messages[messages.length - 1]?.sender === 'user' && (
-    <div className="d-flex align-items-start">
-      <div className="p-3 rounded-4" style={{ backgroundColor: '#1e1e24', borderBottomLeftRadius: '4px' }}>
-        <span className="spinner-grow spinner-grow-sm text-success me-1" style={{ width: '0.5rem', height: '0.5rem' }}></span>
-        <span className="spinner-grow spinner-grow-sm text-success me-1" style={{ width: '0.5rem', height: '0.5rem', animationDelay: '0.2s' }}></span>
-        <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '0.5rem', height: '0.5rem', animationDelay: '0.4s' }}></span>
-      </div>
-    </div>
-  )}
-  <div ref={messagesEndRef} />
-</div>
+            {isAiTyping && (
+              <div className="d-flex gap-3 align-items-end">
+                <img src={AI_AVATAR} alt="AI Avatar" className="rounded-circle shadow-sm" style={{ width: "40px", height: "40px", objectFit: "cover", border: `1px solid ${TECH_COLORS.accentCyan}` }} />
+                <div className="p-3 rounded-4 shadow-sm" style={{ backgroundColor: "rgba(30, 41, 59, 0.8)", borderTopLeftRadius: "4px", border: `1px solid ${TECH_COLORS.borderSoft}` }}>
+                  <div className="typing-indicator d-flex gap-1">
+                    <span className="rounded-circle" style={{ width: "6px", height: "6px", backgroundColor: TECH_COLORS.accentCyan, animation: "bounce 1.4s infinite ease-in-out both" }}></span>
+                    <span className="rounded-circle" style={{ width: "6px", height: "6px", backgroundColor: TECH_COLORS.accentCyan, animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "0.2s" }}></span>
+                    <span className="rounded-circle" style={{ width: "6px", height: "6px", backgroundColor: TECH_COLORS.accentCyan, animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "0.4s" }}></span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-          <div className="p-4 border-top border-secondary border-opacity-10" style={{ backgroundColor: '#07080f' }}>
-            <form onSubmit={handleSendMessage} className="d-flex gap-2 mx-auto" style={{ maxWidth: '800px' }}>
-              <input 
-                type="text" 
-                className="form-control bg-dark border-secondary border-opacity-25 text-white py-3 px-4 rounded-pill shadow-sm" 
-                placeholder="Nhập câu hỏi để bắt đầu thảo luận..." 
-                value={chatInput} 
-                onChange={(e) => setChatInput(e.target.value)} 
-                disabled={isAiTyping || isLoadingHistory}
-              />
-              <button 
-                type="submit" 
-                className="btn btn-success rounded-pill px-4 shadow-sm d-flex align-items-center justify-content-center" 
+          {/* Ô nhập tin nhắn */}
+          <div className="p-4" style={{ backgroundColor: "rgba(0,0,0,0.2)", borderTop: `1px solid ${TECH_COLORS.borderSoft}` }}>
+            <form onSubmit={handleSendMessage} className="d-flex gap-3 mx-auto align-items-center" style={{ maxWidth: "850px" }}>
+              <div className="position-relative flex-grow-1">
+                <input
+                  type="text"
+                  className="form-control text-white py-3 ps-4 pe-5 shadow-sm tech-input"
+                  placeholder="Hỏi Sarah về lộ trình, kỹ năng hoặc review CV..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  disabled={isAiTyping || isLoadingHistory}
+                  style={{
+                    backgroundColor: "rgba(15, 23, 42, 0.8)",
+                    border: `1px solid ${TECH_COLORS.borderSoft}`,
+                    borderRadius: "24px",
+                    fontSize: "0.95rem",
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn rounded-circle shadow d-flex align-items-center justify-content-center text-white tech-btn-glow"
                 disabled={isAiTyping || isLoadingHistory || !chatInput.trim()}
-                style={{ width: '60px' }}
+                style={{
+                  width: "52px", height: "52px", flexShrink: 0,
+                  backgroundImage: `linear-gradient(135deg, ${TECH_COLORS.accentBlue}, ${TECH_COLORS.accentCyan})`,
+                  border: "none", transition: "all 0.2s",
+                }}
               >
-                <i className="bi bi-send-fill"></i>
+                <i className="bi bi-send-fill fs-5"></i>
               </button>
             </form>
           </div>
-
         </div>
       </div>
+
+      <style>
+        {`
+          .tech-glass-panel {
+            background-color: ${TECH_COLORS.bgPanel};
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid ${TECH_COLORS.borderSoft};
+          }
+          .tech-input:focus {
+             box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3) !important;
+             border-color: ${TECH_COLORS.accentCyan} !important;
+             background-color: rgba(15, 23, 42, 1) !important;
+             color: white;
+          }
+          .tech-btn-glow:not(:disabled):hover {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+            transform: translateY(-2px);
+          }
+          @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+          }
+          .markdown-content p:last-child { margin-bottom: 0; }
+        `}
+      </style>
     </div>
   );
 }
