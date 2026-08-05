@@ -141,12 +141,12 @@ function SkillAssessment() {
     try {
       const fullPayload = {
         studentId: studentId,
-        skillNodeId: targetSkillId, 
+        skillNodeId: targetSkillId?.skillNodeId || targetSkillId?.id || targetSkillId,
         quizAnswers: examData.quizAnswers,
         codeSubmission: codePayload
       };
 
-      const response = await axiosClient.post('/api/assessments/submit-exam', fullPayload);
+const response = await axiosClient.post('/api/assessments/submit-exam', fullPayload);
       const data = response.data;
 
       setTestResult({
