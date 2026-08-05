@@ -25,6 +25,7 @@ import AdminResourceList from "./pages/dashboard/admin/AdminResourceList";
 import AdminCreateResource from "./pages/dashboard/admin/AdminCreateResource";
 import AdminEditResource from "./pages/dashboard/admin/AdminEditResource";
 import AdminAILogs from "./pages/dashboard/admin/AdminAILogs";
+
 // Import các Component cho Counselor và Mentor
 import CounselorDashboard from "./pages/dashboard/counselor/CounselorDashboard";
 import MentorDashboard from "./pages/dashboard/mentor/MentorDashboard";
@@ -32,12 +33,13 @@ import CounselorStudentList from "./pages/dashboard/counselor/CounselorStudentLi
 import MentorFeedbackHistory from "./pages/dashboard/mentor/MentorFeedbackHistory";
 import CounselorStudentDetail from "./pages/dashboard/counselor/CounselorStudentDetail";
 
-// ĐÃ THÊM: Import Page Chat của sinh viên
+// Import Page Chat của sinh viên
 import CounselorChatPage from "./components/chat/CounselorChatPage";
 
 function App() {
   const location = useLocation();
 
+  // Danh sách các URL không hiển thị Navbar public (MyNavbar) ở ngoài cùng
   const noNavarPaths = [
     "/login",
     "/register",
@@ -46,6 +48,7 @@ function App() {
     "/learning-hub",
     "/p/",
   ];
+
   const showNavbar = !noNavarPaths.some((path) =>
     location.pathname.startsWith(path),
   );
@@ -56,14 +59,16 @@ function App() {
         {showNavbar && <MyNavbar />}
 
         <Routes>
+          {/* Public Routes */}
           <Route index element={<Home />} />
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
           <Route path="/p/:slug" element={<PublicPortfolio />} />
 
+          {/* Protected Routes (Cần đăng nhập) */}
           <Route element={<ProtectedRoute />}>
+            {/* Các route chung cho Sinh viên (Student) */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/learning" element={<Learning />} />
             <Route path="/dashboard/practice" element={<Practice />} />
@@ -80,6 +85,7 @@ function App() {
             />
             {/* ĐÃ THÊM: Route dành cho Sinh viên mở khung chat với Cố vấn */}
             <Route path="/dashboard/chat" element={<CounselorChatPage />} />
+
             {/* Các route bảo vệ dành riêng cho Quản trị viên (Admin) */}
             <Route element={<AdminRoute />}>
               <Route path="/dashboard/admin" element={<AdminStats />} />
@@ -87,8 +93,6 @@ function App() {
                 path="/dashboard/admin/users"
                 element={<AdminUserManagement />}
               />
-
-              {/* Hệ thống định tuyến CRUD phân trang cho Tài nguyên học tập */}
               <Route
                 path="/dashboard/admin/management"
                 element={<AdminResourceList />}
@@ -103,6 +107,7 @@ function App() {
                 element={<AdminEditResource />}
               />
             </Route>
+
             {/* Các route dành cho Cố vấn học tập (Counselor) */}
             <Route
               path="/dashboard/counselor"
@@ -116,12 +121,13 @@ function App() {
               path="/dashboard/counselor/students/:studentId"
               element={<CounselorStudentDetail />}
             />
+
             {/* Các route dành cho Chuyên gia doanh nghiệp (Mentor) */}
             <Route path="/dashboard/mentor" element={<MentorDashboard />} />
             <Route
               path="/dashboard/mentor/history"
               element={<MentorFeedbackHistory />}
-            />{" "}
+            />
           </Route>
         </Routes>
       </div>
