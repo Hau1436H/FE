@@ -32,6 +32,9 @@ import CounselorStudentList from "./pages/dashboard/counselor/CounselorStudentLi
 import MentorFeedbackHistory from "./pages/dashboard/mentor/MentorFeedbackHistory";
 import CounselorStudentDetail from "./pages/dashboard/counselor/CounselorStudentDetail";
 
+// ĐÃ THÊM: Import Page Chat của sinh viên
+import CounselorChatPage from "./components/chat/CounselorChatPage";
+
 function App() {
   const location = useLocation();
 
@@ -75,6 +78,8 @@ function App() {
               path="/dashboard/virtual-mentor"
               element={<VirtualMentor />}
             />
+            {/* ĐÃ THÊM: Route dành cho Sinh viên mở khung chat với Cố vấn */}
+            <Route path="/dashboard/chat" element={<CounselorChatPage />} />
             {/* Các route bảo vệ dành riêng cho Quản trị viên (Admin) */}
             <Route element={<AdminRoute />}>
               <Route path="/dashboard/admin" element={<AdminStats />} />
@@ -117,7 +122,6 @@ function App() {
               path="/dashboard/mentor/history"
               element={<MentorFeedbackHistory />}
             />{" "}
-            {/* THÊM DÒNG NÀY */}
           </Route>
         </Routes>
       </div>

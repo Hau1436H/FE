@@ -18,7 +18,8 @@ import {
   FaClipboardCheck,
   FaChartPie,
   FaFolderOpen,
-  FaMicrochip, // ĐÃ THÊM: Icon cho phần Giám sát AI
+  FaMicrochip,
+  FaComments, // ĐÃ THÊM: Icon cho phần Chat
 } from "react-icons/fa";
 
 import { PROFILE_DATA } from "../../data/profileData";
@@ -51,7 +52,6 @@ function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // FIX LỖI NHÁY MÀN HÌNH: Khởi tạo user ngay từ token trong localStorage trước khi render HTML
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem("token");
     const payload = decodeToken(token);
@@ -87,7 +87,6 @@ function Sidebar() {
             ...prev,
             ...fetchedUser,
             ...fetchedDetails,
-            // Ưu tiên role từ DB, nếu không có thì giữ nguyên role đã decode từ token
             role: (
               fetchedUser.roleName ||
               fetchedUser.role ||
@@ -126,6 +125,10 @@ function Sidebar() {
     { icon: <FaCode />, text: "Thực hành", path: "/dashboard/practice" },
     { icon: <FaBriefcase />, text: "Career & Jobs", path: "/dashboard/jobs" },
     { icon: <FaRobot />, text: "Cố vấn AI", path: "/dashboard/virtual-mentor" },
+
+    // ĐÃ THÊM: Nút mở Menu chat với cố vấn thật
+    { icon: <FaComments />, text: "Chat với Cố vấn", path: "/dashboard/chat" },
+
     { icon: <FaHistory />, text: "Lịch sử đánh giá", path: historyPath },
     { icon: <FaUser />, text: "Hồ sơ của tôi", path: "/dashboard/profile" },
   ];
@@ -143,7 +146,7 @@ function Sidebar() {
       text: "Quản lý người dùng",
       path: "/dashboard/admin/users",
     },
-    { icon: <FaMicrochip />, text: "Giám sát AI", path: "/admin/ai-logs" }, // ĐÃ THÊM: Nút Giám sát AI
+    { icon: <FaMicrochip />, text: "Giám sát AI", path: "/admin/ai-logs" },
   ];
 
   // Role 3: Mentor
@@ -183,26 +186,25 @@ function Sidebar() {
     case "admin":
       currentMenuItems = adminMenuItems;
       menuHeader = "QUẢN TRỊ VIÊN";
-      headerColor = "#10b981"; // Màu xanh lá
+      headerColor = "#10b981";
       break;
     case "mentor":
       currentMenuItems = mentorMenuItems;
       menuHeader = "MENTOR (CHUYÊN GIA)";
-      headerColor = "#3b82f6"; // Màu xanh dương
+      headerColor = "#3b82f6";
       break;
     case "counselor":
       currentMenuItems = counselorMenuItems;
       menuHeader = "CỐ VẤN HỌC TẬP";
-      headerColor = "#f59e0b"; // Màu vàng/cam
+      headerColor = "#f59e0b";
       break;
     default:
       currentMenuItems = studentMenuItems;
       menuHeader = "MENU HỌC VIÊN";
-      headerColor = "#a78bfa"; // Màu tím nhạt
+      headerColor = "#a78bfa";
       break;
   }
 
-  // Thông số mục tiêu (Chỉ hiển thị cho Student)
   const hourStat = PROFILE_DATA?.stats?.find((s) => s.label === "Giờ học");
   const currentHours =
     parseInt(hourStat?.value?.replace(/[^0-9]/g, ""), 10) || 0;
@@ -215,7 +217,6 @@ function Sidebar() {
   const renderMenuItem = (item, index) => {
     let isItemActive;
 
-    // Logic Active chuẩn xác hơn
     if (item.text === "Lịch sử đánh giá") {
       isItemActive = location.pathname.includes("/assessment-history");
     } else if (item.text === "Quản lý tài liệu") {
@@ -319,7 +320,6 @@ function Sidebar() {
           </div>
         </div>
 
-        {/* Lựa chọn 2: Mục tiêu nghề nghiệp */}
         {userRole === "student" && (
           <div className="mt-3">
             <div
