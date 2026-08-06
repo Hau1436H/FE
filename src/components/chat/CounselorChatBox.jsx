@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
-import axiosClient from "../../api/axiosClient"; // Đường dẫn import có thể thay đổi tùy vị trí file
+import axiosClient from "../../api/axiosClient";
 
 const CounselorChatBox = ({
   studentId,
@@ -16,7 +16,6 @@ const CounselorChatBox = ({
 
   const messagesEndRef = useRef(null);
 
-  // Tự động cuộn xuống tin nhắn mới nhất
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -25,90 +24,99 @@ const CounselorChatBox = ({
     scrollToBottom();
   }, [messages]);
 
-  // Khởi tạo Chat: Lấy Session và Lịch sử
   useEffect(() => {
+    let isMounted = true;
+    let newConnection = null;
+
     const initializeChat = async () => {
       try {
         setIsLoading(true);
-        // 1. Lấy hoặc tạo Session
+
+        // 1. Lấy Session
         const sessionRes = await axiosClient.post(
-          `/api/counselorchat/session?studentId=${studentId}&counselorId=${counselorId}`,
+          `/api/CounselorChat/session?studentId=${studentId}&counselorId=${counselorId}`,
         );
         const currentSessionId =
-          sessionRes.data.SessionId || sessionRes.data.sessionId;
+          sessionRes.data?.sessionId || sessionRes.data?.SessionId;
+
+        if (!isMounted) return;
         setSessionId(currentSessionId);
 
-        // 2. Lấy lịch sử chat
-        const historyRes = await axiosClient.get(
-          `/api/counselorchat/history/${currentSessionId}`,
-        );
-        setMessages(historyRes.data || historyRes.data.data);
+        // 2. Lấy Lịch sử
+        if (currentSessionId) {
+          const historyRes = await axiosClient.get(
+            `/api/CounselorChat/history/${currentSessionId}`,
+          );
+          if (isMounted) {
+            // Bao gồm mọi format trả về của axios
+            const historyData = historyRes.data?.data || historyRes.data || [];
+            setMessages(historyData);
+          }
+        }
 
-        // 3. Khởi tạo SignalR Connection
-        // Lấy token từ localStorage (hoặc nơi bạn đang lưu) để SignalR xác thực
-        const token = localStorage.getItem("token");
+        // 3. Kết nối SignalR
+        if (currentSessionId) {
+          const token = localStorage.getItem("token");
+          const baseUrl =
+            import.meta.env.VITE_API_URL || "https://localhost:7196";
+          const hubUrl = `${baseUrl.replace(/\/$/, "")}/hubs/counselorChat`;
 
-        // Đảm bảo URL này khớp với domain C# Backend của bạn
-        const hubUrl = import.meta.env.VITE_API_URL
-          ? `${import.meta.env.VITE_API_URL}/hubs/counselorChat`
-          : "https://localhost:7196/hubs/counselorChat";
+          newConnection = new HubConnectionBuilder()
+            .withUrl(hubUrl, { accessTokenFactory: () => token })
+            .withAutomaticReconnect()
+            .configureLogging(LogLevel.Information)
+            .build();
 
-        const newConnection = new HubConnectionBuilder()
-          .withUrl(hubUrl, {
-            accessTokenFactory: () => token,
-          })
-          .withAutomaticReconnect()
-          .configureLogging(LogLevel.Information)
-          .build();
+          // Lắng nghe sự kiện
+          newConnection.on("ReceiveMessage", (message) => {
+            if (isMounted) {
+              setMessages((prev) => [...prev, message]);
+            }
+          });
 
-        setConnection(newConnection);
+          await newConnection.start();
+
+          if (isMounted) {
+            await newConnection.invoke(
+              "JoinSession",
+              currentSessionId.toString().toLowerCase(),
+            );
+            setConnection(newConnection);
+          } else {
+            newConnection.stop();
+          }
+        }
       } catch (error) {
         console.error("Lỗi khởi tạo chat:", error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     if (studentId && counselorId) {
       initializeChat();
     }
-  }, [studentId, counselorId]);
 
-  // Lắng nghe sự kiện SignalR
-  useEffect(() => {
-    if (connection && sessionId) {
-      connection
-        .start()
-        .then(() => {
-          console.log("Đã kết nối SignalR!");
-          // Xin join vào phòng chat (Group) theo SessionId
-          connection.invoke("JoinSession", sessionId);
-
-          // Lắng nghe tin nhắn mới từ Server
-          connection.on("ReceiveMessage", (message) => {
-            setMessages((prev) => [...prev, message]);
-          });
-        })
-        .catch((e) => console.log("Lỗi kết nối SignalR: ", e));
-    }
-
-    // Cleanup function khi component unmount
     return () => {
-      if (connection) {
-        connection.off("ReceiveMessage");
-        connection.stop();
+      isMounted = false;
+      if (newConnection) {
+        newConnection.off("ReceiveMessage");
+        newConnection.stop();
       }
     };
-  }, [connection, sessionId]);
+  }, [studentId, counselorId]);
 
-  // Xử lý gửi tin nhắn
+  // Phân loại tin nhắn của mình hay của đối phương thông qua senderType
+  const checkIsMyMessage = (msg) => {
+    if (!msg || !msg.senderType) return false;
+    const fromStudent = msg.senderType.toLowerCase() === "student";
+    return isStudent ? fromStudent : !fromStudent;
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !connection || !sessionId) return;
-
     try {
-      // Gửi qua SignalR
-      // Các tham số: sessionId, senderId, content, isFromStudent
       await connection.invoke(
         "SendMessage",
         sessionId,
@@ -118,72 +126,87 @@ const CounselorChatBox = ({
       );
       setNewMessage("");
     } catch (error) {
-      console.error("Lỗi khi gửi tin nhắn:", error);
+      console.error("Lỗi gửi tin nhắn:", error);
     }
   };
 
   if (isLoading)
-    return <div className="p-4 text-center">Đang tải phòng chat...</div>;
+    return (
+      <div className="d-flex justify-content-center p-5 text-info">
+        <div className="spinner-border me-2"></div> Đang tải phòng chat...
+      </div>
+    );
 
   return (
-    <div className="card d-flex flex-column" style={{ height: "500px" }}>
-      <div className="card-header bg-primary text-white">
-        <h5 className="mb-0">Khung Chat Hỗ Trợ</h5>
+    <div className="card d-flex flex-column h-100 bg-dark border-secondary">
+      <div className="card-header bg-black text-info border-bottom border-secondary d-flex align-items-center">
+        <h6 className="mb-0 fw-bold">
+          <i className="bi bi-chat-dots me-2"></i>Khung Chat Hỗ Trợ
+        </h6>
       </div>
 
-      {/* Khu vực hiển thị tin nhắn */}
       <div
-        className="card-body overflow-auto"
-        style={{ backgroundColor: "#f8f9fa" }}
+        className="card-body overflow-auto p-3 custom-scrollbar"
+        style={{ backgroundColor: "#0f172a", minHeight: "400px" }}
       >
-        {messages.map((msg, index) => {
-          // Kiểm tra xem tin nhắn này là của user đang đăng nhập hay của người kia
-          const isMyMessage =
-            msg.SenderId === currentUserId || msg.senderId === currentUserId;
+        {messages.length === 0 ? (
+          <div className="text-center text-white-50 mt-4 small">
+            Hãy bắt đầu cuộc trò chuyện!
+          </div>
+        ) : (
+          messages.map((msg, index) => {
+            const isMyMessage = checkIsMyMessage(msg);
 
-          return (
-            <div
-              key={index}
-              className={`d-flex mb-3 ${isMyMessage ? "justify-content-end" : "justify-content-start"}`}
-            >
+            return (
               <div
-                className={`p-3 rounded-3 ${isMyMessage ? "bg-primary text-white" : "bg-white border"}`}
-                style={{ maxWidth: "75%" }}
+                key={index}
+                className={`d-flex mb-3 ${isMyMessage ? "justify-content-end" : "justify-content-start"}`}
               >
-                <div>{msg.MessageText || msg.Content || msg.content}</div>
-                <small
-                  className={
-                    isMyMessage ? "text-light opacity-75" : "text-muted"
-                  }
-                  style={{ fontSize: "0.7rem" }}
+                <div
+                  className={`p-3 rounded-4 shadow-sm ${isMyMessage ? "text-white" : "bg-black text-light border border-secondary border-opacity-25"}`}
+                  style={{
+                    maxWidth: "80%",
+                    backgroundColor: isMyMessage ? "#0ea5e9" : "#1e293b",
+                    borderBottomRightRadius: isMyMessage ? "4px" : "16px",
+                    borderBottomLeftRadius: !isMyMessage ? "4px" : "16px",
+                  }}
                 >
-                  {new Date(
-                    msg.SentAt || msg.Timestamp || msg.timestamp,
-                  ).toLocaleTimeString()}
-                </small>
+                  {/* CHỈ CẦN GỌI ĐÚNG BIẾN messageText */}
+                  <div style={{ fontSize: "0.95rem" }}>{msg.messageText}</div>
+
+                  <div
+                    className={`mt-1 text-end ${isMyMessage ? "text-white-50" : "text-muted"}`}
+                    style={{ fontSize: "0.7rem" }}
+                  >
+                    {new Date(msg.sentAt || new Date()).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Khu vực nhập tin nhắn */}
-      <div className="card-footer bg-white">
+      <div className="card-footer bg-black border-top border-secondary">
         <form onSubmit={handleSendMessage} className="d-flex gap-2">
           <input
             type="text"
-            className="form-control"
+            className="form-control bg-dark text-white border-secondary rounded-pill"
             placeholder="Nhập tin nhắn..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
           />
           <button
             type="submit"
-            className="btn btn-primary"
+            className="btn btn-info rounded-circle d-flex align-items-center justify-content-center"
             disabled={!newMessage.trim()}
+            style={{ width: "40px", height: "40px" }}
           >
-            Gửi
+            <i className="bi bi-send-fill text-dark"></i>
           </button>
         </form>
       </div>

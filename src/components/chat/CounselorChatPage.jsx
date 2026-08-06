@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import CounselorChatBox from "./CounselorChatBox";
+// QUAN TRỌNG: Đã thêm dòng import axiosClient bị thiếu ở đây!
 import axiosClient from "../../api/axiosClient";
-// ĐÃ THÊM: Import Sidebar và Header
 import Sidebar from "../dashboard/Sidebar";
 import DashboardHeader from "../dashboard/DashboardHeader";
 import { FaComments, FaSpinner } from "react-icons/fa";
@@ -41,7 +41,7 @@ const CounselorChatPage = () => {
     const token = localStorage.getItem("token");
     const payload = decodeToken(token);
 
-    // Trích xuất ID từ Token (thường nằm ở biến 'sub' hoặc 'nameid' tùy cấu hình C#)
+    // Trích xuất ID từ Token
     const studentId =
       payload?.sub ||
       payload?.nameid ||
@@ -57,7 +57,7 @@ const CounselorChatPage = () => {
 
       try {
         setIsLoading(true);
-        // GỌI XUỐNG BACKEND ĐỂ TÌM CỐ VẤN (API bạn vừa tạo)
+        // GỌI XUỐNG BACKEND ĐỂ TÌM CỐ VẤN
         const res = await axiosClient.get(`/api/Profile/my-counselor`);
 
         const counselorId =
@@ -81,7 +81,6 @@ const CounselorChatPage = () => {
     fetchMyCounselor();
   }, [currentStudentId]);
 
-  // GIAO DIỆN ĐÃ ĐƯỢC BỌC TRONG SIDEBAR VÀ HEADER ĐỂ KHÔNG BỊ TRẮNG TRANG
   return (
     <div
       className="d-flex"
