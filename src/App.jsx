@@ -35,6 +35,8 @@ import CounselorStudentDetail from "./pages/dashboard/counselor/CounselorStudent
 
 // Import Page Chat của sinh viên
 import CounselorChatPage from "./components/chat/CounselorChatPage";
+import GlobalAIChatWidget from "./components/chat/GlobalAIChatWidget";
+import { AIChatProvider } from "./context/AIChatContext";
 
 function App() {
   const location = useLocation();
@@ -55,8 +57,9 @@ function App() {
 
   return (
     <AppSettingsProvider>
-      <div className="position-relative" style={{ backgroundColor: "#0a0a14" }}>
-        {showNavbar && <MyNavbar />}
+      <AIChatProvider>
+        <div className="position-relative" style={{ backgroundColor: "#0a0a14" }}>
+          {showNavbar && <MyNavbar />}
 
         <Routes>
           {/* Public Routes */}
@@ -130,7 +133,10 @@ function App() {
             />
           </Route>
         </Routes>
-      </div>
+
+        <GlobalAIChatWidget />
+        </div>
+      </AIChatProvider>
     </AppSettingsProvider>
   );
 }

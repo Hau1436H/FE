@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import Sidebar from "../../components/dashboard/Sidebar";
 import axiosClient from "../../api/axiosClient";
 import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+import { useAIChat } from "../../context/AIChatContext";
 
 // --- TECH THEME CONSTANTS ---
 const TECH_COLORS = {
@@ -121,7 +122,7 @@ function VirtualMentor() {
     }
 
     try {
-      await axiosClient.delete(`/api/v1/VirtualMentor/sessions/${sessionId}`);
+      await deleteSession(sessionId);
 
       // Xóa thành công khỏi State
       const updatedSessions = sessions.filter((s) => s.sessionId !== sessionId);
@@ -144,64 +145,16 @@ function VirtualMentor() {
     const userText = chatInput;
     setChatInput("");
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        sender: "user",
-        text: userText,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-    ]);
-
+    // Thêm tin nhắn user vào context
+    addUserMessage(userText);
     setIsAiTyping(true);
 
     try {
-      const payload = { sessionId: activeSessionId, userMessage: userText };
-      const response = await axiosClient.post(
-        "/api/v1/VirtualMentor/chat",
-        payload,
-      );
-      const returnedSessionId =
-        response.data?.sessionId || response.data?.SessionId;
-      const aiResponseText =
-        response.data?.aiResponse ||
-        response.data?.AiResponse ||
-        "Xin lỗi, không lấy được phản hồi.";
-
-      if (!activeSessionId && returnedSessionId) {
-        setActiveSessionId(returnedSessionId);
-        fetchSessions();
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          text: aiResponseText,
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-      ]);
+      // Gửi đến backend qua context
+      await sendMessageToBackend(userText);
+      fetchSessions(); // Cập nhật danh sách phiên
     } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          text: `❌ Hệ thống đang quá tải. Vui lòng thử lại: ${error.response?.data?.Error || error.message}`,
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-      ]);
+      console.error("Lỗi gửi tin nhắn:", error);
     } finally {
       setIsAiTyping(false);
     }
